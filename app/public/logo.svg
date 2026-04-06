@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48" fill="none">
+  <!-- Icon: green circle with trend line -->
+  <circle cx="24" cy="24" r="22" fill="#00C896"/>
+  <polyline
+    points="9,32 15,23 21,27 28,15 39,19"
+    stroke="white"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <circle cx="39" cy="19" r="2.5" fill="white"/>
+
+  <!-- Wordmark -->
+  <text x="56" y="33" font-family="DM Sans, system-ui, sans-serif" font-size="22" font-weight="700" fill="white" letter-spacing="-0.3">stoki</text>
+</svg>
