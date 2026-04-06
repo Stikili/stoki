@@ -41,7 +41,11 @@ export async function proxy(request: NextRequest) {
       !user && pathname.startsWith('/alerts') ||
       !user && pathname.startsWith('/onboarding') ||
       !user && pathname.startsWith('/stores') ||
-      !user && pathname.startsWith('/settings')) {
+      !user && pathname.startsWith('/settings') ||
+      !user && pathname.startsWith('/expenses') ||
+      !user && pathname.startsWith('/cashup') ||
+      !user && pathname.startsWith('/pricelist') ||
+      !user && pathname.startsWith('/customers')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

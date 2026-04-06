@@ -19,7 +19,7 @@ export default async function SalesPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <SalesClient products={products} todaySales={todaySales} />
+      <SalesClient products={products} todaySales={todaySales} storeName={store.name} />
     </div>
   )
 }
