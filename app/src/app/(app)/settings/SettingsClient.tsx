@@ -220,6 +220,11 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         </a>
       </div>
 
+      {/* Privacy */}
+      <a href="/privacy" className="block rounded-2xl p-4 text-sm font-semibold text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+        Privacy Policy
+      </a>
+
       {/* Sign out */}
       <button
         onClick={signOut}
@@ -227,6 +232,23 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         style={{ background: '#2D1518', border: '1px solid #4D1F23' }}
       >
         Sign out
+      </button>
+
+      {/* Delete account */}
+      <button
+        onClick={async () => {
+          if (!confirm('Are you sure? This will permanently delete your account and ALL your store data. This cannot be undone.')) return
+          if (!confirm('Last chance — type DELETE in the next prompt to confirm.')) return
+          const typed = prompt('Type DELETE to confirm:')
+          if (typed !== 'DELETE') return
+          const res = await fetch('/api/account/delete', { method: 'DELETE' })
+          if (res.ok) { await supabase.auth.signOut(); window.location.href = '/login' }
+          else alert('Failed to delete account. Please try again.')
+        }}
+        className="w-full rounded-2xl p-4 text-xs font-semibold"
+        style={{ background: 'transparent', border: '1px solid #4D1F23', color: '#EF4444', opacity: 0.7 }}
+      >
+        Delete my account and all data
       </button>
     </div>
   )
