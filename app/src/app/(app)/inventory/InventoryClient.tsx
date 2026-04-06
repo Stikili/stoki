@@ -61,10 +61,10 @@ export default function InventoryClient({ products, salesVelocity }: { products:
         <h1 className="text-xl font-bold text-white">Stock</h1>
         <div className="flex gap-2">
           <button onClick={() => setShowScanner(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-            <ScanBarcode size={18} color="var(--muted)" strokeWidth={1.75} />
+            <ScanBarcode size={18} color="#7B8CA1" strokeWidth={1.75} />
           </button>
           <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896' }}>
-            <Plus size={20} color="var(--btn-primary-text)" strokeWidth={2.5} />
+            <Plus size={20} color="white" strokeWidth={2.5} />
           </button>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function InventoryClient({ products, salesVelocity }: { products:
       {/* Search */}
       <div className="flex gap-2 mb-4">
         <div className="relative flex-1">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="var(--muted)" /></span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="#7B8CA1" /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products or SKU…" className="input" style={{ paddingLeft: 40 }} />
         </div>
         <VoiceInput onResult={setSearch} />

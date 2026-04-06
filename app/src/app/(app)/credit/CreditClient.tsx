@@ -76,7 +76,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white">Credit Book</h1>
         <button onClick={() => setShowAddDebtor(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896' }}>
-          <Plus size={20} color="var(--btn-primary-text)" strokeWidth={2.5} />
+          <Plus size={20} color="white" strokeWidth={2.5} />
         </button>
       </div>
 
@@ -89,7 +89,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* Search */}
       <div className="flex gap-2 mb-4">
-        <div className="relative flex-1"><span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="var(--muted)" /></span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers…" className="input" style={{ paddingLeft: 40 }} /></div>
+        <div className="relative flex-1"><span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="#7B8CA1" /></span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers…" className="input" style={{ paddingLeft: 40 }} /></div>
         <VoiceInput onResult={setSearch} />
       </div>
 
