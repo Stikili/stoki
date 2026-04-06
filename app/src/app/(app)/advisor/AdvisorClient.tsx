@@ -92,10 +92,8 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
     <div className="flex flex-col h-[calc(100vh-120px)] px-4 pt-5">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-        <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,200,150,0.5))' }}>
-          <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: '#00C896' }}>
-            <StokiIcon size={24} />
-          </div>
+        <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: '#00C896' }}>
+          <StokiIcon size={24} />
         </div>
         <div className="flex-1">
           <h1 className="text-white font-bold">stoki</h1>
@@ -105,7 +103,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
           <button
             onClick={clearHistory}
             className="text-xs text-muted px-3 py-1.5 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: '#141B2D', border: '1px solid #1E293B' }}
           >
             Clear
           </button>
@@ -120,7 +118,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
             onClick={() => send(prompt)}
             disabled={isPending}
             className="flex-shrink-0 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap active:scale-[0.96]"
-            style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#c084fc', opacity: isPending ? 0.5 : 1 }}
+            style={{ background: '#1A1530', border: '1px solid #2D2353', color: '#c084fc', opacity: isPending ? 0.5 : 1 }}
           >
             {prompt}
           </button>
@@ -139,8 +137,8 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
             <div
               className="rounded-2xl px-4 py-3 max-w-[82%] text-sm leading-relaxed"
               style={m.role === 'user'
-                ? { background: 'linear-gradient(135deg, rgba(0,200,150,0.2), rgba(0,200,150,0.1))', border: '1px solid rgba(0,200,150,0.2)', color: 'white', borderBottomRightRadius: '4px' }
-                : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', color: 'white', borderBottomLeftRadius: '4px', boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset' }
+                ? { background: '#143328', border: '1px solid #1E4D3F', color: 'white', borderBottomRightRadius: '4px' }
+                : { background: '#141B2D', border: '1px solid #1E293B', color: 'white', borderBottomLeftRadius: '4px' }
               }
             >
               {m.content}
@@ -152,7 +150,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
             <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: '#00C896' }}>
               <StokiIcon size={16} />
             </div>
-            <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderBottomLeftRadius: '4px' }}>
+            <div className="rounded-2xl px-4 py-3.5" style={{ background: '#141B2D', border: '1px solid #1E293B', borderBottomLeftRadius: '4px' }}>
               <div className="flex gap-1.5 items-center">
                 {[0, 150, 300].map((delay) => (
                   <span key={delay} className="w-1.5 h-1.5 rounded-full bg-muted" style={{ animation: `bounce-dot 1.2s ease-in-out ${delay}ms infinite` }} />
@@ -173,15 +171,15 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
           onKeyDown={(e) => e.key === 'Enter' && send(input)}
           placeholder="Ask anything about your business…"
           disabled={isPending}
-          className="flex-1"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '14px 18px', color: 'white', fontSize: '15px', outline: 'none', opacity: isPending ? 0.6 : 1 }}
+          className="input flex-1"
+          style={{ opacity: isPending ? 0.6 : 1 }}
         />
         <VoiceInput onResult={(text) => send(text)} />
         <button
           onClick={() => send(input)}
           disabled={isPending || !input.trim()}
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: input.trim() && !isPending ? 'linear-gradient(135deg, #00C896, #00a87e)' : 'rgba(255,255,255,0.06)', boxShadow: input.trim() && !isPending ? '0 0 20px rgba(0,200,150,0.35)' : 'none', transition: 'all 0.2s' }}
+          style={{ background: input.trim() && !isPending ? '#00C896' : '#1A2236', transition: 'all 0.2s' }}
         >
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
             <path d="M22 2L11 13" stroke={input.trim() && !isPending ? '#080f1a' : '#5a7a94'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

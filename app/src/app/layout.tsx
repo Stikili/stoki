@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${dmSans.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-navy text-white antialiased">
+      <body className="min-h-full flex flex-col bg-bg text-white antialiased">
         <I18nProvider>
           <ToastProvider>
             <ServiceWorkerRegister />

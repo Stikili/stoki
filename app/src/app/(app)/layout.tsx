@@ -27,11 +27,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-col flex-1 min-h-screen">
-      <StoreHeader store={store} allStores={allStores} />
+      <StoreHeader store={store} allStores={allStores} unreadAlerts={unreadAlerts.length} />
       <main className="flex-1 overflow-y-auto pb-24">
         {children}
       </main>
-      <BottomNav unreadAlerts={unreadAlerts.length} />
+      <BottomNav />
       <Walkthrough />
     </div>
   )
