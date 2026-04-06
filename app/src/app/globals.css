@@ -132,3 +132,32 @@ a,
   animation: shimmer 1.4s infinite;
   border-radius: 12px;
 }
+
+/* Voice input pulse */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+
+/* High contrast & large touch targets for outdoor use */
+@media (prefers-contrast: more) {
+  :root {
+    --foreground: #ffffff;
+    --glass-border: rgba(255,255,255,0.2);
+  }
+  .text-muted {
+    color: #8ba4b8 !important;
+  }
+}
+
+/* Ensure readable text on all devices */
+input, button, select, textarea {
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+
+/* Larger touch area for interactive elements in mobile */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 48px;
+  }
+}

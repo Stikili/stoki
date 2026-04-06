@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useTransition } from 'react'
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react'
+import VoiceInput from '@/components/VoiceInput'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -175,6 +176,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
           className="flex-1"
           style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '14px 18px', color: 'white', fontSize: '15px', outline: 'none', opacity: isPending ? 0.6 : 1 }}
         />
+        <VoiceInput onResult={(text) => send(text)} />
         <button
           onClick={() => send(input)}
           disabled={isPending || !input.trim()}

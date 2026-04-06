@@ -58,6 +58,7 @@ export class ProductRepository implements IProductRepository {
     if (data.qty !== undefined) patch.qty = data.qty
     if (data.reorderPoint !== undefined) patch.reorder_point = data.reorderPoint
     if (data.sku !== undefined) patch.sku = data.sku
+    if (data.expiryDate !== undefined) patch.expiry_date = data.expiryDate || null
 
     const { data: row, error } = await this.db
       .from('products')

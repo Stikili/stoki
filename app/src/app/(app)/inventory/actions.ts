@@ -69,6 +69,7 @@ export async function editProductAction(formData: FormData) {
     qty: parseInt(formData.get('qty') as string) || 0,
     reorderPoint: parseInt(formData.get('reorderPoint') as string) || 5,
     sku: (formData.get('sku') as string) || undefined,
+    expiryDate: (formData.get('expiryDate') as string) || undefined,
   })
 
   revalidateTag(TAGS.products, 'default')

@@ -25,7 +25,7 @@ export default async function CreditPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <CreditClient debtors={debtorsWithEntries} totalOutstanding={totalOutstanding} />
+      <CreditClient debtors={debtorsWithEntries} totalOutstanding={totalOutstanding} storeName={store.name} />
     </div>
   )
 }

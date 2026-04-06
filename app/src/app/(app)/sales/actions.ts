@@ -64,6 +64,32 @@ export async function recordCartAction(items: { productId: string; qty: number; 
   revalidatePath('/alerts')
 }
 
+export async function recordReturnAction(productId: string, qty: number, priceAtSale: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const storeRepo = new StoreRepository(supabase)
+  const store = await storeRepo.getByOwnerId(user.id)
+  if (!store) redirect('/login')
+
+  const saleRepo = new SaleRepository(supabase)
+  const productRepo = new ProductRepository(supabase)
+  const alertRepo = new AlertRepository(supabase)
+
+  await recordSale(saleRepo, productRepo, alertRepo, store.id, {
+    productId,
+    qty,
+    priceAtSale,
+    type: 'return',
+    channel: 'app',
+  })
+
+  revalidateTag(TAGS.products, 'default')
+  revalidatePath('/sales')
+  revalidatePath('/dashboard')
+}
+
 export async function getSalesByDateAction(from: string, to: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

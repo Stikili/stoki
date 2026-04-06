@@ -10,6 +10,7 @@ export interface Product {
   reorderPoint: number
   sku: string | null
   photoUrl: string | null
+  expiryDate: string | null
   createdAt: string
   updatedAt: string
 }
@@ -27,6 +28,7 @@ export interface NewProduct {
   qty: number
   reorderPoint: number
   sku?: string
+  expiryDate?: string
 }
 
 export function getStockStatus(qty: number, reorderPoint: number): StockStatus {

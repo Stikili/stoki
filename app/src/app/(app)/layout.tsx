@@ -5,6 +5,7 @@ import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRep
 import { getSelectedStoreId } from '@/lib/selectedStore'
 import BottomNav from '@/components/BottomNav'
 import StoreHeader from '@/components/StoreHeader'
+import Walkthrough from '@/components/Walkthrough'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -31,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <BottomNav unreadAlerts={unreadAlerts.length} />
+      <Walkthrough />
     </div>
   )
 }

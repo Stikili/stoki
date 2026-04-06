@@ -5,6 +5,7 @@ import { createClient } from '@/infrastructure/supabase/client'
 import { Store } from '@/domain/entities/store'
 import { updateStoreAction, deleteStoreAction } from './actions'
 import PushSubscribeButton from '@/components/PushSubscribeButton'
+import { useI18n, LOCALE_NAMES, type Locale } from '@/lib/i18n'
 
 const cardStyle = {
   background: 'rgba(255,255,255,0.04)',
@@ -175,6 +176,9 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         )}
       </div>
 
+      {/* Language */}
+      <LanguageSelector />
+
       {/* Push notifications */}
       <div className="rounded-2xl p-4" style={cardStyle}>
         <p className="text-white font-semibold mb-1">Notifications</p>
@@ -201,6 +205,20 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         </div>
       </div>
 
+      {/* Data export */}
+      <div className="rounded-2xl p-4" style={cardStyle}>
+        <p className="text-white font-semibold mb-1">Data Backup</p>
+        <p className="text-muted text-sm mb-4">Download all your store data as a JSON file.</p>
+        <a
+          href="/api/export"
+          download
+          className="block w-full text-center rounded-xl py-3 font-semibold text-sm"
+          style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}
+        >
+          Download Backup
+        </a>
+      </div>
+
       {/* Sign out */}
       <button
         onClick={signOut}
@@ -209,6 +227,33 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
       >
         Sign out
       </button>
+    </div>
+  )
+}
+
+function LanguageSelector() {
+  const { locale, setLocale, t } = useI18n()
+  const locales = Object.entries(LOCALE_NAMES) as [Locale, string][]
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 1px 0 rgba(255,255,255,0.08) inset' }}>
+      <p className="text-white font-semibold mb-1">{t('settings.language')}</p>
+      <p className="text-muted text-sm mb-4">Choose your preferred language.</p>
+      <div className="flex flex-wrap gap-2">
+        {locales.map(([code, name]) => (
+          <button
+            key={code}
+            onClick={() => setLocale(code)}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={locale === code
+              ? { background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', boxShadow: '0 0 14px rgba(0,200,150,0.3)' }
+              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#5a7a94' }
+            }
+          >
+            {name}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

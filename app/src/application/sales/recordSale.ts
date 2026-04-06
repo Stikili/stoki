@@ -10,10 +10,15 @@ export async function recordSale(
   storeId: string,
   data: NewSale
 ): Promise<Sale> {
-  const sale = await saleRepo.record(storeId, data)
+  // Look up product cost for profit tracking
+  const productForCost = await productRepo.findById(storeId, data.productId)
+  const saleData = { ...data, costAtSale: data.costAtSale ?? productForCost?.cost ?? 0 }
 
-  // Decrement stock
-  await productRepo.updateQty(storeId, data.productId, -data.qty)
+  const sale = await saleRepo.record(storeId, saleData)
+
+  // Decrement stock (or increment for returns)
+  const qtyDelta = data.type === 'return' ? data.qty : -data.qty
+  await productRepo.updateQty(storeId, data.productId, qtyDelta)
 
   // Check if reorder alert needed
   const product = await productRepo.findById(storeId, data.productId)

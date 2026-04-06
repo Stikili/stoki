@@ -5,6 +5,10 @@ import { ProductWithStatus } from '@/domain/entities/product'
 import { Sale } from '@/domain/entities/sale'
 import { recordCartAction, getSalesByDateAction } from './actions'
 import { useToast } from '@/components/Toast'
+import { useI18n } from '@/lib/i18n'
+import { haptic } from '@/lib/haptic'
+import VoiceInput from '@/components/VoiceInput'
+import Receipt from '@/components/Receipt'
 
 const cardStyle = {
   background: 'rgba(255,255,255,0.04)',
@@ -52,13 +56,18 @@ interface CartItem {
 export default function SalesClient({
   products,
   todaySales,
+  storeName,
 }: {
   products: ProductWithStatus[]
   todaySales: Sale[]
+  storeName: string
 }) {
   const { toast } = useToast()
+  const { t } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'sell' | 'history'>('sell')
+  const [search, setSearch] = useState('')
+  const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number }[]; total: number } | null>(null)
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([])
@@ -76,20 +85,40 @@ export default function SalesClient({
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0)
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
 
-  // Compute in-stock remaining accounting for cart
   const cartMap = useMemo(() => {
     const m: Record<string, number> = {}
     for (const item of cart) m[item.product.id] = item.qty
     return m
   }, [cart])
 
-  function openSell(p: ProductWithStatus) {
+  // Filter available by search
+  const filteredAvailable = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    if (!q) return available
+    return available.filter((p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q))
+  }, [available, search])
+
+  // One-tap sale: single tap adds 1 to cart. Long-press opens qty picker.
+  function quickAdd(p: ProductWithStatus) {
+    const remaining = p.qty - (cartMap[p.id] ?? 0)
+    if (remaining <= 0) return
+    haptic(30)
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === p.id)
+      if (existing) return prev.map((i) => i.product.id === p.id ? { ...i, qty: i.qty + 1 } : i)
+      return [...prev, { product: p, qty: 1 }]
+    })
+    toast(`+1 ${p.name}`, 'success')
+  }
+
+  function openQtyPicker(p: ProductWithStatus) {
     setQtyForSelling(1)
     setSelling(p)
   }
 
   function addToCart() {
     if (!selling) return
+    haptic(30)
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === selling.id)
       if (existing) {
@@ -106,12 +135,14 @@ export default function SalesClient({
 
   function confirmCart() {
     if (cart.length === 0 || isPending) return
+    haptic([50, 30, 50])
     startTransition(async () => {
       await recordCartAction(cart.map((i) => ({
         productId: i.product.id,
         qty: i.qty,
         priceAtSale: i.product.price,
       })))
+      setReceipt({ items: cart.map((i) => ({ name: i.product.name, qty: i.qty, price: i.product.price })), total: cartTotal })
       toast(`Sale recorded — R${cartTotal.toFixed(2)}`)
       setCart([])
     })
@@ -155,32 +186,51 @@ export default function SalesClient({
 
   const historyTotal = historySales.reduce((s, sale) => s + sale.priceAtSale * sale.qty, 0)
 
+  // Touch hold detection
+  let holdTimer: ReturnType<typeof setTimeout> | null = null
+
   return (
     <>
       {/* Tabs */}
-      <div className="flex gap-2 mb-5">
-        {(['sell', 'history'] as const).map((t) => (
+      <div className="flex gap-2 mb-4">
+        {(['sell', 'history'] as const).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className="px-4 py-2 rounded-full text-xs font-semibold transition-all capitalize"
-            style={tab === t
+            key={tb}
+            onClick={() => setTab(tb)}
+            className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all"
+            style={tab === tb
               ? { background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', boxShadow: '0 0 14px rgba(0,200,150,0.3)' }
               : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#5a7a94' }
             }
           >
-            {t === 'sell' ? `Sell${cartCount > 0 ? ` (${cartCount})` : ''}` : 'History'}
+            {tb === 'sell' ? `${t('sales.sell')}${cartCount > 0 ? ` (${cartCount})` : ''}` : t('sales.history')}
           </button>
         ))}
       </div>
 
       {tab === 'sell' && (
         <>
+          {/* Search bar */}
+          {available.length > 5 && (
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-sm">🔍</span>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('inventory.search')}
+                  style={{ ...inputStyle, paddingLeft: '40px', width: '100%' }}
+                />
+              </div>
+              <VoiceInput onResult={setSearch} />
+            </div>
+          )}
+
           {/* Cart summary bar */}
           {cart.length > 0 && (
             <div className="rounded-2xl px-4 py-3 mb-4 flex items-center justify-between gap-3" style={{ background: 'rgba(0,200,150,0.1)', border: '1px solid rgba(0,200,150,0.25)' }}>
               <div className="flex-1 min-w-0">
-                <p className="text-brand font-bold text-sm">Cart · R{cartTotal.toFixed(2)}</p>
+                <p className="text-brand font-bold text-sm">{t('sales.cart')} · R{cartTotal.toFixed(2)}</p>
                 <p className="text-muted text-xs mt-0.5 truncate">
                   {cart.map((i) => `${i.qty}× ${i.product.name}`).join(', ')}
                 </p>
@@ -188,10 +238,10 @@ export default function SalesClient({
               <button
                 onClick={confirmCart}
                 disabled={isPending}
-                className="text-sm font-bold px-4 py-2 rounded-xl flex-shrink-0"
+                className="text-sm font-bold px-5 py-2.5 rounded-xl flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', opacity: isPending ? 0.6 : 1 }}
               >
-                {isPending ? 'Saving…' : 'Charge →'}
+                {isPending ? t('common.saving') : `${t('sales.charge')} →`}
               </button>
             </div>
           )}
@@ -207,7 +257,7 @@ export default function SalesClient({
                   </div>
                   <button
                     onClick={() => removeFromCart(item.product.id)}
-                    className="text-muted text-lg ml-3 w-8 h-8 flex items-center justify-center rounded-full"
+                    className="text-muted text-lg ml-3 w-9 h-9 flex items-center justify-center rounded-full"
                     style={{ background: 'rgba(239,68,68,0.1)' }}
                   >
                     ×
@@ -217,23 +267,27 @@ export default function SalesClient({
             </div>
           )}
 
-          {available.length === 0 ? (
+          {filteredAvailable.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={cardStyle}>
                 <span className="text-3xl">💰</span>
               </div>
-              <p className="text-white font-semibold mb-1">{products.length === 0 ? 'No products yet' : 'All out of stock'}</p>
-              <p className="text-muted text-sm">{products.length === 0 ? 'Add stock first' : 'Restock to sell'}</p>
+              <p className="text-white font-semibold mb-1">{search ? 'No matches' : products.length === 0 ? t('sales.noProducts') : t('sales.outOfStock')}</p>
+              <p className="text-muted text-sm">{products.length === 0 ? 'Add stock first' : search ? 'Try a different search' : 'Restock to sell'}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {available.map((p) => {
+              {filteredAvailable.map((p) => {
                 const inCart = cartMap[p.id] ?? 0
                 const remaining = p.qty - inCart
                 return (
                   <button
                     key={p.id}
-                    onClick={() => remaining > 0 && openSell(p)}
+                    onClick={() => remaining > 0 && quickAdd(p)}
+                    onTouchStart={() => { holdTimer = setTimeout(() => { holdTimer = null; openQtyPicker(p) }, 500) }}
+                    onTouchEnd={() => { if (holdTimer) clearTimeout(holdTimer) }}
+                    onTouchMove={() => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null } }}
+                    onContextMenu={(e) => { e.preventDefault(); openQtyPicker(p) }}
                     disabled={remaining <= 0}
                     className="w-full text-left rounded-2xl p-4 active:scale-[0.97] transition-transform relative overflow-hidden"
                     style={{ ...cardStyle, opacity: remaining <= 0 ? 0.4 : 1 }}
@@ -242,13 +296,13 @@ export default function SalesClient({
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-semibold truncate">{p.name}</p>
-                        <p className="text-muted text-sm mt-0.5">{remaining} available{inCart > 0 ? ` (${inCart} in cart)` : ''}</p>
+                        <p className="text-muted text-sm mt-0.5">{remaining} left{inCart > 0 ? ` · ${inCart} in cart` : ''}</p>
                       </div>
                       <div className="ml-4 text-right flex-shrink-0">
                         <p className="font-bold text-xl" style={{ background: 'linear-gradient(135deg, #00C896, #00e8b3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                           R{p.price.toFixed(2)}
                         </p>
-                        <p className="text-muted text-xs mt-0.5">{remaining > 0 ? 'Tap to add' : 'In cart'}</p>
+                        <p className="text-muted text-xs mt-0.5">{remaining > 0 ? 'Tap = 1 · Hold = more' : 'In cart'}</p>
                       </div>
                     </div>
                   </button>
@@ -261,83 +315,49 @@ export default function SalesClient({
 
       {tab === 'history' && (
         <>
-          {/* Date range picker */}
           <div className="rounded-2xl px-4 py-3 mb-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-2">
               <span className="text-muted text-xs w-8">From</span>
-              <input
-                type="date"
-                value={fromDate}
-                max={toDate}
-                onChange={(e) => {
-                  setFromDate(e.target.value)
-                  loadHistory(e.target.value, toDate)
-                }}
-                style={{ ...inputStyle, flex: 1 }}
-              />
+              <input type="date" value={fromDate} max={toDate} onChange={(e) => { setFromDate(e.target.value); loadHistory(e.target.value, toDate) }} style={{ ...inputStyle, flex: 1 }} />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted text-xs w-8">To</span>
-              <input
-                type="date"
-                value={toDate}
-                min={fromDate}
-                max={today}
-                onChange={(e) => {
-                  setToDate(e.target.value)
-                  loadHistory(fromDate, e.target.value)
-                }}
-                style={{ ...inputStyle, flex: 1 }}
-              />
+              <input type="date" value={toDate} min={fromDate} max={today} onChange={(e) => { setToDate(e.target.value); loadHistory(fromDate, e.target.value) }} style={{ ...inputStyle, flex: 1 }} />
             </div>
             <div className="flex gap-2">
-              {(['Today', '7d', '30d'] as const).map((label) => {
-                function setRange() {
-                  const now = new Date()
-                  const t = toLocalDateString(now)
-                  let f = t
+              {(['Today', '7d', '30d'] as const).map((label) => (
+                <button key={label} onClick={() => {
+                  const now = new Date(); const t2 = toLocalDateString(now)
+                  let f = t2
                   if (label === '7d') { const d = new Date(now); d.setDate(d.getDate() - 6); f = toLocalDateString(d) }
                   if (label === '30d') { const d = new Date(now); d.setDate(d.getDate() - 29); f = toLocalDateString(d) }
-                  setFromDate(f); setToDate(t); loadHistory(f, t)
-                }
-                return (
-                  <button key={label} onClick={setRange} className="text-xs font-semibold px-3 py-1.5 rounded-full"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#5a7a94', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {label}
-                  </button>
-                )
-              })}
+                  setFromDate(f); setToDate(t2); loadHistory(f, t2)
+                }} className="text-xs font-semibold px-3 py-2 rounded-full"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#5a7a94', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Summary bar */}
           <div className="rounded-2xl px-4 py-3 mb-4 flex items-center justify-between" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.15)' }}>
             <div>
               <span className="text-muted text-xs">{historySales.length} sale{historySales.length !== 1 ? 's' : ''}</span>
               <p className="text-brand font-bold text-lg">R{historyTotal.toFixed(2)}</p>
             </div>
             {historySales.length > 0 && (
-              <button
-                onClick={exportCSV}
-                className="text-xs font-semibold px-3 py-2 rounded-xl"
-                style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}
-              >
-                Export CSV
+              <button onClick={exportCSV} className="text-xs font-semibold px-4 py-2.5 rounded-xl"
+                style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>
+                {t('sales.exportCsv')}
               </button>
             )}
           </div>
 
           {historyLoading ? (
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="skeleton h-16 rounded-2xl" />
-              ))}
-            </div>
+            <div className="flex flex-col gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
           ) : historySales.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={cardStyle}>
-                <span className="text-3xl">📋</span>
-              </div>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={cardStyle}><span className="text-3xl">📋</span></div>
               <p className="text-white font-semibold mb-1">No sales in this period</p>
               <p className="text-muted text-sm">Try a different date range</p>
             </div>
@@ -357,7 +377,7 @@ export default function SalesClient({
         </>
       )}
 
-      {/* Add to cart sheet */}
+      {/* Qty picker sheet */}
       {selling && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setSelling(null)} />
@@ -365,39 +385,33 @@ export default function SalesClient({
             <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-0.5">{selling.name}</h2>
             <p className="text-muted text-sm mb-6">R{selling.price.toFixed(2)} each · {selling.qty - (cartMap[selling.id] ?? 0)} available</p>
-
             <div className="flex items-center justify-center gap-6 mb-6">
-              <button
-                onClick={() => setQtyForSelling((q) => Math.max(1, q - 1))}
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-              >−</button>
-              <div className="text-center min-w-[60px]">
-                <p className="text-5xl font-black text-white">{qtyForSelling}</p>
-                <p className="text-muted text-xs mt-1">units</p>
-              </div>
-              <button
-                onClick={() => setQtyForSelling((q) => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q + 1))}
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-              >+</button>
+              <button onClick={() => setQtyForSelling((q) => Math.max(1, q - 1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>−</button>
+              <div className="text-center min-w-[60px]"><p className="text-5xl font-black text-white">{qtyForSelling}</p><p className="text-muted text-xs mt-1">units</p></div>
+              <button onClick={() => setQtyForSelling((q) => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q + 1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>+</button>
             </div>
-
             <div className="rounded-2xl px-4 py-3 mb-5 flex items-center justify-between" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.15)' }}>
               <span className="text-muted text-sm">Subtotal</span>
               <span className="text-brand font-bold text-xl">R{(selling.price * qtyForSelling).toFixed(2)}</span>
             </div>
-
-            <button
-              onClick={addToCart}
-              className="w-full relative overflow-hidden active:scale-[0.98] transition-transform"
-              style={{ background: 'linear-gradient(135deg, #00C896 0%, #00a87e 100%)', boxShadow: '0 0 28px rgba(0,200,150,0.4), 0 1px 0 rgba(255,255,255,0.25) inset', borderRadius: '14px', padding: '15px', color: '#080f1a', fontWeight: 700, fontSize: '16px' }}
-            >
+            <button onClick={addToCart} className="w-full relative overflow-hidden active:scale-[0.98] transition-transform"
+              style={{ background: 'linear-gradient(135deg, #00C896 0%, #00a87e 100%)', boxShadow: '0 0 28px rgba(0,200,150,0.4), 0 1px 0 rgba(255,255,255,0.25) inset', borderRadius: '14px', padding: '15px', color: '#080f1a', fontWeight: 700, fontSize: '16px' }}>
               <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)', borderRadius: 'inherit' }} />
-              Add to Cart
+              {t('sales.addToCart')}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Receipt modal */}
+      {receipt && (
+        <Receipt
+          storeName={storeName}
+          items={receipt.items}
+          total={receipt.total}
+          date={new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}
+          onClose={() => setReceipt(null)}
+        />
       )}
     </>
   )

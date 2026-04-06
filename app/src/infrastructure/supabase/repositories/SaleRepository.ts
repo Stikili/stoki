@@ -14,6 +14,8 @@ export class SaleRepository implements ISaleRepository {
         product_id: data.productId,
         qty: data.qty,
         price_at_sale: data.priceAtSale,
+        cost_at_sale: data.costAtSale ?? 0,
+        type: data.type ?? 'sale',
         channel: data.channel ?? 'app',
       })
       .select('*, products(name)')
@@ -39,13 +41,18 @@ export class SaleRepository implements ISaleRepository {
   async summarise(storeId: string, from: Date, to: Date): Promise<SalesSummary> {
     const sales = await this.findByPeriod(storeId, from, to)
     return sales.reduce<SalesSummary>(
-      (acc, sale) => ({
-        totalRevenue: acc.totalRevenue + sale.priceAtSale * sale.qty,
-        totalCost: acc.totalCost,
-        totalMargin: acc.totalMargin,
-        transactionCount: acc.transactionCount + 1,
-        itemsSold: acc.itemsSold + sale.qty,
-      }),
+      (acc, sale) => {
+        const sign = sale.type === 'return' ? -1 : 1
+        const revenue = sale.priceAtSale * sale.qty * sign
+        const cost = sale.costAtSale * sale.qty * sign
+        return {
+          totalRevenue: acc.totalRevenue + revenue,
+          totalCost: acc.totalCost + cost,
+          totalMargin: acc.totalMargin + (revenue - cost),
+          transactionCount: acc.transactionCount + 1,
+          itemsSold: acc.itemsSold + sale.qty * sign,
+        }
+      },
       { totalRevenue: 0, totalCost: 0, totalMargin: 0, transactionCount: 0, itemsSold: 0 }
     )
   }

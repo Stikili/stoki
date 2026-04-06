@@ -6,6 +6,8 @@ import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRep
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { withStatus } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
+import QuickSell from './QuickSell'
+import { recordSaleAction } from '../sales/actions'
 
 export default async function DashboardPage() {
   const { supabase, store } = await getServerData()
@@ -30,6 +32,17 @@ export default async function DashboardPage() {
 
   const lowStockProducts = allProducts.filter((p) => p.status === 'low' || p.status === 'out')
   const totalOutstanding = allDebtors.reduce((sum, d) => sum + d.totalOwed, 0)
+
+  // Compute top 5 most-sold products for quick sell
+  const todaySalesList = await saleRepo.findByPeriod(store.id, weekStart, dayEnd)
+  const salesCount: Record<string, number> = {}
+  for (const s of todaySalesList) {
+    if (s.productId) salesCount[s.productId] = (salesCount[s.productId] ?? 0) + s.qty
+  }
+  const topProducts = allProducts
+    .filter((p) => p.qty > 0)
+    .sort((a, b) => (salesCount[b.id] ?? 0) - (salesCount[a.id] ?? 0))
+    .slice(0, 5)
 
   const dashboard = {
     today: todaySales,
@@ -122,7 +135,16 @@ export default async function DashboardPage() {
           {dashboard.today.transactionCount} sale{dashboard.today.transactionCount !== 1 ? 's' : ''} ·{' '}
           {dashboard.today.itemsSold} item{dashboard.today.itemsSold !== 1 ? 's' : ''}
         </p>
+        {dashboard.today.totalMargin > 0 && (
+          <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(0,200,150,0.15)' }}>
+            <span className="text-brand/50 text-xs">Profit</span>
+            <span className="text-white font-bold">R{dashboard.today.totalMargin.toFixed(2)}</span>
+          </div>
+        )}
       </div>
+
+      {/* Quick sell */}
+      <QuickSell topProducts={topProducts} recordSaleAction={recordSaleAction} />
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">
@@ -131,6 +153,10 @@ export default async function DashboardPage() {
           { href: '/inventory', label: 'Add Stock', emoji: '📦', color: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)', text: '#60a5fa', glow: 'rgba(59,130,246,0.12)' },
           { href: '/credit', label: 'Add Credit', emoji: '📋', color: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.25)', text: '#fb923c', glow: 'rgba(249,115,22,0.12)' },
           { href: '/advisor', label: 'Ask Stoki', emoji: '✨', color: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.25)', text: '#c084fc', glow: 'rgba(168,85,247,0.12)' },
+          { href: '/expenses', label: 'Expenses', emoji: '💸', color: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.15)', text: '#fb923c', glow: 'rgba(249,115,22,0.06)' },
+          { href: '/cashup', label: 'Cash Up', emoji: '🧮', color: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.15)', text: '#60a5fa', glow: 'rgba(59,130,246,0.06)' },
+          { href: '/pricelist', label: 'Price List', emoji: '📝', color: 'rgba(0,200,150,0.08)', border: 'rgba(0,200,150,0.15)', text: '#00C896', glow: 'rgba(0,200,150,0.06)' },
+          { href: '/customers', label: 'Customers', emoji: '👥', color: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.15)', text: '#c084fc', glow: 'rgba(168,85,247,0.06)' },
         ].map(({ href, label, emoji, color, border, text, glow }) => (
           <Link
             key={href}
@@ -191,6 +217,12 @@ export default async function DashboardPage() {
           <p className="text-muted text-xs">Week total</p>
           <p className="text-white font-bold text-sm">R{dashboard.week.totalRevenue.toFixed(2)}</p>
         </div>
+        {dashboard.week.totalMargin > 0 && (
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-muted text-xs">Week profit</p>
+            <p className="text-brand font-bold text-sm">R{dashboard.week.totalMargin.toFixed(2)}</p>
+          </div>
+        )}
       </div>
 
       {/* Status strips */}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
+import { I18nProvider } from "@/lib/i18n";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const dmSans = DM_Sans({
@@ -38,10 +39,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-navy text-white antialiased">
-        <ToastProvider>
-          <ServiceWorkerRegister />
-          {children}
-        </ToastProvider>
+        <I18nProvider>
+          <ToastProvider>
+            <ServiceWorkerRegister />
+            {children}
+          </ToastProvider>
+        </I18nProvider>
       </body>
     </html>
   );
