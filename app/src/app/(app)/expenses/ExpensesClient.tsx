@@ -55,8 +55,8 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-5">Add Expense</h2>
             <form action={handleAdd} className="flex flex-col gap-3">
               <select name="category" required className="input">{EXPENSE_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}</select>

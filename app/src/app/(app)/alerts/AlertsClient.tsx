@@ -171,7 +171,7 @@ export default function AlertsClient({ alerts }: { alerts: Alert[] }) {
 
       {/* Create alert sheet */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowCreate(false)} />
           <div className="relative rounded-t-3xl p-6 pb-10" style={sheetStyle}>
             <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-6" />

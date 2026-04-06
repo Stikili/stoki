@@ -206,9 +206,9 @@ export default function SalesClient({ products, todaySales, storeName }: { produ
 
       {/* Qty picker sheet */}
       {selling && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setSelling(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-0.5">{selling.name}</h2>
             <p className="text-muted text-sm mb-6">R{selling.price.toFixed(2)} each · {selling.qty - (cartMap[selling.id] ?? 0)} available</p>

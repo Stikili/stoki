@@ -52,9 +52,9 @@ export default function StoreHeader({
       </header>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full mx-auto mb-6" style={{ background: 'var(--card-border)' }} />
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>Your Stores</h2>
