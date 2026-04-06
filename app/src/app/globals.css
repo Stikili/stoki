@@ -110,6 +110,9 @@ button, a, [role="button"] { min-height: 48px; }
 .sheet {
   background: var(--sheet-bg);
   border-top: 1px solid var(--card-border);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
 }
 
 .pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }

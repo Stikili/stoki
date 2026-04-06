@@ -130,9 +130,9 @@ export default function InventoryClient({ products, salesVelocity }: { products:
 
       {/* Add sheet */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>Add Product</h2>
             <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>You can add cost, SKU and expiry later via Edit.</p>
@@ -150,9 +150,9 @@ export default function InventoryClient({ products, salesVelocity }: { products:
 
       {/* Restock sheet */}
       {restockId && restockProduct && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setRestockId(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-1">Restock</h2>
             <p className="text-muted text-sm mb-5">{restockProduct.name}</p>
@@ -168,9 +168,9 @@ export default function InventoryClient({ products, salesVelocity }: { products:
 
       {/* Edit sheet */}
       {editId && editProduct && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setEditId(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-white">Edit Product</h2>

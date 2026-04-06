@@ -149,8 +149,8 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* Add debtor sheet */}
       {showAddDebtor && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAddDebtor(false)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAddDebtor(false)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-5">New Customer</h2>
             <form action={handleAddDebtor} className="flex flex-col gap-3">
               <input name="name" placeholder="Customer name *" required autoFocus className="input" />
@@ -163,8 +163,8 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* Add credit sheet */}
       {creditDebtorId && creditDebtor && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setCreditDebtorId(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setCreditDebtorId(null)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-1">Add Credit</h2>
             <p className="text-muted text-sm mb-5">{creditDebtor.name} · owes R{creditDebtor.totalOwed.toFixed(2)}</p>
             <form action={handleAddCredit} className="flex flex-col gap-3">
@@ -178,8 +178,8 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* Settle sheet */}
       {settleDebtorId && settleDebtor && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setSettleDebtorId(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setSettleDebtorId(null)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-1">Settle Debt</h2>
             <p className="text-muted text-sm mb-5">{settleDebtor.name} · owes R{settleDebtor.totalOwed.toFixed(2)}</p>
             <div className="flex flex-col gap-3">
