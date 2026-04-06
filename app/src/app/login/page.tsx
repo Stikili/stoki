@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/infrastructure/supabase/client";
+import { Download, Share } from "lucide-react";
 
 type Mode = "signin" | "register";
 type Tab = "email" | "phone";
@@ -242,6 +243,7 @@ export default function LoginPage() {
     <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,200,150,0.1) 0%, transparent 60%)" }}>
       <div className="w-full max-w-sm">
         <Logo />
+        <InstallPrompt />
 
         <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 0 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
 
@@ -434,4 +436,75 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function InstallPrompt() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const deferredPrompt = useRef<any>(null)
+  const [showInstall, setShowInstall] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    // Already installed as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (localStorage.getItem('stoki_install_dismissed')) return
+
+    // iOS detection
+    const ua = navigator.userAgent
+    const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    if (ios) { setIsIOS(true); setShowInstall(true); return }
+
+    // Android/Chrome: listen for beforeinstallprompt
+    const handler = (e: Event) => {
+      e.preventDefault()
+      deferredPrompt.current = e
+      setShowInstall(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function install() {
+    if (!deferredPrompt.current) return
+    deferredPrompt.current.prompt()
+    const result = await deferredPrompt.current.userChoice
+    if (result.outcome === 'accepted') setShowInstall(false)
+    deferredPrompt.current = null
+  }
+
+  function dismiss() {
+    setDismissed(true)
+    setShowInstall(false)
+    localStorage.setItem('stoki_install_dismissed', '1')
+  }
+
+  if (!showInstall || dismissed) return null
+
+  return (
+    <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.2)' }}>
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#00C896' }}>
+          <Download size={20} color="white" strokeWidth={2} />
+        </div>
+        <div className="flex-1">
+          <p className="text-white font-semibold text-sm">Install stoki</p>
+          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            {isIOS
+              ? <>Tap <Share size={14} className="inline -mt-0.5" color="rgba(255,255,255,0.6)" /> then <strong>&quot;Add to Home Screen&quot;</strong></>
+              : 'Add to your home screen for the best experience.'
+            }
+          </p>
+        </div>
+        <button onClick={dismiss} className="text-lg min-h-0 w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>×</button>
+      </div>
+      {!isIOS && (
+        <button onClick={install}
+          className="w-full mt-3 py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
+          style={{ background: '#00C896', color: '#0A0E17' }}>
+          Install App
+        </button>
+      )}
+    </div>
+  )
 }
