@@ -10,7 +10,7 @@ const steps = [
   { title: 'Sales', desc: 'Tap products to add to cart. One tap = 1 item. Long press for bulk. Charge when ready.', emoji: '💰' },
   { title: 'Stock', desc: 'Track inventory, scan barcodes, get restock suggestions, and set expiry dates.', emoji: '📦' },
   { title: 'Credit Book', desc: 'Track who owes you. Send WhatsApp reminders. Settle partially or fully.', emoji: '📋' },
-  { title: 'Ask Stoki', desc: 'Your AI advisor knows your store data. Ask about profit, stock, or business strategy.', emoji: '✨' },
+  { title: 'Stoki Insight', desc: 'Your business insight assistant knows your store data. Ask about profit, stock, or strategy.', emoji: '✨' },
   { title: 'You\'re ready!', desc: 'Head to Settings to change language, enable notifications, or export data.', emoji: '🚀' },
 ]
 
