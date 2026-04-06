@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { CirclePlus, Settings, ChevronDown, Check, TrendingUp, Sun, Moon } from 'lucide-react'
+import { Bell, Settings, ChevronDown, Check, TrendingUp, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
 const MUTED = '#7B8CA1';
@@ -39,8 +39,13 @@ export default function StoreHeader({
         </button>
 
         <div className="flex items-center gap-2">
-          <Link href="/sales" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: '#00C896' }}>
-            <CirclePlus size={20} color="white" strokeWidth={2} />
+          <Link href="/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            <Bell size={18} color={MUTED} strokeWidth={1.75} />
+            {unreadAlerts > 0 && (
+              <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold px-1" style={{ background: '#EF4444', color: 'white' }}>
+                {unreadAlerts > 9 ? '9+' : unreadAlerts}
+              </div>
+            )}
           </Link>
           <button onClick={toggle} className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             {theme === 'dark' ? <Sun size={18} color={MUTED} strokeWidth={1.75} /> : <Moon size={18} color={MUTED} strokeWidth={1.75} />}

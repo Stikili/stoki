@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, Bot, CreditCard, Bell } from "lucide-react";
+import { Home, Package, Bot, CreditCard, ShoppingBag } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", Icon: Home },
   { href: "/inventory", label: "Stock", Icon: Package },
   { href: "/advisor", label: "Stoki", Icon: Bot },
+  { href: "/sales", label: "Sales", Icon: ShoppingBag },
   { href: "/credit", label: "Credit", Icon: CreditCard },
-  { href: "/alerts", label: "Alerts", Icon: Bell },
 ];
 
 const ACTIVE = '#00C896';

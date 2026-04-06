@@ -1,13 +1,11 @@
 import Link from 'next/link'
-import { CirclePlus, Wallet, Calculator, FileText, Users } from 'lucide-react'
+import { Wallet, Calculator, FileText, Users } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import SetupChecklist from '@/components/SetupChecklist'
-import QuickSell from './QuickSell'
-import { recordSaleAction } from '../sales/actions'
 
 export default async function DashboardPage() {
   const { supabase, store } = await getServerData()
@@ -31,14 +29,6 @@ export default async function DashboardPage() {
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
   const totalOutstanding = allDebtors.reduce((sum, d) => sum + d.totalOwed, 0)
-
-  // Quick sell: top 5 most-sold products
-  const recentSales = await saleRepo.findByPeriod(store.id, weekStart, dayEnd)
-  const salesCount: Record<string, number> = {}
-  for (const s of recentSales) {
-    if (s.productId) salesCount[s.productId] = (salesCount[s.productId] ?? 0) + s.qty
-  }
-  const topProducts = allProducts.filter((p) => p.qty > 0).sort((a, b) => (salesCount[b.id] ?? 0) - (salesCount[a.id] ?? 0)).slice(0, 5)
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -142,16 +132,6 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Quick sell */}
-      <QuickSell topProducts={topProducts} recordSaleAction={recordSaleAction} />
-
-      {/* Record sale */}
-      <Link href="/sales"
-        className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
-        style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
-        <CirclePlus size={22} strokeWidth={2.5} />
-        Record Sale
-      </Link>
     </div>
   )
 }
