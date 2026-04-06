@@ -46,7 +46,7 @@ export default function Walkthrough() {
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-black/85" />
       <div className="relative w-full max-w-sm rounded-3xl p-6 text-center"
-        style={{ background: '#0F1523', border: '1px solid #1E293B', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+        style={{ background: 'var(--sheet-bg)', border: '1px solid var(--card-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
         <div className="text-5xl mb-4">{s.emoji}</div>
         <h2 className="text-white font-bold text-xl mb-2">{s.title}</h2>
         <p className="text-muted text-sm mb-6 leading-relaxed">{s.desc}</p>
@@ -63,11 +63,11 @@ export default function Walkthrough() {
 
         <div className="flex gap-3">
           <button onClick={skip} className="flex-1 py-3 rounded-xl text-sm font-semibold"
-            style={{ background: '#1A2236', color: '#8896AB', border: '1px solid #1E293B' }}>
+            style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--card-border)' }}>
             Skip
           </button>
           <button onClick={next} className="flex-1 py-3 rounded-xl text-sm font-bold"
-            style={{ background: '#00C896', color: '#0A0E17' }}>
+            style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
             {step >= steps.length - 1 ? 'Get Started' : 'Next'}
           </button>
         </div>

@@ -6,19 +6,20 @@ import { Store } from '@/domain/entities/store'
 import { updateStoreAction, deleteStoreAction } from './actions'
 import PushSubscribeButton from '@/components/PushSubscribeButton'
 import { useI18n, LOCALE_NAMES, type Locale } from '@/lib/i18n'
+import { useTheme } from '@/components/ThemeProvider'
 
 const cardStyle = {
-  background: '#141B2D',
-  border: '1px solid #1E293B',
+  background: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
   borderRadius: '16px',
 }
 
 const inputStyle = {
-  background: '#1A2236',
-  border: '1px solid #1E293B',
+  background: 'var(--surface)',
+  border: '1px solid var(--card-border)',
   borderRadius: '14px',
   padding: '14px 16px',
-  color: '#F1F5F9',
+  color: 'var(--foreground)',
   fontSize: '16px',
   outline: 'none',
   width: '100%',
@@ -173,6 +174,9 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         )}
       </div>
 
+      {/* Theme */}
+      <ThemeToggle />
+
       {/* Language */}
       <LanguageSelector />
 
@@ -233,7 +237,7 @@ function LanguageSelector() {
   const locales = Object.entries(LOCALE_NAMES) as [Locale, string][]
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#141B2D', border: '1px solid #1E293B' }}>
+    <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
       <p className="text-white font-semibold mb-1">{t('settings.language')}</p>
       <p className="text-muted text-sm mb-4">Choose your preferred language.</p>
       <div className="flex flex-wrap gap-2">
@@ -243,11 +247,34 @@ function LanguageSelector() {
             onClick={() => setLocale(code)}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
             style={locale === code
-              ? { background: '#00C896', color: '#0A0E17' }
-              : { background: '#1A2236', border: '1px solid #1E293B', color: '#8896AB' }
+              ? { background: '#00C896', color: 'var(--btn-primary-text)' }
+              : { background: 'var(--surface)', border: '1px solid var(--card-border)', color: 'var(--muted)' }
             }
           >
             {name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Appearance</p>
+      <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>Choose light or dark mode.</p>
+      <div className="flex gap-2">
+        {(['dark', 'light'] as const).map(t => (
+          <button key={t} onClick={toggle}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+            style={theme === t
+              ? { background: '#00C896', color: 'var(--btn-primary-text)' }
+              : { background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--card-border)' }
+            }>
+            {t === 'dark' ? '🌙' : '☀️'} {t === 'dark' ? 'Dark' : 'Light'}
           </button>
         ))}
       </div>
