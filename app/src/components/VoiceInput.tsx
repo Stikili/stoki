@@ -39,7 +39,7 @@ export default function VoiceInput({ onResult, className = '' }: VoiceInputProps
         : { background: 'var(--card-bg)', border: '1px solid var(--card-border)' }
       }
       aria-label={listening ? 'Stop listening' : 'Voice input'}>
-      {listening ? <MicOff size={18} color="#EF4444" /> : <Mic size={18} color="var(--muted)" />}
+      {listening ? <MicOff size={18} color="#EF4444" /> : <Mic size={18} color="#7B8CA1" />}
     </button>
   )
 }

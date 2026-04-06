@@ -177,7 +177,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ background: input.trim() && !isPending ? '#00C896' : 'var(--surface)', transition: 'all 0.2s' }}
         >
-          <Send size={18} color={input.trim() && !isPending ? 'var(--btn-primary-text)' : 'var(--muted-dim)'} />
+          <Send size={18} color={input.trim() && !isPending ? 'white' : '#5A6B80'} />
         </button>
       </div>
     </div>

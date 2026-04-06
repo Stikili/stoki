@@ -147,7 +147,7 @@ export default async function DashboardPage() {
           { href: '/customers', label: 'Customers', Icon: Users },
         ].map(({ href, label, Icon }) => (
           <Link key={href} href={href} className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform">
-            <Icon size={20} color="var(--muted)" strokeWidth={1.75} />
+            <Icon size={20} color="#7B8CA1" strokeWidth={1.75} />
             <span className="text-[10px] font-semibold mt-1.5" style={{ color: 'var(--muted)' }}>{label}</span>
           </Link>
         ))}
