@@ -6,6 +6,7 @@ import { addProductAction, restockAction, editProductAction, archiveProductActio
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
+import { ScanBarcode, Plus, Search } from 'lucide-react'
 
 type Filter = 'all' | 'low' | 'out'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
@@ -59,17 +60,19 @@ export default function InventoryClient({ products, salesVelocity }: { products:
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white">Stock</h1>
         <div className="flex gap-2">
-          <button onClick={() => setShowScanner(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#141B2D' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8896AB" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="11" y1="8" x2="11" y2="16"/><line x1="15" y1="8" x2="15" y2="16"/></svg>
+          <button onClick={() => setShowScanner(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            <ScanBarcode size={18} color="var(--muted)" strokeWidth={1.75} />
           </button>
-          <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg" style={{ background: '#00C896', color: '#0A0E17' }}>+</button>
+          <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896' }}>
+            <Plus size={20} color="var(--btn-primary-text)" strokeWidth={2.5} />
+          </button>
         </div>
       </div>
 
       {/* Search */}
       <div className="flex gap-2 mb-4">
         <div className="relative flex-1">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-sm">🔍</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="var(--muted)" /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products or SKU…" className="input" style={{ paddingLeft: 40 }} />
         </div>
         <VoiceInput onResult={setSearch} />
