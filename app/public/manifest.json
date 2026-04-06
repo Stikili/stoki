@@ -5,7 +5,7 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#080f1a",
+  "background_color": "#0A0E17",
   "theme_color": "#00C896",
   "categories": ["business", "finance", "productivity"],
   "icons": [

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { Bell, Settings, ChevronDown, Check, TrendingUp, Sun, Moon } from 'lucide-react'
+import { Bell, Settings, ChevronDown, Check, Bot, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
 const MUTED = '#7B8CA1';
@@ -32,7 +32,7 @@ export default function StoreHeader({
           className="flex items-center gap-2.5 min-h-0"
           style={{ cursor: hasMultiple ? 'pointer' : 'default' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#00C896' }}>
-            <TrendingUp size={16} color="white" strokeWidth={2.5} />
+            <Bot size={16} color="white" strokeWidth={2} />
           </div>
           <span className="font-semibold text-sm truncate max-w-[160px]" style={{ color: 'var(--foreground)' }}>{store.name}</span>
           {hasMultiple && <ChevronDown size={14} color={MUTED} />}
