@@ -8,18 +8,18 @@ import PushSubscribeButton from '@/components/PushSubscribeButton'
 import { useI18n, LOCALE_NAMES, type Locale } from '@/lib/i18n'
 
 const cardStyle = {
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.09)',
-  boxShadow: '0 1px 0 rgba(255,255,255,0.08) inset',
+  background: '#141B2D',
+  border: '1px solid #1E293B',
+  borderRadius: '16px',
 }
 
 const inputStyle = {
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: '#1A2236',
+  border: '1px solid #1E293B',
   borderRadius: '14px',
   padding: '14px 16px',
-  color: 'white',
-  fontSize: '15px',
+  color: '#F1F5F9',
+  fontSize: '16px',
   outline: 'none',
   width: '100%',
 } as const
@@ -74,7 +74,7 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         {storeSaved && (
           <div
             className="rounded-xl px-4 py-3 text-sm font-semibold mb-3"
-            style={{ background: 'rgba(0,200,150,0.1)', color: '#00C896', border: '1px solid rgba(0,200,150,0.2)' }}
+            style={{ background: '#143328', color: '#00C896', border: '1px solid #1E4D3F' }}
           >
             ✓ Store updated
           </div>
@@ -110,9 +110,9 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
             disabled={isPending}
             className="rounded-xl py-3 font-semibold text-sm"
             style={{
-              background: 'linear-gradient(135deg, #00C896, #00a87e)',
+              background: '#00C896',
               color: '#080f1a',
-              boxShadow: '0 0 20px rgba(0,200,150,0.3)',
+              boxShadow: 'none',
               opacity: isPending ? 0.6 : 1,
             }}
           >
@@ -141,7 +141,7 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         {emailSent ? (
           <div
             className="rounded-xl px-4 py-3 text-sm font-semibold"
-            style={{ background: 'rgba(0,200,150,0.1)', color: '#00C896', border: '1px solid rgba(0,200,150,0.2)' }}
+            style={{ background: '#143328', color: '#00C896', border: '1px solid #1E4D3F' }}
           >
             ✓ Confirmation sent to {email} — check your inbox.
           </div>
@@ -160,11 +160,8 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
               disabled={isPending || !email.includes('@')}
               className="rounded-xl py-3 font-semibold text-sm"
               style={{
-                background: email.includes('@') && !isPending
-                  ? 'linear-gradient(135deg, #00C896, #00a87e)'
-                  : 'rgba(0,200,150,0.2)',
-                color: '#080f1a',
-                boxShadow: email.includes('@') && !isPending ? '0 0 20px rgba(0,200,150,0.3)' : 'none',
+                background: email.includes('@') && !isPending ? '#00C896' : '#1A2236',
+                color: email.includes('@') && !isPending ? '#0A0E17' : '#5A6B80',
               }}
             >
               {isPending ? 'Sending…' : 'Add email'}
@@ -213,7 +210,7 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
           href="/api/export"
           download
           className="block w-full text-center rounded-xl py-3 font-semibold text-sm"
-          style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}
+          style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}
         >
           Download Backup
         </a>
@@ -223,7 +220,7 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
       <button
         onClick={signOut}
         className="w-full rounded-2xl p-4 text-sm font-semibold text-danger"
-        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
+        style={{ background: '#2D1518', border: '1px solid #4D1F23' }}
       >
         Sign out
       </button>
@@ -236,7 +233,7 @@ function LanguageSelector() {
   const locales = Object.entries(LOCALE_NAMES) as [Locale, string][]
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 1px 0 rgba(255,255,255,0.08) inset' }}>
+    <div className="rounded-2xl p-4" style={{ background: '#141B2D', border: '1px solid #1E293B' }}>
       <p className="text-white font-semibold mb-1">{t('settings.language')}</p>
       <p className="text-muted text-sm mb-4">Choose your preferred language.</p>
       <div className="flex flex-wrap gap-2">
@@ -246,8 +243,8 @@ function LanguageSelector() {
             onClick={() => setLocale(code)}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
             style={locale === code
-              ? { background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', boxShadow: '0 0 14px rgba(0,200,150,0.3)' }
-              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#5a7a94' }
+              ? { background: '#00C896', color: '#0A0E17' }
+              : { background: '#1A2236', border: '1px solid #1E293B', color: '#8896AB' }
             }
           >
             {name}

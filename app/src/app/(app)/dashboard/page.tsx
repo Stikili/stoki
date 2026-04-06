@@ -4,7 +4,6 @@ import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
-import { withStatus } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
 import QuickSell from './QuickSell'
 import { recordSaleAction } from '../sales/actions'
@@ -20,7 +19,6 @@ export default async function DashboardPage() {
   const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999)
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6); weekStart.setHours(0, 0, 0, 0)
 
-  // Sales + alerts always fresh; products + debtors from cache
   const [todaySales, weekSales, unreadAlerts, weekDaily, allProducts, allDebtors] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -30,235 +28,129 @@ export default async function DashboardPage() {
     getCachedDebtors(store.id),
   ])
 
-  const lowStockProducts = allProducts.filter((p) => p.status === 'low' || p.status === 'out')
+  const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
   const totalOutstanding = allDebtors.reduce((sum, d) => sum + d.totalOwed, 0)
 
-  // Compute top 5 most-sold products for quick sell
-  const todaySalesList = await saleRepo.findByPeriod(store.id, weekStart, dayEnd)
+  // Quick sell: top 5 most-sold products
+  const recentSales = await saleRepo.findByPeriod(store.id, weekStart, dayEnd)
   const salesCount: Record<string, number> = {}
-  for (const s of todaySalesList) {
+  for (const s of recentSales) {
     if (s.productId) salesCount[s.productId] = (salesCount[s.productId] ?? 0) + s.qty
   }
-  const topProducts = allProducts
-    .filter((p) => p.qty > 0)
-    .sort((a, b) => (salesCount[b.id] ?? 0) - (salesCount[a.id] ?? 0))
-    .slice(0, 5)
-
-  const dashboard = {
-    today: todaySales,
-    week: weekSales,
-    lowStockProducts,
-    unreadAlerts,
-    totalOutstanding,
-  }
+  const topProducts = allProducts.filter((p) => p.qty > 0).sort((a, b) => (salesCount[b.id] ?? 0) - (salesCount[a.id] ?? 0)).slice(0, 5)
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const maxRevenue = Math.max(...weekDaily.map((d) => d.totalRevenue), 1)
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    return ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
   })
 
-  // Checklist — uses cached data already fetched above
   const hasQty = allProducts.some((p) => p.qty > 0)
   const hasAnySale = weekSales.transactionCount > 0
   const hasAnyDebtor = allDebtors.length > 0
-
   const checklistItems = [
     { key: 'store', label: 'Store created', done: true, href: '/settings', cta: 'View settings' },
-    { key: 'stock', label: 'Add stock quantities', done: hasQty, href: '/inventory', cta: 'Add quantities → 2 min' },
+    { key: 'stock', label: 'Add stock quantities', done: hasQty, href: '/inventory', cta: 'Add quantities' },
     { key: 'sale', label: 'Record your first sale', done: hasAnySale, href: '/sales', cta: 'Record a sale' },
     { key: 'debtor', label: 'Add a credit customer', done: hasAnyDebtor, href: '/credit', cta: 'Add a customer' },
   ]
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-3">
+    <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
-      <div className="mb-2">
-        <h1 className="text-xl font-bold text-white">{greeting} 👋</h1>
+      <div>
+        <h1 className="text-xl font-bold text-white">{greeting}</h1>
         <p className="text-muted text-sm mt-0.5">{store.name}</p>
       </div>
 
-      {/* Setup checklist — shown until all done or dismissed */}
+      {/* Checklist */}
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
         <SetupChecklist storeId={store.id} items={checklistItems} />
       ) : null}
 
-      {/* Alert strip */}
-      {dashboard.unreadAlerts.length > 0 && (
-        <Link
-          href="/alerts"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 min-h-0"
-          style={{
-            background: 'rgba(245,158,11,0.08)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            boxShadow: '0 0 20px rgba(245,158,11,0.08)',
-          }}
-        >
-          <span className="text-lg">⚡</span>
-          <span className="text-warning text-sm font-semibold">
-            {dashboard.unreadAlerts.length} alert{dashboard.unreadAlerts.length > 1 ? 's' : ''} need your attention
-          </span>
-          <span className="ml-auto text-warning text-lg">›</span>
-        </Link>
-      )}
-
-      {/* Revenue hero */}
-      <div
-        className="rounded-3xl p-5 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, rgba(0,200,150,0.18) 0%, rgba(0,120,90,0.08) 100%)',
-          border: '1px solid rgba(0,200,150,0.25)',
-          boxShadow: '0 0 40px rgba(0,200,150,0.15), 0 1px 0 rgba(255,255,255,0.1) inset',
-        }}
-      >
-        {/* Gloss shine */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1/2 rounded-t-3xl pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 100%)' }}
-        />
-        <p className="text-brand/70 text-xs font-semibold uppercase tracking-widest mb-2">Today&apos;s Revenue</p>
-        <p
-          className="text-5xl font-bold mb-1"
-          style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #a8f0da 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          R{dashboard.today.totalRevenue.toFixed(2)}
+      {/* Revenue hero — big and clear */}
+      <div className="card p-6">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">Today&apos;s Revenue</p>
+        <p className="text-[42px] font-bold text-white leading-none">
+          R{todaySales.totalRevenue.toFixed(2)}
         </p>
-        <p className="text-brand/60 text-sm">
-          {dashboard.today.transactionCount} sale{dashboard.today.transactionCount !== 1 ? 's' : ''} ·{' '}
-          {dashboard.today.itemsSold} item{dashboard.today.itemsSold !== 1 ? 's' : ''}
-        </p>
-        {dashboard.today.totalMargin > 0 && (
-          <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(0,200,150,0.15)' }}>
-            <span className="text-brand/50 text-xs">Profit</span>
-            <span className="text-white font-bold">R{dashboard.today.totalMargin.toFixed(2)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-4 mt-3 text-sm">
+          <span className="text-muted">{todaySales.transactionCount} sale{todaySales.transactionCount !== 1 ? 's' : ''}</span>
+          {todaySales.totalMargin > 0 && (
+            <span className="text-brand font-semibold">R{todaySales.totalMargin.toFixed(2)} profit</span>
+          )}
+        </div>
       </div>
+
+      {/* Big sell button */}
+      <Link href="/sales"
+        className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
+        style={{ background: '#00C896', color: '#0A0E17' }}>
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#0A0E17" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="#0A0E17" strokeWidth="2" strokeLinecap="round"/></svg>
+        Record Sale
+      </Link>
 
       {/* Quick sell */}
       <QuickSell topProducts={topProducts} recordSaleAction={recordSaleAction} />
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { href: '/sales', label: 'Record Sale', emoji: '💰', color: 'rgba(0,200,150,0.12)', border: 'rgba(0,200,150,0.25)', text: '#00C896', glow: 'rgba(0,200,150,0.15)' },
-          { href: '/inventory', label: 'Add Stock', emoji: '📦', color: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)', text: '#60a5fa', glow: 'rgba(59,130,246,0.12)' },
-          { href: '/credit', label: 'Add Credit', emoji: '📋', color: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.25)', text: '#fb923c', glow: 'rgba(249,115,22,0.12)' },
-          { href: '/advisor', label: 'Ask Stoki', emoji: '✨', color: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.25)', text: '#c084fc', glow: 'rgba(168,85,247,0.12)' },
-          { href: '/expenses', label: 'Expenses', emoji: '💸', color: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.15)', text: '#fb923c', glow: 'rgba(249,115,22,0.06)' },
-          { href: '/cashup', label: 'Cash Up', emoji: '🧮', color: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.15)', text: '#60a5fa', glow: 'rgba(59,130,246,0.06)' },
-          { href: '/pricelist', label: 'Price List', emoji: '📝', color: 'rgba(0,200,150,0.08)', border: 'rgba(0,200,150,0.15)', text: '#00C896', glow: 'rgba(0,200,150,0.06)' },
-          { href: '/customers', label: 'Customers', emoji: '👥', color: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.15)', text: '#c084fc', glow: 'rgba(168,85,247,0.06)' },
-        ].map(({ href, label, emoji, color, border, text, glow }) => (
-          <Link
-            key={href}
-            href={href}
-            className="rounded-2xl p-4 active:scale-[0.96] transition-transform relative overflow-hidden"
-            style={{
-              background: color,
-              border: `1px solid ${border}`,
-              boxShadow: `0 0 20px ${glow}, 0 1px 0 rgba(255,255,255,0.08) inset`,
-            }}
-          >
-            <div
-              className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
-              style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%)' }}
-            />
-            <div className="text-2xl mb-2">{emoji}</div>
-            <p className="font-semibold text-sm" style={{ color }}>{label}</p>
-          </Link>
-        ))}
+      {/* Status pills — at a glance */}
+      <div className="flex gap-2 flex-wrap">
+        {unreadAlerts.length > 0 && (
+          <Link href="/alerts" className="pill pill-yellow min-h-0">{unreadAlerts.length} alert{unreadAlerts.length > 1 ? 's' : ''}</Link>
+        )}
+        {lowStockCount > 0 && (
+          <Link href="/inventory" className="pill pill-red min-h-0">{lowStockCount} low stock</Link>
+        )}
+        {totalOutstanding > 0 && (
+          <Link href="/credit" className="pill pill-orange min-h-0">R{totalOutstanding.toFixed(0)} owed</Link>
+        )}
       </div>
 
-      {/* 7-day chart */}
-      <div
-        className="rounded-3xl p-5"
-        style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
-        }}
-      >
-        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-4">7-Day Revenue</p>
-        <div className="flex items-end gap-1.5 h-20">
+      {/* 7-day chart — compact */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-muted text-xs font-semibold uppercase tracking-widest">7-Day Revenue</p>
+          <p className="text-white font-bold text-sm">R{weekSales.totalRevenue.toFixed(0)}</p>
+        </div>
+        <div className="flex items-end gap-1.5 h-16">
           {weekDaily.map((day, i) => {
             const heightPct = (day.totalRevenue / maxRevenue) * 100
             const isToday = i === 6
             return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                <div
-                  className="w-full rounded-md transition-all duration-500"
-                  style={{
-                    height: `${Math.max(heightPct, day.totalRevenue > 0 ? 12 : 6)}%`,
-                    background: day.totalRevenue > 0
-                      ? isToday
-                        ? 'linear-gradient(180deg, #00e8b3 0%, #00C896 100%)'
-                        : 'linear-gradient(180deg, rgba(0,200,150,0.6) 0%, rgba(0,200,150,0.3) 100%)'
-                      : 'rgba(255,255,255,0.06)',
-                    boxShadow: day.totalRevenue > 0 && isToday ? '0 0 12px rgba(0,200,150,0.4)' : 'none',
-                  }}
-                />
-                <span className={`text-[9px] font-medium ${isToday ? 'text-brand' : 'text-muted'}`}>
-                  {isToday ? 'Today' : dayLabels[i]}
-                </span>
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full rounded-md" style={{
+                  height: `${Math.max(heightPct, day.totalRevenue > 0 ? 12 : 4)}%`,
+                  background: day.totalRevenue > 0 ? (isToday ? '#00C896' : '#1E4D3F') : '#1A2236',
+                }} />
+                <span className={`text-[9px] font-medium ${isToday ? 'text-brand' : 'text-muted'}`}>{dayLabels[i]}</span>
               </div>
             )
           })}
         </div>
-        <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <p className="text-muted text-xs">Week total</p>
-          <p className="text-white font-bold text-sm">R{dashboard.week.totalRevenue.toFixed(2)}</p>
-        </div>
-        {dashboard.week.totalMargin > 0 && (
-          <div className="flex items-center justify-between mt-2">
+        {weekSales.totalMargin > 0 && (
+          <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid #1E293B' }}>
             <p className="text-muted text-xs">Week profit</p>
-            <p className="text-brand font-bold text-sm">R{dashboard.week.totalMargin.toFixed(2)}</p>
+            <p className="text-brand font-bold text-sm">R{weekSales.totalMargin.toFixed(2)}</p>
           </div>
         )}
       </div>
 
-      {/* Status strips */}
-      {dashboard.lowStockProducts.length > 0 && (
-        <Link
-          href="/inventory"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 min-h-0"
-          style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.2)',
-          }}
-        >
-          <span className="text-lg">🔴</span>
-          <span className="text-danger text-sm font-semibold">
-            {dashboard.lowStockProducts.length} product{dashboard.lowStockProducts.length > 1 ? 's' : ''} low or out of stock
-          </span>
-          <span className="ml-auto text-danger text-lg">›</span>
-        </Link>
-      )}
-
-      {dashboard.totalOutstanding > 0 && (
-        <Link
-          href="/credit"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 min-h-0"
-          style={{
-            background: 'rgba(249,115,22,0.08)',
-            border: '1px solid rgba(249,115,22,0.2)',
-          }}
-        >
-          <span className="text-lg">💳</span>
-          <span className="text-orange-400 text-sm font-semibold">
-            R{dashboard.totalOutstanding.toFixed(2)} outstanding credit
-          </span>
-          <span className="ml-auto text-orange-400 text-lg">›</span>
-        </Link>
-      )}
+      {/* Quick links — secondary actions */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { href: '/expenses', label: 'Expenses', icon: '💸' },
+          { href: '/cashup', label: 'Cash Up', icon: '🧮' },
+          { href: '/pricelist', label: 'Prices', icon: '📝' },
+          { href: '/customers', label: 'Customers', icon: '👥' },
+        ].map(({ href, label, icon }) => (
+          <Link key={href} href={href} className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform">
+            <span className="text-lg">{icon}</span>
+            <span className="text-muted text-[10px] font-semibold mt-1">{label}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

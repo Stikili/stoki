@@ -5,77 +5,25 @@ import { ProductWithStatus } from '@/domain/entities/product'
 import { Sale } from '@/domain/entities/sale'
 import { recordCartAction, getSalesByDateAction } from './actions'
 import { useToast } from '@/components/Toast'
-import { useI18n } from '@/lib/i18n'
 import { haptic } from '@/lib/haptic'
-import VoiceInput from '@/components/VoiceInput'
 import Receipt from '@/components/Receipt'
 
-const cardStyle = {
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.09)',
-  boxShadow: '0 1px 0 rgba(255,255,255,0.08) inset, 0 4px 20px rgba(0,0,0,0.25)',
-}
+function fmtTime(iso: string) { return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false }) }
+function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }) }
+function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
-const sheetStyle = {
-  background: 'rgba(8,18,32,0.97)',
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
-  borderTop: '1px solid rgba(255,255,255,0.1)',
-}
+interface CartItem { product: ProductWithStatus; qty: number }
 
-const inputStyle = {
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  color: 'white',
-  borderRadius: '14px',
-  padding: '10px 14px',
-  fontSize: '14px',
-  outline: 'none',
-}
-
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false })
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })
-}
-
-function toLocalDateString(d: Date) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-interface CartItem {
-  product: ProductWithStatus
-  qty: number
-}
-
-export default function SalesClient({
-  products,
-  todaySales,
-  storeName,
-}: {
-  products: ProductWithStatus[]
-  todaySales: Sale[]
-  storeName: string
-}) {
+export default function SalesClient({ products, todaySales, storeName }: { products: ProductWithStatus[]; todaySales: Sale[]; storeName: string }) {
   const { toast } = useToast()
-  const { t } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'sell' | 'history'>('sell')
-  const [search, setSearch] = useState('')
-  const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number }[]; total: number } | null>(null)
-
-  // Cart state
   const [cart, setCart] = useState<CartItem[]>([])
   const [selling, setSelling] = useState<ProductWithStatus | null>(null)
   const [qtyForSelling, setQtyForSelling] = useState(1)
+  const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number }[]; total: number } | null>(null)
 
-  // History state
-  const today = toLocalDateString(new Date())
+  const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
   const [toDate, setToDate] = useState(today)
   const [historySales, setHistorySales] = useState<Sale[]>(todaySales)
@@ -84,226 +32,116 @@ export default function SalesClient({
   const available = products.filter((p) => p.qty > 0)
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0)
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
+  const cartMap = useMemo(() => { const m: Record<string, number> = {}; for (const i of cart) m[i.product.id] = i.qty; return m }, [cart])
 
-  const cartMap = useMemo(() => {
-    const m: Record<string, number> = {}
-    for (const item of cart) m[item.product.id] = item.qty
-    return m
-  }, [cart])
-
-  // Filter available by search
-  const filteredAvailable = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    if (!q) return available
-    return available.filter((p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q))
-  }, [available, search])
-
-  // One-tap sale: single tap adds 1 to cart. Long-press opens qty picker.
   function quickAdd(p: ProductWithStatus) {
-    const remaining = p.qty - (cartMap[p.id] ?? 0)
-    if (remaining <= 0) return
+    if (p.qty - (cartMap[p.id] ?? 0) <= 0) return
     haptic(30)
-    setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === p.id)
-      if (existing) return prev.map((i) => i.product.id === p.id ? { ...i, qty: i.qty + 1 } : i)
-      return [...prev, { product: p, qty: 1 }]
-    })
-    toast(`+1 ${p.name}`, 'success')
-  }
-
-  function openQtyPicker(p: ProductWithStatus) {
-    setQtyForSelling(1)
-    setSelling(p)
-  }
-
-  function addToCart() {
-    if (!selling) return
-    haptic(30)
-    setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === selling.id)
-      if (existing) {
-        return prev.map((i) => i.product.id === selling.id ? { ...i, qty: i.qty + qtyForSelling } : i)
-      }
-      return [...prev, { product: selling, qty: qtyForSelling }]
-    })
-    setSelling(null)
-  }
-
-  function removeFromCart(productId: string) {
-    setCart((prev) => prev.filter((i) => i.product.id !== productId))
+    setCart(prev => { const e = prev.find(i => i.product.id === p.id); return e ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { product: p, qty: 1 }] })
   }
 
   function confirmCart() {
-    if (cart.length === 0 || isPending) return
+    if (!cart.length || isPending) return
     haptic([50, 30, 50])
+    const items = cart.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price }))
+    const total = cartTotal
     startTransition(async () => {
-      await recordCartAction(cart.map((i) => ({
-        productId: i.product.id,
-        qty: i.qty,
-        priceAtSale: i.product.price,
-      })))
-      setReceipt({ items: cart.map((i) => ({ name: i.product.name, qty: i.qty, price: i.product.price })), total: cartTotal })
-      toast(`Sale recorded — R${cartTotal.toFixed(2)}`)
+      await recordCartAction(cart.map(i => ({ productId: i.product.id, qty: i.qty, priceAtSale: i.product.price })))
+      setReceipt({ items, total })
+      toast(`Sale recorded — R${total.toFixed(2)}`)
       setCart([])
     })
   }
 
-  const loadHistory = useCallback((from: string, to: string) => {
+  const loadHistory = useCallback((f: string, t: string) => {
     setHistoryLoading(true)
-    const fromDt = new Date(from)
-    fromDt.setHours(0, 0, 0, 0)
-    const toDt = new Date(to)
-    toDt.setHours(23, 59, 59, 999)
-    startTransition(async () => {
-      const sales = await getSalesByDateAction(fromDt.toISOString(), toDt.toISOString())
-      setHistorySales(sales)
-      setHistoryLoading(false)
-    })
+    const from = new Date(f); from.setHours(0,0,0,0)
+    const to = new Date(t); to.setHours(23,59,59,999)
+    startTransition(async () => { setHistorySales(await getSalesByDateAction(from.toISOString(), to.toISOString())); setHistoryLoading(false) })
   }, [])
 
   function exportCSV() {
-    const rows = [
-      ['Date', 'Time', 'Product', 'Qty', 'Price', 'Total'],
-      ...historySales.map((s) => [
-        fmtDate(s.recordedAt),
-        fmtTime(s.recordedAt),
-        s.productName ?? '',
-        String(s.qty),
-        s.priceAtSale.toFixed(2),
-        (s.priceAtSale * s.qty).toFixed(2),
-      ]),
-    ]
-    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `sales_${fromDate}_to_${toDate}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    const rows = [['Date','Time','Product','Qty','Price','Total'], ...historySales.map(s => [fmtDate(s.recordedAt),fmtTime(s.recordedAt),s.productName??'',String(s.qty),s.priceAtSale.toFixed(2),(s.priceAtSale*s.qty).toFixed(2)])]
+    const blob = new Blob([rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')], { type: 'text/csv' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sales_${fromDate}_${toDate}.csv`; a.click()
     toast('CSV downloaded', 'info')
   }
 
-  const historyTotal = historySales.reduce((s, sale) => s + sale.priceAtSale * sale.qty, 0)
-
-  // Touch hold detection
   let holdTimer: ReturnType<typeof setTimeout> | null = null
+  const historyTotal = historySales.reduce((s, sale) => s + sale.priceAtSale * sale.qty, 0)
 
   return (
     <>
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        {(['sell', 'history'] as const).map((tb) => (
-          <button
-            key={tb}
-            onClick={() => setTab(tb)}
-            className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all"
-            style={tab === tb
-              ? { background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', boxShadow: '0 0 14px rgba(0,200,150,0.3)' }
-              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#5a7a94' }
-            }
-          >
-            {tb === 'sell' ? `${t('sales.sell')}${cartCount > 0 ? ` (${cartCount})` : ''}` : t('sales.history')}
+      <div className="flex gap-2 mb-5">
+        {(['sell', 'history'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={tab === t ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB', border: '1px solid #1E293B' }}>
+            {t === 'sell' ? `Sell${cartCount ? ` (${cartCount})` : ''}` : 'History'}
           </button>
         ))}
       </div>
 
       {tab === 'sell' && (
         <>
-          {/* Search bar */}
-          {available.length > 5 && (
-            <div className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-sm">🔍</span>
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('inventory.search')}
-                  style={{ ...inputStyle, paddingLeft: '40px', width: '100%' }}
-                />
-              </div>
-              <VoiceInput onResult={setSearch} />
-            </div>
-          )}
-
-          {/* Cart summary bar */}
+          {/* Cart bar */}
           {cart.length > 0 && (
-            <div className="rounded-2xl px-4 py-3 mb-4 flex items-center justify-between gap-3" style={{ background: 'rgba(0,200,150,0.1)', border: '1px solid rgba(0,200,150,0.25)' }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-brand font-bold text-sm">{t('sales.cart')} · R{cartTotal.toFixed(2)}</p>
-                <p className="text-muted text-xs mt-0.5 truncate">
-                  {cart.map((i) => `${i.qty}× ${i.product.name}`).join(', ')}
-                </p>
-              </div>
-              <button
-                onClick={confirmCart}
-                disabled={isPending}
-                className="text-sm font-bold px-5 py-2.5 rounded-xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #00C896, #00a87e)', color: '#080f1a', opacity: isPending ? 0.6 : 1 }}
-              >
-                {isPending ? t('common.saving') : `${t('sales.charge')} →`}
-              </button>
-            </div>
-          )}
-
-          {/* Cart items */}
-          {cart.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4">
-              {cart.map((item) => (
-                <div key={item.product.id} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(0,200,150,0.06)', border: '1px solid rgba(0,200,150,0.15)' }}>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-white text-sm font-semibold truncate">{item.product.name}</span>
-                    <span className="text-muted text-xs ml-2">{item.qty}× R{item.product.price.toFixed(2)}</span>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(item.product.id)}
-                    className="text-muted text-lg ml-3 w-9 h-9 flex items-center justify-center rounded-full"
-                    style={{ background: 'rgba(239,68,68,0.1)' }}
-                  >
-                    ×
-                  </button>
+            <div className="card p-4 mb-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold text-sm">Cart · R{cartTotal.toFixed(2)}</p>
+                  <p className="text-muted text-xs mt-0.5 truncate">{cart.map(i => `${i.qty}× ${i.product.name}`).join(', ')}</p>
                 </div>
-              ))}
+                <button onClick={confirmCart} disabled={isPending}
+                  className="text-sm font-bold px-5 py-2.5 rounded-xl flex-shrink-0 min-h-0"
+                  style={{ background: '#00C896', color: '#0A0E17', opacity: isPending ? 0.5 : 1 }}>
+                  {isPending ? 'Saving…' : 'Charge →'}
+                </button>
+              </div>
+              {/* Cart items */}
+              <div className="flex flex-col gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid #1E293B' }}>
+                {cart.map(item => (
+                  <div key={item.product.id} className="flex items-center justify-between">
+                    <span className="text-white text-sm">{item.qty}× {item.product.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted text-sm">R{(item.product.price * item.qty).toFixed(2)}</span>
+                      <button onClick={() => setCart(prev => prev.filter(i => i.product.id !== item.product.id))}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs min-h-0"
+                        style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {filteredAvailable.length === 0 ? (
+          {/* Product list */}
+          {available.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={cardStyle}>
-                <span className="text-3xl">💰</span>
-              </div>
-              <p className="text-white font-semibold mb-1">{search ? 'No matches' : products.length === 0 ? t('sales.noProducts') : t('sales.outOfStock')}</p>
-              <p className="text-muted text-sm">{products.length === 0 ? 'Add stock first' : search ? 'Try a different search' : 'Restock to sell'}</p>
+              <p className="text-white font-semibold mb-1">{products.length === 0 ? 'No products yet' : 'All out of stock'}</p>
+              <p className="text-muted text-sm">{products.length === 0 ? 'Add stock first' : 'Restock to sell'}</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {filteredAvailable.map((p) => {
-                const inCart = cartMap[p.id] ?? 0
-                const remaining = p.qty - inCart
+            <div className="flex flex-col gap-2">
+              {available.map(p => {
+                const inCart = cartMap[p.id] ?? 0, remaining = p.qty - inCart
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => remaining > 0 && quickAdd(p)}
-                    onTouchStart={() => { holdTimer = setTimeout(() => { holdTimer = null; openQtyPicker(p) }, 500) }}
-                    onTouchEnd={() => { if (holdTimer) clearTimeout(holdTimer) }}
-                    onTouchMove={() => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null } }}
-                    onContextMenu={(e) => { e.preventDefault(); openQtyPicker(p) }}
+                  <button key={p.id} onClick={() => remaining > 0 && quickAdd(p)}
+                    onContextMenu={e => { e.preventDefault(); setQtyForSelling(1); setSelling(p) }}
+                    onTouchStart={() => { holdTimer = setTimeout(() => { holdTimer = null; setQtyForSelling(1); setSelling(p) }, 500) }}
+                    onTouchEnd={() => holdTimer && clearTimeout(holdTimer)}
+                    onTouchMove={() => holdTimer && (clearTimeout(holdTimer), holdTimer = null)}
                     disabled={remaining <= 0}
-                    className="w-full text-left rounded-2xl p-4 active:scale-[0.97] transition-transform relative overflow-hidden"
-                    style={{ ...cardStyle, opacity: remaining <= 0 ? 0.4 : 1 }}
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none rounded-t-2xl" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)' }} />
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold truncate">{p.name}</p>
-                        <p className="text-muted text-sm mt-0.5">{remaining} left{inCart > 0 ? ` · ${inCart} in cart` : ''}</p>
-                      </div>
-                      <div className="ml-4 text-right flex-shrink-0">
-                        <p className="font-bold text-xl" style={{ background: 'linear-gradient(135deg, #00C896, #00e8b3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                          R{p.price.toFixed(2)}
-                        </p>
-                        <p className="text-muted text-xs mt-0.5">{remaining > 0 ? 'Tap = 1 · Hold = more' : 'In cart'}</p>
-                      </div>
+                    className="card p-4 w-full text-left flex items-center justify-between active:scale-[0.98] transition-transform"
+                    style={{ opacity: remaining <= 0 ? 0.3 : 1 }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold truncate">{p.name}</p>
+                      <p className="text-muted text-sm mt-0.5">{remaining} left{inCart > 0 ? ` · ${inCart} in cart` : ''}</p>
+                    </div>
+                    <div className="ml-4 text-right flex-shrink-0">
+                      <p className="text-brand font-bold text-lg">R{p.price.toFixed(2)}</p>
+                      <p className="text-muted text-[11px]">Tap +1 · Hold more</p>
                     </div>
                   </button>
                 )
@@ -315,59 +153,48 @@ export default function SalesClient({
 
       {tab === 'history' && (
         <>
-          <div className="rounded-2xl px-4 py-3 mb-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="card p-4 mb-4 flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-muted text-xs w-8">From</span>
-              <input type="date" value={fromDate} max={toDate} onChange={(e) => { setFromDate(e.target.value); loadHistory(e.target.value, toDate) }} style={{ ...inputStyle, flex: 1 }} />
+              <span className="text-muted text-xs w-10">From</span>
+              <input type="date" value={fromDate} max={toDate} onChange={e => { setFromDate(e.target.value); loadHistory(e.target.value, toDate) }} className="input flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-muted text-xs w-8">To</span>
-              <input type="date" value={toDate} min={fromDate} max={today} onChange={(e) => { setToDate(e.target.value); loadHistory(fromDate, e.target.value) }} style={{ ...inputStyle, flex: 1 }} />
+              <span className="text-muted text-xs w-10">To</span>
+              <input type="date" value={toDate} min={fromDate} max={today} onChange={e => { setToDate(e.target.value); loadHistory(fromDate, e.target.value) }} className="input flex-1" />
             </div>
             <div className="flex gap-2">
-              {(['Today', '7d', '30d'] as const).map((label) => (
+              {(['Today','7d','30d'] as const).map(label => (
                 <button key={label} onClick={() => {
-                  const now = new Date(); const t2 = toLocalDateString(now)
-                  let f = t2
-                  if (label === '7d') { const d = new Date(now); d.setDate(d.getDate() - 6); f = toLocalDateString(d) }
-                  if (label === '30d') { const d = new Date(now); d.setDate(d.getDate() - 29); f = toLocalDateString(d) }
+                  const n = new Date(), t2 = toDateStr(n); let f = t2
+                  if (label==='7d') { const d = new Date(n); d.setDate(d.getDate()-6); f = toDateStr(d) }
+                  if (label==='30d') { const d = new Date(n); d.setDate(d.getDate()-29); f = toDateStr(d) }
                   setFromDate(f); setToDate(t2); loadHistory(f, t2)
-                }} className="text-xs font-semibold px-3 py-2 rounded-full"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#5a7a94', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  {label}
-                </button>
+                }} className="text-xs font-semibold px-3 py-2 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB' }}>{label}</button>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl px-4 py-3 mb-4 flex items-center justify-between" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.15)' }}>
+          <div className="card p-4 mb-4 flex items-center justify-between">
             <div>
-              <span className="text-muted text-xs">{historySales.length} sale{historySales.length !== 1 ? 's' : ''}</span>
-              <p className="text-brand font-bold text-lg">R{historyTotal.toFixed(2)}</p>
+              <p className="text-muted text-xs">{historySales.length} sale{historySales.length !== 1 ? 's' : ''}</p>
+              <p className="text-white font-bold text-lg">R{historyTotal.toFixed(2)}</p>
             </div>
             {historySales.length > 0 && (
-              <button onClick={exportCSV} className="text-xs font-semibold px-4 py-2.5 rounded-xl"
-                style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>
-                {t('sales.exportCsv')}
-              </button>
+              <button onClick={exportCSV} className="text-xs font-semibold px-4 py-2.5 rounded-xl min-h-0 pill-blue">Export CSV</button>
             )}
           </div>
 
           {historyLoading ? (
-            <div className="flex flex-col gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
+            <div className="flex flex-col gap-2">{[1,2,3,4].map(i => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
           ) : historySales.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={cardStyle}><span className="text-3xl">📋</span></div>
-              <p className="text-white font-semibold mb-1">No sales in this period</p>
-              <p className="text-muted text-sm">Try a different date range</p>
-            </div>
+            <p className="text-center text-muted py-12">No sales in this period</p>
           ) : (
             <div className="flex flex-col gap-2">
-              {historySales.map((sale) => (
-                <div key={sale.id} className="rounded-2xl px-4 py-3 flex items-center justify-between" style={cardStyle}>
+              {historySales.map(sale => (
+                <div key={sale.id} className="card px-4 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-white font-semibold text-sm">{sale.productName ?? 'Unknown product'}</p>
-                    <p className="text-muted text-xs mt-0.5">{sale.qty} unit{sale.qty > 1 ? 's' : ''} · {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}</p>
+                    <p className="text-white font-semibold text-sm">{sale.productName ?? 'Unknown'}</p>
+                    <p className="text-muted text-xs mt-0.5">{sale.qty} × {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}</p>
                   </div>
                   <p className="text-brand font-bold">R{(sale.priceAtSale * sale.qty).toFixed(2)}</p>
                 </div>
@@ -381,37 +208,31 @@ export default function SalesClient({
       {selling && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/70" onClick={() => setSelling(null)} />
-          <div className="relative rounded-t-3xl p-6 pb-10" style={sheetStyle}>
-            <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-6" />
+          <div className="relative rounded-t-3xl p-6 pb-10 sheet">
+            <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-0.5">{selling.name}</h2>
             <p className="text-muted text-sm mb-6">R{selling.price.toFixed(2)} each · {selling.qty - (cartMap[selling.id] ?? 0)} available</p>
             <div className="flex items-center justify-center gap-6 mb-6">
-              <button onClick={() => setQtyForSelling((q) => Math.max(1, q - 1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>−</button>
-              <div className="text-center min-w-[60px]"><p className="text-5xl font-black text-white">{qtyForSelling}</p><p className="text-muted text-xs mt-1">units</p></div>
-              <button onClick={() => setQtyForSelling((q) => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q + 1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>+</button>
+              <button onClick={() => setQtyForSelling(q => Math.max(1, q-1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>−</button>
+              <div className="text-center min-w-[60px]"><p className="text-5xl font-black text-white">{qtyForSelling}</p></div>
+              <button onClick={() => setQtyForSelling(q => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q+1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>+</button>
             </div>
-            <div className="rounded-2xl px-4 py-3 mb-5 flex items-center justify-between" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.15)' }}>
+            <div className="card p-4 mb-5 flex items-center justify-between">
               <span className="text-muted text-sm">Subtotal</span>
               <span className="text-brand font-bold text-xl">R{(selling.price * qtyForSelling).toFixed(2)}</span>
             </div>
-            <button onClick={addToCart} className="w-full relative overflow-hidden active:scale-[0.98] transition-transform"
-              style={{ background: 'linear-gradient(135deg, #00C896 0%, #00a87e 100%)', boxShadow: '0 0 28px rgba(0,200,150,0.4), 0 1px 0 rgba(255,255,255,0.25) inset', borderRadius: '14px', padding: '15px', color: '#080f1a', fontWeight: 700, fontSize: '16px' }}>
-              <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)', borderRadius: 'inherit' }} />
-              {t('sales.addToCart')}
+            <button onClick={() => { haptic(30); setCart(prev => { const e = prev.find(i => i.product.id === selling!.id); return e ? prev.map(i => i.product.id === selling!.id ? { ...i, qty: i.qty + qtyForSelling } : i) : [...prev, { product: selling!, qty: qtyForSelling }] }); setSelling(null) }}
+              className="btn-primary active:scale-[0.98] transition-transform">
+              Add to Cart
             </button>
           </div>
         </div>
       )}
 
-      {/* Receipt modal */}
       {receipt && (
-        <Receipt
-          storeName={storeName}
-          items={receipt.items}
-          total={receipt.total}
+        <Receipt storeName={storeName} items={receipt.items} total={receipt.total}
           date={new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}
-          onClose={() => setReceipt(null)}
-        />
+          onClose={() => setReceipt(null)} />
       )}
     </>
   )
