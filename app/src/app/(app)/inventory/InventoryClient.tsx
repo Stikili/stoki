@@ -134,18 +134,14 @@ export default function InventoryClient({ products, salesVelocity }: { products:
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
           <div className="relative rounded-t-3xl p-6 pb-10 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
-            <h2 className="text-lg font-bold text-white mb-5">Add Product</h2>
+            <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>Add Product</h2>
+            <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>You can add cost, SKU and expiry later via Edit.</p>
             <form action={handleAdd} className="flex flex-col gap-3">
-              <input name="name" placeholder="Product name *" required className="input" />
+              <input name="name" placeholder="Product name" required autoFocus className="input" />
               <div className="grid grid-cols-2 gap-3">
-                <input name="price" type="number" step="0.01" min="0" placeholder="Price (R) *" required className="input" />
-                <input name="cost" type="number" step="0.01" min="0" placeholder="Cost (R)" className="input" />
+                <input name="price" type="number" step="0.01" min="0" placeholder="Sell price (R)" required className="input" />
+                <input name="qty" type="number" min="0" placeholder="Qty in stock" defaultValue="0" className="input" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input name="qty" type="number" min="0" placeholder="Qty" defaultValue="0" className="input" />
-                <input name="reorderPoint" type="number" min="0" placeholder="Reorder at" defaultValue="5" className="input" />
-              </div>
-              <input name="sku" placeholder="SKU / Barcode (optional)" className="input" />
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Adding…' : 'Add Product'}</button>
             </form>
           </div>
