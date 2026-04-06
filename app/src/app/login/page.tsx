@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/infrastructure/supabase/client";
-import { Download, Share } from "lucide-react";
+import { Download, Share, Bot } from "lucide-react";
 
 type Mode = "signin" | "register";
 type Tab = "email" | "phone";
@@ -20,20 +20,13 @@ function normalizePhone(raw: string): string {
 
 const Logo = () => (
   <div className="mb-10 text-center flex flex-col items-center">
-    <div style={{ filter: "drop-shadow(0 0 20px rgba(0,200,150,0.4))" }} className="mb-4">
-      <svg width="56" height="56" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#00C896"/>
-        <polyline points="7,27 13,20 18,23 24,13 33,16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="33" cy="16" r="2" fill="white"/>
-      </svg>
+    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: '#00C896' }}>
+      <Bot size={36} color="white" strokeWidth={1.75} />
     </div>
-    <h1
-      className="text-4xl font-black tracking-tight lowercase"
-      style={{ background: "linear-gradient(135deg, #ffffff 0%, #a8f0da 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
-    >
+    <h1 className="text-4xl font-black tracking-tight lowercase" style={{ color: 'var(--foreground)' }}>
       stoki
     </h1>
-    <p className="mt-1.5 text-muted text-sm">Run your business. Ask stoki.</p>
+    <p className="mt-1.5 text-sm" style={{ color: 'var(--muted)' }}>Run your business. Ask stoki.</p>
   </div>
 )
 
