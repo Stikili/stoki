@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 export type Theme = 'dark' | 'light'
 
@@ -18,24 +18,28 @@ const STORAGE_KEY = 'stoki_theme'
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
+  const themeRef = useRef<Theme>('dark')
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null
     if (saved === 'light' || saved === 'dark') {
       setThemeState(saved)
+      themeRef.current = saved
       document.documentElement.setAttribute('data-theme', saved)
     }
   }, [])
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t)
+    themeRef.current = t
     localStorage.setItem(STORAGE_KEY, t)
     document.documentElement.setAttribute('data-theme', t)
   }, [])
 
   const toggle = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
-  }, [theme, setTheme])
+    const next = themeRef.current === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+  }, [setTheme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggle }}>
