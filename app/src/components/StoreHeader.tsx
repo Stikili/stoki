@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { CirclePlus, Settings, ChevronDown, Check, TrendingUp } from 'lucide-react'
+import { CirclePlus, Settings, ChevronDown, Check, TrendingUp, Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/components/ThemeProvider'
 
 const MUTED = '#7B8CA1';
 
@@ -15,6 +16,7 @@ export default function StoreHeader({
 }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const { theme, toggle } = useTheme()
   const hasMultiple = allStores.length > 1
 
   function select(id: string) {
@@ -40,6 +42,9 @@ export default function StoreHeader({
           <Link href="/sales" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: '#00C896' }}>
             <CirclePlus size={20} color="white" strokeWidth={2} />
           </Link>
+          <button onClick={toggle} className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            {theme === 'dark' ? <Sun size={18} color={MUTED} strokeWidth={1.75} /> : <Moon size={18} color={MUTED} strokeWidth={1.75} />}
+          </button>
           <Link href="/settings" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             <Settings size={18} color={MUTED} strokeWidth={1.75} />
           </Link>
