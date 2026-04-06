@@ -85,17 +85,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Big sell button */}
-      <Link href="/sales"
-        className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
-        style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
-        <CirclePlus size={22} strokeWidth={2.5} />
-        Record Sale
-      </Link>
-
-      {/* Quick sell */}
-      <QuickSell topProducts={topProducts} recordSaleAction={recordSaleAction} />
-
       {/* Status pills — at a glance */}
       <div className="flex gap-2 flex-wrap">
         {unreadAlerts.length > 0 && (
@@ -152,6 +141,17 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Quick sell */}
+      <QuickSell topProducts={topProducts} recordSaleAction={recordSaleAction} />
+
+      {/* Record sale */}
+      <Link href="/sales"
+        className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
+        style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
+        <CirclePlus size={22} strokeWidth={2.5} />
+        Record Sale
+      </Link>
     </div>
   )
 }
