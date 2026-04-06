@@ -99,6 +99,7 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const supabase = createClient();
   const router = useRouter();
@@ -113,7 +114,7 @@ export default function LoginPage() {
   const otpValid = otp.length === 6;
   const emailValid = email.includes("@") && email.includes(".");
   const passwordValid = password.length >= 8;
-  const formValid = emailValid && passwordValid && (mode === "signin" || password === confirmPassword);
+  const formValid = emailValid && passwordValid && (mode === "signin" || (password === confirmPassword && consent));
 
   function clearError() { setError(null); setSuccess(null); }
 
@@ -317,19 +318,29 @@ export default function LoginPage() {
                 </div>
 
                 {mode === "register" && (
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Confirm password"
-                    value={confirmPassword}
-                    onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
-                    autoComplete="new-password"
-                    style={{
-                      ...inputStyle,
-                      border: confirmPassword && confirmPassword !== password
-                        ? "1px solid rgba(239,68,68,0.5)"
-                        : inputStyle.border,
-                    }}
-                  />
+                  <>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm password"
+                      value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
+                      autoComplete="new-password"
+                      style={{
+                        ...inputStyle,
+                        border: confirmPassword && confirmPassword !== password
+                          ? "1px solid rgba(239,68,68,0.5)"
+                          : inputStyle.border,
+                      }}
+                    />
+                    <Checkbox
+                      checked={consent}
+                      onChange={() => setConsent(v => !v)}
+                      label="I agree that Stoki may process my business data to provide the service."
+                    />
+                    <p className="text-xs -mt-1 ml-7" style={{ color: "var(--muted-dim)" }}>
+                      Read our <a href="/privacy" className="underline" style={{ color: "var(--muted)" }}>Privacy Policy</a>
+                    </p>
+                  </>
                 )}
 
                 <div className="flex items-center justify-between">
@@ -381,11 +392,18 @@ export default function LoginPage() {
                     />
                   </div>
                   <Checkbox checked={rememberMe} onChange={() => setRememberMe((v) => !v)} label="Remember this number" />
-                  <div className="mt-4">
-                    <PrimaryBtn active={phoneValid} loading={loading} label="Send OTP →" loadingLabel="Sending…" onClick={sendOtp} />
+                  <div className="mt-2">
+                    <Checkbox
+                      checked={consent}
+                      onChange={() => setConsent(v => !v)}
+                      label="I agree that Stoki may process my business data to provide the service."
+                    />
+                    <p className="text-xs mt-1 ml-7" style={{ color: "var(--muted-dim)" }}>
+                      Read our <a href="/privacy" className="underline" style={{ color: "var(--muted)" }}>Privacy Policy</a>
+                    </p>
                   </div>
-                  <div className="mt-3 rounded-xl px-3 py-2.5 text-xs text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", color: "#5a7a94" }}>
-                    SMS OTP requires Twilio configuration
+                  <div className="mt-4">
+                    <PrimaryBtn active={phoneValid && consent} loading={loading} label="Send OTP →" loadingLabel="Sending…" onClick={sendOtp} />
                   </div>
                 </>
               )}
