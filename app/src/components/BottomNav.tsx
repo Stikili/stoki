@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, Package, CirclePlus, CreditCard, TrendingUp } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: (a: boolean) => <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2" strokeLinejoin="round"/><path d="M9 21V12h6v9" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2" strokeLinecap="round"/></svg> },
-  { href: "/inventory", label: "Stock", icon: (a: boolean) => <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2" strokeLinecap="round"/></svg> },
-  { href: "/sales", label: "Sell", icon: (a: boolean) => <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2" strokeLinecap="round"/></svg> },
-  { href: "/credit", label: "Credit", icon: (a: boolean) => <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2"/><path d="M2 10h20" stroke={a?"#00C896":"var(--muted)"} strokeWidth="2"/></svg> },
-  { href: "/advisor", label: "Stoki", icon: (a: boolean) => <svg width="22" height="22" viewBox="0 0 40 40" fill="none"><polyline points="5,27 12,19 18,23 24,12 35,16" stroke={a?"#00C896":"var(--muted)"} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="35" cy="16" r="2.5" fill={a?"#00C896":"var(--muted)"}/></svg> },
+  { href: "/dashboard", label: "Home", Icon: Home },
+  { href: "/inventory", label: "Stock", Icon: Package },
+  { href: "/sales", label: "Sell", Icon: CirclePlus },
+  { href: "/credit", label: "Credit", Icon: CreditCard },
+  { href: "/advisor", label: "Stoki", Icon: TrendingUp },
 ];
 
 export default function BottomNav() {
@@ -16,11 +17,11 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50" style={{ background: 'var(--background)', borderTop: '1px solid var(--card-border)' }}>
       <div className="flex items-stretch max-w-lg mx-auto">
-        {navItems.map(({ href, label, icon }) => {
+        {navItems.map(({ href, label, Icon }) => {
           const active = pathname.startsWith(href);
           return (
             <Link key={href} href={href} className="flex flex-1 flex-col items-center justify-center gap-1 py-3">
-              {icon(active)}
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.75} color={active ? '#00C896' : 'var(--muted-dim)'} />
               <span className="text-[11px] font-semibold" style={{ color: active ? '#00C896' : 'var(--muted-dim)' }}>{label}</span>
             </Link>
           );

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
 import { addExpenseAction, deleteExpenseAction } from './actions'
 import { useToast } from '@/components/Toast'
+import { Plus } from 'lucide-react'
 
 export default function ExpensesClient({ expenses, totalThisMonth }: { expenses: Expense[]; totalThisMonth: number }) {
   const { toast, toastUndo } = useToast()
@@ -23,7 +24,9 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
     <>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white">Expenses</h1>
-        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg" style={{ background: '#F97316', color: 'white' }}>+</button>
+        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#F97316' }}>
+          <Plus size={20} color="white" strokeWidth={2.5} />
+        </button>
       </div>
 
       <div className="card p-5 mb-4">

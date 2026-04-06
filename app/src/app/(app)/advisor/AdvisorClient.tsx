@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition, useCallback } from 'react'
+import { TrendingUp, Send, Trash2 } from 'lucide-react'
 import VoiceInput from '@/components/VoiceInput'
 
 interface Message { role: 'user' | 'assistant'; content: string }
@@ -15,12 +16,7 @@ const HISTORY_KEY = (storeId: string) => `stoki_advisor_${storeId}`
 const MAX_STORED = 60   // kept in localStorage
 const MAX_CONTEXT = 40  // sent to API per turn
 
-const StokiIcon = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-    <polyline points="5,27 12,19 18,23 24,12 35,16" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="35" cy="16" r="2.5" fill="white"/>
-  </svg>
-)
+const StokiIcon = ({ size = 22 }: { size?: number }) => <TrendingUp size={size} color="white" strokeWidth={2.5} />
 
 export default function AdvisorClient({ storeId }: { storeId: string }) {
   const [messages, setMessages] = useState<Message[]>([INTRO])
@@ -102,10 +98,10 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
         {messages.length > 1 && (
           <button
             onClick={clearHistory}
-            className="text-xs text-muted px-3 py-1.5 rounded-xl"
-            style={{ background: '#141B2D', border: '1px solid #1E293B' }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl min-h-0"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}
           >
-            Clear
+            <Trash2 size={12} /> Clear
           </button>
         )}
       </div>
@@ -179,12 +175,9 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
           onClick={() => send(input)}
           disabled={isPending || !input.trim()}
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: input.trim() && !isPending ? '#00C896' : '#1A2236', transition: 'all 0.2s' }}
+          style={{ background: input.trim() && !isPending ? '#00C896' : 'var(--surface)', transition: 'all 0.2s' }}
         >
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-            <path d="M22 2L11 13" stroke={input.trim() && !isPending ? '#080f1a' : '#5a7a94'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isPending ? '#080f1a' : '#5a7a94'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <Send size={18} color={input.trim() && !isPending ? 'var(--btn-primary-text)' : 'var(--muted-dim)'} />
         </button>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
+import { Bell, Settings, ChevronDown, Check, TrendingUp } from 'lucide-react'
 
 export default function StoreHeader({
   store, allStores, unreadAlerts = 0,
@@ -27,23 +28,15 @@ export default function StoreHeader({
           className="flex items-center gap-2.5 min-h-0"
           style={{ cursor: hasMultiple ? 'pointer' : 'default' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#00C896' }}>
-            <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-              <polyline points="7,27 13,20 18,23 24,13 33,16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="33" cy="16" r="2.5" fill="white"/>
-            </svg>
+            <TrendingUp size={16} color="white" strokeWidth={2.5} />
           </div>
           <span className="font-semibold text-sm truncate max-w-[160px]" style={{ color: 'var(--foreground)' }}>{store.name}</span>
-          {hasMultiple && (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          )}
+          {hasMultiple && <ChevronDown size={14} color="var(--muted)" />}
         </button>
 
         <div className="flex items-center gap-2">
           <Link href="/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)' }}>
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-              <path d="M12 2a7 7 0 00-7 7v4l-2 3h18l-2-3V9a7 7 0 00-7-7z" stroke="var(--muted)" strokeWidth="1.75" strokeLinejoin="round"/>
-              <path d="M10 19a2 2 0 004 0" stroke="var(--muted)" strokeWidth="1.75" strokeLinecap="round"/>
-            </svg>
+            <Bell size={18} color="var(--muted)" strokeWidth={1.75} />
             {unreadAlerts > 0 && (
               <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold px-1"
                 style={{ background: '#EF4444', color: 'white' }}>
@@ -52,10 +45,7 @@ export default function StoreHeader({
             )}
           </Link>
           <Link href="/settings" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" stroke="var(--muted)" strokeWidth="1.75"/>
-              <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="var(--muted)" strokeWidth="1.75" strokeLinecap="round"/>
-            </svg>
+            <Settings size={18} color="var(--muted)" strokeWidth={1.75} />
           </Link>
         </div>
       </header>
@@ -83,7 +73,7 @@ export default function StoreHeader({
                     <div className="flex-1 min-w-0">
                       <p className={`font-semibold truncate ${active ? 'text-brand' : ''}`} style={active ? {} : { color: 'var(--foreground)' }}>{s.name}</p>
                     </div>
-                    {active && <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#00C896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    {active && <Check size={18} color="#00C896" strokeWidth={2.5} />}
                   </button>
                 )
               })}

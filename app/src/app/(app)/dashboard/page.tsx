@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CirclePlus, Wallet, Calculator, FileText, Users } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
@@ -87,8 +88,8 @@ export default async function DashboardPage() {
       {/* Big sell button */}
       <Link href="/sales"
         className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
-        style={{ background: '#00C896', color: '#0A0E17' }}>
-        <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#0A0E17" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="#0A0E17" strokeWidth="2" strokeLinecap="round"/></svg>
+        style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
+        <CirclePlus size={22} strokeWidth={2.5} />
         Record Sale
       </Link>
 
@@ -140,14 +141,14 @@ export default async function DashboardPage() {
       {/* Quick links — secondary actions */}
       <div className="grid grid-cols-4 gap-2">
         {[
-          { href: '/expenses', label: 'Expenses', icon: '💸' },
-          { href: '/cashup', label: 'Cash Up', icon: '🧮' },
-          { href: '/pricelist', label: 'Prices', icon: '📝' },
-          { href: '/customers', label: 'Customers', icon: '👥' },
-        ].map(({ href, label, icon }) => (
+          { href: '/expenses', label: 'Expenses', Icon: Wallet },
+          { href: '/cashup', label: 'Cash Up', Icon: Calculator },
+          { href: '/pricelist', label: 'Prices', Icon: FileText },
+          { href: '/customers', label: 'Customers', Icon: Users },
+        ].map(({ href, label, Icon }) => (
           <Link key={href} href={href} className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform">
-            <span className="text-lg">{icon}</span>
-            <span className="text-muted text-[10px] font-semibold mt-1">{label}</span>
+            <Icon size={20} color="var(--muted)" strokeWidth={1.75} />
+            <span className="text-[10px] font-semibold mt-1.5" style={{ color: 'var(--muted)' }}>{label}</span>
           </Link>
         ))}
       </div>
