@@ -14,7 +14,7 @@ function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1
 
 interface CartItem { product: ProductWithStatus; qty: number }
 
-export default function SalesClient({ products, todaySales, storeName }: { products: ProductWithStatus[]; todaySales: Sale[]; storeName: string }) {
+export default function SalesClient({ products, todaySales, storeName, topProducts = [] }: { products: ProductWithStatus[]; todaySales: Sale[]; storeName: string; topProducts?: ProductWithStatus[] }) {
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'sell' | 'history'>('sell')
@@ -85,6 +85,26 @@ export default function SalesClient({ products, todaySales, storeName }: { produ
 
       {tab === 'sell' && (
         <>
+          {/* Quick sell */}
+          {topProducts.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Quick Sell</p>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {topProducts.map(p => {
+                  const remaining = p.qty - (cartMap[p.id] ?? 0)
+                  return (
+                    <button key={p.id} onClick={() => remaining > 0 && quickAdd(p)} disabled={remaining <= 0}
+                      className="flex-shrink-0 card px-4 py-3 active:scale-[0.96] transition-transform min-w-[100px] text-left"
+                      style={{ opacity: remaining <= 0 ? 0.3 : 1 }}>
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>{p.name}</p>
+                      <p className="text-brand font-bold mt-1">R{p.price.toFixed(2)}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Cart bar */}
           {cart.length > 0 && (
             <div className="card p-4 mb-4">
