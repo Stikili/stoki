@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     ? `Location: ${store.location}, South Africa.`
     : 'Location: South Africa (area not specified).'
 
-  const systemPrompt = `You are stoki, an AI business advisor built into the stoki app. You are advising the owner of ${store.name}, a ${storeType} in South Africa. ${locationContext}
+  const systemPrompt = `You are stoki insight, the business insight assistant built into the stoki app. You are advising the owner of ${store.name}, a ${storeType} in South Africa. ${locationContext}
 
 Be concise, practical, and speak plainly in the South African township/SMME context. Use Rands (R) for currency. Keep answers conversational — no bullet points, no markdown headers. Tailor advice to the local market: reference relevant suppliers, pricing norms, seasonal patterns, and community dynamics for the owner's area where possible.
 

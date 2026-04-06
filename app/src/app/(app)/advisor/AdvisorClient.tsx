@@ -9,7 +9,7 @@ interface Message { role: 'user' | 'assistant'; content: string }
 const QUICK_PROMPTS = ["What to reorder?", "Today's profit?", "Who owes me?", "Best seller?"]
 const INTRO: Message = {
   role: 'assistant',
-  content: "Hi, I'm stoki — your AI business advisor. Ask me anything about your stock, sales, or customers.",
+  content: "Hi, I'm stoki — your business insight assistant. Ask me anything about your stock, sales, or customers.",
 }
 
 const HISTORY_KEY = (storeId: string) => `stoki_advisor_${storeId}`
@@ -93,7 +93,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
         </div>
         <div className="flex-1">
           <h1 className="text-white font-bold">stoki</h1>
-          <p className="text-muted text-xs">Your AI business advisor</p>
+          <p className="text-muted text-xs">Stoki Insight</p>
         </div>
         {messages.length > 1 && (
           <button
