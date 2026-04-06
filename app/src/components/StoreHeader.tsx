@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { Bell, Settings, ChevronDown, Check, TrendingUp } from 'lucide-react'
+import { CirclePlus, Settings, ChevronDown, Check, TrendingUp } from 'lucide-react'
 
 export default function StoreHeader({
   store, allStores, unreadAlerts = 0,
@@ -35,14 +35,8 @@ export default function StoreHeader({
         </button>
 
         <div className="flex items-center gap-2">
-          <Link href="/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)' }}>
-            <Bell size={18} color="var(--muted)" strokeWidth={1.75} />
-            {unreadAlerts > 0 && (
-              <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold px-1"
-                style={{ background: '#EF4444', color: 'white' }}>
-                {unreadAlerts > 9 ? '9+' : unreadAlerts}
-              </div>
-            )}
+          <Link href="/sales" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: '#00C896' }}>
+            <CirclePlus size={18} color="var(--btn-primary-text)" strokeWidth={2} />
           </Link>
           <Link href="/settings" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)' }}>
             <Settings size={18} color="var(--muted)" strokeWidth={1.75} />
