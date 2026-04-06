@@ -1,0 +1,55 @@
+{
+  "name": "stoki — Run your business.",
+  "short_name": "stoki",
+  "description": "Stock, sales, credit book, and AI advisor for South African SMMEs.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080f1a",
+  "theme_color": "#00C896",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Record Sale",
+      "url": "/sales",
+      "description": "Quickly record a sale"
+    },
+    {
+      "name": "Add Stock",
+      "url": "/inventory",
+      "description": "Add or restock products"
+    },
+    {
+      "name": "Credit Book",
+      "url": "/credit",
+      "description": "View and manage debtors"
+    }
+  ]
+}
