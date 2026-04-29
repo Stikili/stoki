@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 
-// Called by a cron job at end of day to send daily summary push to all subscribers
+// Called by a cron job at 18:00 SAST to send daily summary push to all subscribers
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
+  const cronSecret = req.headers.get('x-vercel-cron') ? true : false
+  const validBearer = authHeader === `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+  const validCron = cronSecret || (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`)
+
+  if (!validBearer && !validCron) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -67,4 +71,9 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ sent })
+}
+
+// Vercel crons call GET
+export async function GET(req: Request) {
+  return POST(req)
 }

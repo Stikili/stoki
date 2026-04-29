@@ -106,6 +106,18 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
               Helps stoki give you market-relevant advice for your area
             </p>
           </div>
+          <div>
+            <input
+              name="whatsappNumber"
+              type="tel"
+              defaultValue={store.whatsappNumber ?? ''}
+              placeholder="Your WhatsApp number (e.g. 0821234567)"
+              style={inputStyle}
+            />
+            <p className="text-muted text-xs mt-1.5 ml-1">
+              Link your number to use the stoki WhatsApp bot — send &quot;help&quot; to get started
+            </p>
+          </div>
           <button
             type="submit"
             disabled={isPending}

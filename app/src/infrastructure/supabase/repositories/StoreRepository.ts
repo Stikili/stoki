@@ -41,11 +41,24 @@ export class StoreRepository implements IStoreRepository {
     return toStore(data)
   }
 
+  async findByWhatsAppNumber(phone: string): Promise<Store | null> {
+    const normalized = phone.replace(/\D/g, '')
+    const { data, error } = await this.db
+      .from('stores')
+      .select('*')
+      .eq('whatsapp_number', normalized)
+      .is('deleted_at', null)
+      .single()
+    if (error || !data) return null
+    return toStore(data)
+  }
+
   async update(storeId: string, patch: {
     name?: string
     phone?: string
     category?: StoreCategory
     location?: string
+    whatsappNumber?: string
     onboardingCompleted?: boolean
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
@@ -53,6 +66,7 @@ export class StoreRepository implements IStoreRepository {
     if (patch.phone !== undefined) dbPatch.phone = patch.phone
     if (patch.category !== undefined) dbPatch.category = patch.category
     if (patch.location !== undefined) dbPatch.location = patch.location
+    if (patch.whatsappNumber !== undefined) dbPatch.whatsapp_number = patch.whatsappNumber
     if (patch.onboardingCompleted !== undefined) dbPatch.onboarding_completed = patch.onboardingCompleted
     const { data, error } = await this.db
       .from('stores')

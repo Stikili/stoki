@@ -47,17 +47,13 @@ export default function SetupChecklist({
 
   return (
     <div
-      className="rounded-2xl p-4 relative overflow-hidden"
-      style={{
-        background: 'rgba(0,200,150,0.06)',
-        border: '1px solid rgba(0,200,150,0.18)',
-        boxShadow: '0 0 24px rgba(0,200,150,0.07)',
-      }}
+      className="card rounded-2xl p-4 relative overflow-hidden"
+      style={{ borderColor: 'rgba(0,200,150,0.18)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <p className="text-white text-sm font-semibold">
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
             {allDone ? 'You\'re all set! 🎉' : 'Get set up'}
           </p>
         </div>
@@ -73,13 +69,12 @@ export default function SetupChecklist({
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 rounded-full mb-3 overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+      <div className="h-1.5 rounded-full mb-3 overflow-hidden" style={{ background: 'var(--surface)' }}>
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{
             width: `${(doneCount / items.length) * 100}%`,
-            background: 'linear-gradient(90deg, #00C896, #00e8b3)',
-            boxShadow: '0 0 8px rgba(0,200,150,0.5)',
+            background: '#00C896',
           }}
         />
       </div>
@@ -92,16 +87,16 @@ export default function SetupChecklist({
               className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style={item.done
                 ? { background: '#00C896' }
-                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }
+                : { background: 'var(--surface)', border: '1px solid var(--card-border)' }
               }
             >
               {item.done && (
                 <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path d="M1 4L3.5 6.5L9 1" stroke="#080f1a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M1 4L3.5 6.5L9 1" stroke="var(--btn-primary-text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
             </div>
-            <span className="text-sm" style={{ color: item.done ? '#5a7a94' : 'white', textDecoration: item.done ? 'line-through' : 'none' }}>
+            <span className="text-sm" style={{ color: item.done ? 'var(--muted)' : 'var(--foreground)', textDecoration: item.done ? 'line-through' : 'none' }}>
               {item.label}
             </span>
           </div>
@@ -113,7 +108,7 @@ export default function SetupChecklist({
         <Link
           href={nextItem.href}
           className="flex items-center justify-between rounded-xl px-4 py-2.5"
-          style={{ background: 'rgba(0,200,150,0.12)', border: '1px solid rgba(0,200,150,0.2)' }}
+          style={{ background: 'var(--pill-green-bg)', border: '1px solid var(--card-border)' }}
         >
           <span className="text-brand text-sm font-semibold">{nextItem.cta}</span>
           <span className="text-brand">›</span>

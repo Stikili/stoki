@@ -26,20 +26,9 @@ const Logo = () => (
     <h1 className="text-4xl font-black tracking-tight lowercase" style={{ color: 'var(--foreground)' }}>
       stoki
     </h1>
-    <p className="mt-1.5 text-sm" style={{ color: 'var(--muted)' }}>Run your business. Ask stoki.</p>
+    <p className="mt-1.5 text-sm text-muted">Run your business. Ask stoki.</p>
   </div>
 )
-
-const inputStyle = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: "14px",
-  padding: "14px 16px",
-  color: "white",
-  fontSize: "16px",
-  outline: "none",
-  width: "100%",
-} as const;
 
 const PrimaryBtn = ({ active, loading, label, loadingLabel, onClick, type = "button" }: {
   active: boolean; loading: boolean; label: string; loadingLabel: string;
@@ -49,15 +38,9 @@ const PrimaryBtn = ({ active, loading, label, loadingLabel, onClick, type = "but
     type={type}
     onClick={onClick}
     disabled={loading || !active}
-    className="w-full relative overflow-hidden active:scale-[0.98] transition-transform"
-    style={{
-      background: active && !loading ? "linear-gradient(135deg, #00C896 0%, #00a87e 100%)" : "rgba(0,200,150,0.25)",
-      boxShadow: active && !loading ? "0 0 28px rgba(0,200,150,0.4), 0 1px 0 rgba(255,255,255,0.25) inset" : "none",
-      borderRadius: "14px", padding: "15px", color: "#080f1a",
-      fontWeight: 700, fontSize: "16px", transition: "all 0.2s",
-    }}
+    className="btn-primary active:scale-[0.98] transition-transform"
+    style={{ opacity: active && !loading ? 1 : 0.5 }}
   >
-    <div className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)", borderRadius: "inherit" }} />
     {loading ? loadingLabel : label}
   </button>
 )
@@ -68,18 +51,22 @@ const Checkbox = ({ checked, onChange, label }: { checked: boolean; onChange: ()
       onClick={onChange}
       className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
       style={checked
-        ? { background: "#00C896", border: "1px solid #00C896", boxShadow: "0 0 10px rgba(0,200,150,0.4)" }
-        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)" }
+        ? { background: "#00C896", border: "1px solid #00C896" }
+        : { background: "var(--surface)", border: "1px solid var(--card-border)" }
       }
     >
       {checked && (
         <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-          <path d="M1 4L4 7L10 1" stroke="#080f1a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M1 4L4 7L10 1" stroke="var(--btn-primary-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
     </div>
     <span className="text-sm text-muted">{label}</span>
   </label>
+)
+
+const ErrorMsg = ({ error }: { error: string }) => (
+  <p className="mt-4 text-sm text-center rounded-xl py-2 px-3" style={{ background: "var(--pill-red-bg)", color: "#ef4444", border: "1px solid var(--card-border)" }}>{error}</p>
 )
 
 export default function LoginPage() {
@@ -191,15 +178,15 @@ export default function LoginPage() {
   // ── Forgot password overlay ───────────────────────────────────
   if (showForgot) {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,200,150,0.1) 0%, transparent 60%)" }}>
+      <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen">
         <div className="w-full max-w-sm">
           <Logo />
-          <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 0 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+          <div className="card rounded-3xl p-6">
             {forgotSent ? (
               <div className="text-center py-4">
                 <div className="text-5xl mb-4">📬</div>
-                <h2 className="text-lg font-bold text-white mb-2">Check your email</h2>
-                <p className="text-muted text-sm mb-6">We sent a reset link to <span className="text-white font-medium">{forgotEmail}</span></p>
+                <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>Check your email</h2>
+                <p className="text-muted text-sm mb-6">We sent a reset link to <span className="font-medium" style={{ color: 'var(--foreground)' }}>{forgotEmail}</span></p>
                 <button onClick={() => { setShowForgot(false); setForgotSent(false); setForgotEmail(""); }} className="text-muted text-xs underline">
                   Back to sign in
                 </button>
@@ -207,7 +194,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <button onClick={() => { setShowForgot(false); clearError(); }} className="text-muted text-xs mb-4 flex items-center gap-1">← Back</button>
-                <h2 className="text-lg font-bold text-white mb-1">Reset your password</h2>
+                <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Reset your password</h2>
                 <p className="text-muted text-sm mb-5">Enter your email and we&apos;ll send a reset link.</p>
                 <input
                   type="email"
@@ -217,14 +204,14 @@ export default function LoginPage() {
                   onChange={(e) => setForgotEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()}
                   autoFocus
-                  style={{ ...inputStyle, marginBottom: "12px" }}
+                  className="input mb-3"
                 />
                 <PrimaryBtn
                   active={forgotEmail.includes("@")} loading={loading}
                   label="Send reset link →" loadingLabel="Sending…"
                   onClick={handleForgotPassword}
                 />
-                {error && <p className="mt-4 text-sm text-center rounded-xl py-2 px-3" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>{error}</p>}
+                {error && <ErrorMsg error={error} />}
               </>
             )}
           </div>
@@ -234,15 +221,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,200,150,0.1) 0%, transparent 60%)" }}>
+    <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen">
       <div className="w-full max-w-sm">
         <Logo />
         <InstallPrompt />
 
-        <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 0 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="card rounded-3xl p-6">
 
           {/* Tab switcher */}
-          <div className="flex gap-1.5 p-1 rounded-2xl mb-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <div className="flex gap-1.5 p-1 rounded-2xl mb-6" style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}>
             {(["email", "phone"] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -250,8 +237,8 @@ export default function LoginPage() {
                 onClick={() => { setTab(t); clearError(); }}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all capitalize"
                 style={tab === t
-                  ? { background: "rgba(0,200,150,0.15)", color: "#00C896", border: "1px solid rgba(0,200,150,0.3)" }
-                  : { color: "#5a7a94" }
+                  ? { background: "var(--pill-green-bg)", color: "#00C896", border: "1px solid rgba(0,200,150,0.3)" }
+                  : { color: "var(--muted)" }
                 }
               >
                 {t === "email" ? "Email" : "Cell number"}
@@ -271,7 +258,7 @@ export default function LoginPage() {
                     onClick={() => { setMode(m); clearError(); setPassword(""); setConfirmPassword(""); }}
                     className="text-sm font-semibold pb-2 transition-all"
                     style={{
-                      color: mode === m ? "white" : "#5a7a94",
+                      color: mode === m ? "var(--foreground)" : "var(--muted)",
                       borderBottom: mode === m ? "2px solid #00C896" : "2px solid transparent",
                       marginRight: "16px",
                     }}
@@ -282,7 +269,7 @@ export default function LoginPage() {
               </div>
 
               {success && (
-                <div className="rounded-xl px-4 py-3 text-sm mb-4" style={{ background: "rgba(0,200,150,0.1)", color: "#00C896", border: "1px solid rgba(0,200,150,0.2)" }}>
+                <div className="rounded-xl px-4 py-3 text-sm mb-4" style={{ background: "var(--pill-green-bg)", color: "#00C896", border: "1px solid var(--card-border)" }}>
                   {success}
                 </div>
               )}
@@ -296,7 +283,7 @@ export default function LoginPage() {
                   onChange={(e) => { setEmail(e.target.value); clearError(); }}
                   autoFocus
                   autoComplete="email"
-                  style={inputStyle}
+                  className="input"
                 />
 
                 <div className="relative">
@@ -306,7 +293,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearError(); }}
                     autoComplete={mode === "register" ? "new-password" : "current-password"}
-                    style={inputStyle}
+                    className="input"
                   />
                   <button
                     type="button"
@@ -325,12 +312,11 @@ export default function LoginPage() {
                       value={confirmPassword}
                       onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
                       autoComplete="new-password"
-                      style={{
-                        ...inputStyle,
-                        border: confirmPassword && confirmPassword !== password
-                          ? "1px solid rgba(239,68,68,0.5)"
-                          : inputStyle.border,
-                      }}
+                      className="input"
+                      style={confirmPassword && confirmPassword !== password
+                        ? { borderColor: "rgba(239,68,68,0.5)" }
+                        : undefined
+                      }
                     />
                     <Checkbox
                       checked={consent}
@@ -338,7 +324,7 @@ export default function LoginPage() {
                       label="I agree that Stoki may process my business data to provide the service."
                     />
                     <p className="text-xs -mt-1 ml-7" style={{ color: "var(--muted-dim)" }}>
-                      Read our <a href="/privacy" className="underline" style={{ color: "var(--muted)" }}>Privacy Policy</a>
+                      Read our <a href="/privacy" className="underline text-muted">Privacy Policy</a>
                     </p>
                   </>
                 )}
@@ -346,7 +332,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <Checkbox checked={rememberMe} onChange={() => setRememberMe((v) => !v)} label="Remember me" />
                   {mode === "signin" && (
-                    <button type="button" onClick={() => { setShowForgot(true); setForgotEmail(email); clearError(); }} className="text-xs text-muted underline decoration-muted/30">
+                    <button type="button" onClick={() => { setShowForgot(true); setForgotEmail(email); clearError(); }} className="text-xs text-muted underline">
                       Forgot password?
                     </button>
                   )}
@@ -363,7 +349,7 @@ export default function LoginPage() {
                 </div>
               </form>
 
-              {error && <p className="mt-4 text-sm text-center rounded-xl py-2 px-3" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>{error}</p>}
+              {error && <ErrorMsg error={error} />}
             </>
           )}
 
@@ -372,12 +358,12 @@ export default function LoginPage() {
             <>
               {phoneStep === "number" && (
                 <>
-                  <h2 className="text-lg font-bold text-white mb-1">
+                  <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>
                     {mode === "register" ? "Register with cell" : "Sign in with cell"}
                   </h2>
                   <p className="text-muted text-sm mb-5">Enter your SA cellphone number</p>
                   <div className="flex gap-2 mb-4">
-                    <div className="flex items-center justify-center px-3 rounded-xl flex-shrink-0 font-semibold text-sm text-white" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                    <div className="flex items-center justify-center px-3 rounded-xl flex-shrink-0 font-semibold text-sm" style={{ background: "var(--surface)", border: "1px solid var(--card-border)", color: "var(--foreground)" }}>
                       🇿🇦 +27
                     </div>
                     <input
@@ -388,7 +374,7 @@ export default function LoginPage() {
                       onChange={(e) => { setPhone(e.target.value); clearError(); }}
                       onKeyDown={(e) => e.key === "Enter" && phoneValid && sendOtp()}
                       autoFocus
-                      style={{ ...inputStyle, flex: 1 }}
+                      className="input flex-1"
                     />
                   </div>
                   <Checkbox checked={rememberMe} onChange={() => setRememberMe((v) => !v)} label="Remember this number" />
@@ -399,7 +385,7 @@ export default function LoginPage() {
                       label="I agree that Stoki may process my business data to provide the service."
                     />
                     <p className="text-xs mt-1 ml-7" style={{ color: "var(--muted-dim)" }}>
-                      Read our <a href="/privacy" className="underline" style={{ color: "var(--muted)" }}>Privacy Policy</a>
+                      Read our <a href="/privacy" className="underline text-muted">Privacy Policy</a>
                     </p>
                   </div>
                   <div className="mt-4">
@@ -413,8 +399,8 @@ export default function LoginPage() {
                   <button onClick={() => { setPhoneStep("number"); setOtp(""); clearError(); }} className="text-muted text-xs mb-4 flex items-center gap-1">
                     ← {normalised}
                   </button>
-                  <h2 className="text-lg font-bold text-white mb-1">Enter the code</h2>
-                  <p className="text-muted text-sm mb-5">We sent a 6-digit code to <span className="text-white">{normalised}</span></p>
+                  <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Enter the code</h2>
+                  <p className="text-muted text-sm mb-5">We sent a 6-digit code to <span style={{ color: 'var(--foreground)' }}>{normalised}</span></p>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -424,7 +410,8 @@ export default function LoginPage() {
                     onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "")); clearError(); }}
                     onKeyDown={(e) => e.key === "Enter" && otpValid && verifyOtp()}
                     autoFocus
-                    style={{ ...inputStyle, fontSize: "24px", letterSpacing: "0.3em", textAlign: "center", marginBottom: "12px" }}
+                    className="input mb-3"
+                    style={{ fontSize: "24px", letterSpacing: "0.3em", textAlign: "center" }}
                   />
                   <PrimaryBtn active={otpValid} loading={loading} label="Verify →" loadingLabel="Verifying…" onClick={verifyOtp} />
                   <div className="mt-4 text-center">
@@ -433,16 +420,16 @@ export default function LoginPage() {
                 </>
               )}
 
-              {error && <p className="mt-4 text-sm text-center rounded-xl py-2 px-3" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>{error}</p>}
+              {error && <ErrorMsg error={error} />}
             </>
           )}
         </div>
 
         <p className="text-center text-muted text-xs mt-6">
           By continuing you agree to our{" "}
-          <span className="underline decoration-muted/30">Terms</span>{" "}
+          <span className="underline">Terms</span>{" "}
           &amp;{" "}
-          <span className="underline decoration-muted/30">Privacy Policy</span>
+          <span className="underline">Privacy Policy</span>
         </p>
       </div>
     </div>
@@ -493,26 +480,26 @@ function InstallPrompt() {
   if (!showInstall || dismissed) return null
 
   return (
-    <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.2)' }}>
+    <div className="rounded-2xl p-4 mb-5" style={{ background: 'var(--pill-green-bg)', border: '1px solid var(--card-border)' }}>
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#00C896' }}>
           <Download size={20} color="white" strokeWidth={2} />
         </div>
         <div className="flex-1">
-          <p className="text-white font-semibold text-sm">Install stoki</p>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <p className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>Install stoki</p>
+          <p className="text-sm mt-1 text-muted">
             {isIOS
-              ? <>Tap <Share size={14} className="inline -mt-0.5" color="rgba(255,255,255,0.6)" /> then <strong>&quot;Add to Home Screen&quot;</strong></>
+              ? <>Tap <Share size={14} className="inline -mt-0.5" /> then <strong>&quot;Add to Home Screen&quot;</strong></>
               : 'Add to your home screen for the best experience.'
             }
           </p>
         </div>
-        <button onClick={dismiss} className="text-lg min-h-0 w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>×</button>
+        <button onClick={dismiss} className="text-lg min-h-0 w-8 h-8 flex items-center justify-center flex-shrink-0 text-muted">×</button>
       </div>
       {!isIOS && (
         <button onClick={install}
           className="w-full mt-3 py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
-          style={{ background: '#00C896', color: '#0A0E17' }}>
+          style={{ background: '#00C896', color: 'var(--btn-primary-text)' }}>
           Install App
         </button>
       )}

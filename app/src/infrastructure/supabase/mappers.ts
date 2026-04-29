@@ -22,6 +22,7 @@ export function toStore(row: any): Store {
     timezone: row.timezone,
     category: row.category ?? null,
     location: row.location ?? null,
+    whatsappNumber: row.whatsapp_number ?? null,
     onboardingCompleted: row.onboarding_completed ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

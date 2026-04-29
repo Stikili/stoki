@@ -6,6 +6,7 @@ import { getSelectedStoreId } from '@/lib/selectedStore'
 import BottomNav from '@/components/BottomNav'
 import StoreHeader from '@/components/StoreHeader'
 import Walkthrough from '@/components/Walkthrough'
+import OfflineBanner from '@/components/OfflineBanner'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex flex-col flex-1 min-h-screen">
       <StoreHeader store={store} allStores={allStores} unreadAlerts={unreadAlerts.length} />
+      <OfflineBanner />
       <main className="flex-1 overflow-y-auto pb-24">
         {children}
       </main>

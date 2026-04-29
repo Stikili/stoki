@@ -10,6 +10,7 @@ export interface Store {
   timezone: string
   category: StoreCategory | null
   location: string | null
+  whatsappNumber: string | null
   onboardingCompleted: boolean
   createdAt: string
   updatedAt: string

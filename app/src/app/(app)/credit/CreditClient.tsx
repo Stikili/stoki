@@ -8,6 +8,8 @@ import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
 import { Plus, Search } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
+import { isOverdue } from '@/domain/entities/debtor'
 
 export type DebtorWithEntries = Debtor & { entries: CreditEntry[] }
 
@@ -17,6 +19,7 @@ function setPhoto(id: string, url: string) { try { localStorage.setItem(`stoki_p
 
 export default function CreditClient({ debtors, totalOutstanding, storeName }: { debtors: DebtorWithEntries[]; totalOutstanding: number; storeName: string }) {
   const { toast, toastUndo } = useToast()
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [showAddDebtor, setShowAddDebtor] = useState(false)
   const [creditDebtorId, setCreditDebtorId] = useState<string | null>(null)
@@ -27,7 +30,15 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
   const [photoDebtorId, setPhotoDebtorId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const filtered = useMemo(() => { const q = search.toLowerCase().trim(); return q ? debtors.filter(d => d.name.toLowerCase().includes(q) || (d.phone ?? '').includes(q)) : debtors }, [debtors, search])
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    const list = q ? debtors.filter(d => d.name.toLowerCase().includes(q) || (d.phone ?? '').includes(q)) : debtors
+    return [...list].sort((a, b) => {
+      const ao = isOverdue(a) ? 0 : 1, bo = isOverdue(b) ? 0 : 1
+      if (ao !== bo) return ao - bo
+      return b.totalOwed - a.totalOwed
+    })
+  }, [debtors, search])
   const creditDebtor = debtors.find(d => d.id === creditDebtorId)
   const settleDebtor = debtors.find(d => d.id === settleDebtorId)
 
@@ -74,7 +85,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Credit Book</h1>
+        <h1 className="text-xl font-bold text-white">{t('credit.creditBook')}</h1>
         <button onClick={() => setShowAddDebtor(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896' }}>
           <Plus size={20} color="white" strokeWidth={2.5} />
         </button>
@@ -82,7 +93,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* Total */}
       <div className="card p-5 mb-4">
-        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">Total Outstanding</p>
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">{t('credit.totalOutstanding')}</p>
         <p className={`text-3xl font-bold ${totalOutstanding > 0 ? 'text-danger' : 'text-brand'}`}>R{totalOutstanding.toFixed(2)}</p>
         <p className="text-muted text-sm mt-1">{debtors.filter(d => d.totalOwed > 0).length} customer{debtors.filter(d => d.totalOwed > 0).length !== 1 ? 's' : ''} owe you</p>
       </div>
@@ -110,17 +121,21 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
                       {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <span className="text-muted text-sm font-bold">{d.name[0].toUpperCase()}</span>}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold">{d.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-semibold">{d.name}</p>
+                        {isOverdue(d) && <span className="pill pill-red min-h-0 text-[10px] py-0">{t('credit.overdue')}</span>}
+                      </div>
                       {d.phone && <p className="text-muted text-xs mt-0.5">{d.phone}</p>}
+                      {d.lastRemindedAt && <p className="text-muted text-[10px] mt-0.5">{t('credit.lastReminded', { date: fmtDate(d.lastRemindedAt) })}</p>}
                     </div>
                     <p className={`font-bold text-xl flex-shrink-0 ${d.totalOwed > 0 ? 'text-danger' : 'text-brand'}`}>R{d.totalOwed.toFixed(2)}</p>
                   </div>
                   <div className="flex gap-2 flex-wrap pt-3" style={{ borderTop: '1px solid #1E293B' }}>
-                    <button onClick={() => setCreditDebtorId(d.id)} className="pill pill-orange min-h-0 text-xs">Add Credit</button>
+                    <button onClick={() => setCreditDebtorId(d.id)} className="pill pill-orange min-h-0 text-xs">{t('credit.addCredit')}</button>
                     {d.totalOwed > 0 && (
                       <>
-                        <button onClick={() => { setSettleDebtorId(d.id); setSettleAmount('') }} className="pill pill-green min-h-0 text-xs">Settle</button>
-                        <button onClick={() => handleClearDebt(d)} disabled={isPending} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB', opacity: isPending ? 0.5 : 1 }}>All Paid</button>
+                        <button onClick={() => { setSettleDebtorId(d.id); setSettleAmount('') }} className="pill pill-green min-h-0 text-xs">{t('credit.settle')}</button>
+                        <button onClick={() => handleClearDebt(d)} disabled={isPending} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB', opacity: isPending ? 0.5 : 1 }}>{t('credit.allPaid')}</button>
                         {d.phone && <button onClick={() => sendWhatsApp(d)} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366' }}>WA</button>}
                       </>
                     )}
@@ -151,7 +166,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
       {showAddDebtor && (
         <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAddDebtor(false)} />
           <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
-            <h2 className="text-lg font-bold text-white mb-5">New Customer</h2>
+            <h2 className="text-lg font-bold text-white mb-5">{t('credit.newCustomer')}</h2>
             <form action={handleAddDebtor} className="flex flex-col gap-3">
               <input name="name" placeholder="Customer name *" required autoFocus className="input" />
               <input name="phone" type="tel" placeholder="Phone (for WhatsApp reminders)" className="input" />

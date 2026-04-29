@@ -6,6 +6,8 @@ import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepos
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import SetupChecklist from '@/components/SetupChecklist'
+import { isOverdue } from '@/domain/entities/debtor'
+import DashboardHeader from './DashboardHeader'
 
 export default async function DashboardPage() {
   const { supabase, store } = await getServerData()
@@ -31,7 +33,6 @@ export default async function DashboardPage() {
   const totalOutstanding = allDebtors.reduce((sum, d) => sum + d.totalOwed, 0)
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const maxRevenue = Math.max(...weekDaily.map((d) => d.totalRevenue), 1)
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
@@ -51,15 +52,40 @@ export default async function DashboardPage() {
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-white">{greeting}</h1>
-        <p className="text-muted text-sm mt-0.5">{store.name}</p>
-      </div>
+      <DashboardHeader storeName={store.name} hour={hour} />
 
       {/* Checklist */}
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
         <SetupChecklist storeId={store.id} items={checklistItems} />
       ) : null}
+
+      {/* Credit hero — outstanding debt */}
+      {totalOutstanding > 0 && (() => {
+        const overdueDebtors = allDebtors.filter(d => isOverdue(d))
+        const topDebtors = allDebtors.filter(d => d.totalOwed > 0).slice(0, 3)
+        return (
+          <Link href="/credit" className="card p-5 block" style={{ borderColor: 'rgba(239,68,68,0.2)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-muted text-xs font-semibold uppercase tracking-widest">Credit Owed</p>
+              {overdueDebtors.length > 0 && (
+                <span className="pill pill-red min-h-0 text-[10px]">{overdueDebtors.length} overdue</span>
+              )}
+            </div>
+            <p className="text-[32px] font-bold text-danger leading-none">R{totalOutstanding.toFixed(2)}</p>
+            <p className="text-muted text-sm mt-2">{allDebtors.filter(d => d.totalOwed > 0).length} customer{allDebtors.filter(d => d.totalOwed > 0).length !== 1 ? 's' : ''}</p>
+            {topDebtors.length > 0 && (
+              <div className="flex flex-col gap-1 mt-3 pt-3" style={{ borderTop: '1px solid var(--card-border)' }}>
+                {topDebtors.map(d => (
+                  <div key={d.id} className="flex items-center justify-between">
+                    <span className="text-sm text-muted truncate">{d.name}</span>
+                    <span className="text-sm font-semibold text-danger">R{d.totalOwed.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Link>
+        )
+      })()}
 
       {/* Revenue hero — big and clear */}
       <div className="card p-6">
