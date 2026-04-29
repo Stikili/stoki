@@ -11,11 +11,12 @@ export async function updateStoreAction(formData: FormData) {
   const name = (formData.get('name') as string).trim()
   const phone = (formData.get('phone') as string | null)?.trim() || undefined
   const location = (formData.get('location') as string | null)?.trim() || undefined
+  const whatsappNumber = (formData.get('whatsappNumber') as string | null)?.trim().replace(/\D/g, '') || undefined
 
   if (!name) return
 
   const storeRepo = new StoreRepository(supabase)
-  await storeRepo.update(store.id, { name, phone, location })
+  await storeRepo.update(store.id, { name, phone, location, whatsappNumber })
 
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/', 'layout')

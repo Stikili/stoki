@@ -6,6 +6,7 @@ import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
 import { Bell, Settings, ChevronDown, Check, Bot, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
+import { useI18n } from '@/lib/i18n'
 
 const MUTED = '#7B8CA1';
 
@@ -17,6 +18,7 @@ export default function StoreHeader({
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const { theme, toggle } = useTheme()
+  const { t } = useI18n()
   const hasMultiple = allStores.length > 1
 
   function select(id: string) {
@@ -62,8 +64,8 @@ export default function StoreHeader({
           <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full mx-auto mb-6" style={{ background: 'var(--card-border)' }} />
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>Your Stores</h2>
-              <Link href="/onboarding?new=1" onClick={() => setOpen(false)} className="text-brand text-sm font-semibold min-h-0">+ New store</Link>
+              <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>{t('header.yourStores')}</h2>
+              <Link href="/onboarding?new=1" onClick={() => setOpen(false)} className="text-brand text-sm font-semibold min-h-0">{t('header.newStore')}</Link>
             </div>
             <div className="flex flex-col gap-2">
               {allStores.map(s => {

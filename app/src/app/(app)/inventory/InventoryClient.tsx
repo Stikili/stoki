@@ -7,6 +7,7 @@ import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
 import { ScanBarcode, Plus, Search } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 type Filter = 'all' | 'low' | 'out'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
@@ -14,6 +15,7 @@ const statusText = { ok: 'In Stock', low: 'Low', out: 'Out' }
 
 export default function InventoryClient({ products, salesVelocity }: { products: ProductWithStatus[]; salesVelocity?: Record<string, number> }) {
   const { toast, toastUndo } = useToast()
+  const { t } = useI18n()
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
@@ -58,7 +60,7 @@ export default function InventoryClient({ products, salesVelocity }: { products:
     <>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Stock</h1>
+        <h1 className="text-xl font-bold text-white">{t('inventory.stock')}</h1>
         <div className="flex gap-2">
           <button onClick={() => setShowScanner(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             <ScanBarcode size={18} color="#7B8CA1" strokeWidth={1.75} />
@@ -83,7 +85,7 @@ export default function InventoryClient({ products, salesVelocity }: { products:
         {(['all','low','out'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)} className="px-4 py-2.5 rounded-xl text-sm font-semibold"
             style={filter === f ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB' }}>
-            {f === 'all' ? 'All' : f === 'low' ? 'Low Stock' : 'Out'}
+            {f === 'all' ? t('inventory.all') : f === 'low' ? t('inventory.lowStock') : t('inventory.outOfStock')}
           </button>
         ))}
       </div>
@@ -118,8 +120,8 @@ export default function InventoryClient({ products, salesVelocity }: { products:
                   <span className="text-muted text-sm">{p.qty} left</span>
                   <span className="text-muted text-xs">+R{p.margin.toFixed(2)}</span>
                   <div className="ml-auto flex gap-2">
-                    <button onClick={() => setRestockId(p.id)} className="pill pill-blue min-h-0 text-xs">Restock</button>
-                    <button onClick={() => setEditId(p.id)} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB' }}>Edit</button>
+                    <button onClick={() => setRestockId(p.id)} className="pill pill-blue min-h-0 text-xs">{t('inventory.restock')}</button>
+                    <button onClick={() => setEditId(p.id)} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB' }}>{t('inventory.edit')}</button>
                   </div>
                 </div>
               </div>
@@ -134,7 +136,7 @@ export default function InventoryClient({ products, salesVelocity }: { products:
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
           <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
-            <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>Add Product</h2>
+            <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>{t('inventory.addProduct')}</h2>
             <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>You can add cost, SKU and expiry later via Edit.</p>
             <form action={handleAdd} className="flex flex-col gap-3">
               <input name="name" placeholder="Product name" required autoFocus className="input" />
@@ -142,7 +144,7 @@ export default function InventoryClient({ products, salesVelocity }: { products:
                 <input name="price" type="number" step="0.01" min="0" placeholder="Sell price (R)" required className="input" />
                 <input name="qty" type="number" min="0" placeholder="Qty in stock" defaultValue="0" className="input" />
               </div>
-              <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Adding…' : 'Add Product'}</button>
+              <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? t('common.adding') : t('inventory.addProduct')}</button>
             </form>
           </div>
         </div>

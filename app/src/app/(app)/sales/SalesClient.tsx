@@ -3,10 +3,13 @@
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
 import { Sale } from '@/domain/entities/sale'
-import { recordCartAction, getSalesByDateAction } from './actions'
+import { recordCartAction, recordReturnAction, getSalesByDateAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import Receipt from '@/components/Receipt'
+import { useI18n } from '@/lib/i18n'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useOfflineStore } from '@/lib/offline-store'
 
 function fmtTime(iso: string) { return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false }) }
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }) }
@@ -16,12 +19,16 @@ interface CartItem { product: ProductWithStatus; qty: number }
 
 export default function SalesClient({ products, todaySales, storeName, topProducts = [] }: { products: ProductWithStatus[]; todaySales: Sale[]; storeName: string; topProducts?: ProductWithStatus[] }) {
   const { toast } = useToast()
+  const { t } = useI18n()
+  const { isOnline } = useOnlineStatus()
+  const { queueSale } = useOfflineStore()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'sell' | 'history'>('sell')
   const [cart, setCart] = useState<CartItem[]>([])
   const [selling, setSelling] = useState<ProductWithStatus | null>(null)
   const [qtyForSelling, setQtyForSelling] = useState(1)
   const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number }[]; total: number } | null>(null)
+  const [returning, setReturning] = useState<Sale | null>(null)
 
   const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
@@ -44,9 +51,19 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
     if (!cart.length || isPending) return
     haptic([50, 30, 50])
     const items = cart.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price }))
+    const cartItems = cart.map(i => ({ productId: i.product.id, qty: i.qty, priceAtSale: i.product.price }))
     const total = cartTotal
+
+    if (!isOnline) {
+      queueSale(cartItems)
+      setReceipt({ items, total })
+      toast(t('offline.saleSaved'), 'info')
+      setCart([])
+      return
+    }
+
     startTransition(async () => {
-      await recordCartAction(cart.map(i => ({ productId: i.product.id, qty: i.qty, priceAtSale: i.product.price })))
+      await recordCartAction(cartItems)
       setReceipt({ items, total })
       toast(`Sale recorded — R${total.toFixed(2)}`)
       setCart([])
@@ -59,6 +76,16 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
     const to = new Date(t); to.setHours(23,59,59,999)
     startTransition(async () => { setHistorySales(await getSalesByDateAction(from.toISOString(), to.toISOString())); setHistoryLoading(false) })
   }, [])
+
+  function confirmReturn() {
+    if (!returning || !returning.productId || isPending) return
+    startTransition(async () => {
+      await recordReturnAction(returning.productId!, returning.qty, returning.priceAtSale)
+      toast(`Return recorded — R${(returning.priceAtSale * returning.qty).toFixed(2)}`, 'info')
+      setReturning(null)
+      loadHistory(fromDate, toDate)
+    })
+  }
 
   function exportCSV() {
     const rows = [['Date','Time','Product','Qty','Price','Total'], ...historySales.map(s => [fmtDate(s.recordedAt),fmtTime(s.recordedAt),s.productName??'',String(s.qty),s.priceAtSale.toFixed(2),(s.priceAtSale*s.qty).toFixed(2)])]
@@ -74,11 +101,11 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
     <>
       {/* Tabs */}
       <div className="flex gap-2 mb-5">
-        {(['sell', 'history'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {(['sell', 'history'] as const).map(tb => (
+          <button key={tb} onClick={() => setTab(tb)}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold"
-            style={tab === t ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB', border: '1px solid #1E293B' }}>
-            {t === 'sell' ? `Sell${cartCount ? ` (${cartCount})` : ''}` : 'History'}
+            style={tab === tb ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB', border: '1px solid #1E293B' }}>
+            {tb === 'sell' ? `${t('sales.sell')}${cartCount ? ` (${cartCount})` : ''}` : t('sales.history')}
           </button>
         ))}
       </div>
@@ -110,13 +137,13 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
             <div className="card p-4 mb-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-bold text-sm">Cart · R{cartTotal.toFixed(2)}</p>
+                  <p className="text-white font-bold text-sm">{t('sales.cart')} · R{cartTotal.toFixed(2)}</p>
                   <p className="text-muted text-xs mt-0.5 truncate">{cart.map(i => `${i.qty}× ${i.product.name}`).join(', ')}</p>
                 </div>
                 <button onClick={confirmCart} disabled={isPending}
                   className="text-sm font-bold px-5 py-2.5 rounded-xl flex-shrink-0 min-h-0"
                   style={{ background: '#00C896', color: '#0A0E17', opacity: isPending ? 0.5 : 1 }}>
-                  {isPending ? 'Saving…' : 'Charge →'}
+                  {isPending ? t('common.saving') : `${t('sales.charge')} →`}
                 </button>
               </div>
               {/* Cart items */}
@@ -139,8 +166,8 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
           {/* Product list */}
           {available.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-white font-semibold mb-1">{products.length === 0 ? 'No products yet' : 'All out of stock'}</p>
-              <p className="text-muted text-sm">{products.length === 0 ? 'Add stock first' : 'Restock to sell'}</p>
+              <p className="text-white font-semibold mb-1">{products.length === 0 ? t('sales.noProducts') : t('sales.outOfStock')}</p>
+              <p className="text-muted text-sm">{products.length === 0 ? t('inventory.addProduct') : t('inventory.restock')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -207,16 +234,32 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
           {historyLoading ? (
             <div className="flex flex-col gap-2">{[1,2,3,4].map(i => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
           ) : historySales.length === 0 ? (
-            <p className="text-center text-muted py-12">No sales in this period</p>
+            <p className="text-center text-muted py-12">{t('sales.noSales')}</p>
           ) : (
             <div className="flex flex-col gap-2">
               {historySales.map(sale => (
                 <div key={sale.id} className="card px-4 py-3 flex items-center justify-between">
                   <div>
                     <p className="text-white font-semibold text-sm">{sale.productName ?? 'Unknown'}</p>
-                    <p className="text-muted text-xs mt-0.5">{sale.qty} × {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}</p>
+                    <p className="text-muted text-xs mt-0.5">
+                      {sale.qty} × {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}
+                      {sale.type === 'return' && <span className="text-danger ml-1">(return)</span>}
+                    </p>
                   </div>
-                  <p className="text-brand font-bold">R{(sale.priceAtSale * sale.qty).toFixed(2)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className={`font-bold ${sale.type === 'return' ? 'text-danger' : 'text-brand'}`}>
+                      {sale.type === 'return' ? '-' : ''}R{(sale.priceAtSale * sale.qty).toFixed(2)}
+                    </p>
+                    {sale.type !== 'return' && sale.productId && (
+                      <button
+                        onClick={() => setReturning(sale)}
+                        className="text-[10px] font-semibold px-2 py-1 rounded-lg min-h-0"
+                        style={{ background: 'var(--pill-red-bg)', color: '#EF4444' }}
+                      >
+                        Return
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -243,8 +286,35 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
             </div>
             <button onClick={() => { haptic(30); setCart(prev => { const e = prev.find(i => i.product.id === selling!.id); return e ? prev.map(i => i.product.id === selling!.id ? { ...i, qty: i.qty + qtyForSelling } : i) : [...prev, { product: selling!, qty: qtyForSelling }] }); setSelling(null) }}
               className="btn-primary active:scale-[0.98] transition-transform">
-              Add to Cart
+              {t('sales.addToCart')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Return confirmation sheet */}
+      {returning && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setReturning(null)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+            <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+            <h2 className="text-lg font-bold text-white mb-1">Confirm Return</h2>
+            <p className="text-muted text-sm mb-5">This will reverse the sale and add stock back.</p>
+            <div className="card p-4 mb-5">
+              <p className="text-white font-semibold">{returning.productName ?? 'Unknown'}</p>
+              <p className="text-muted text-sm mt-1">{returning.qty} × R{returning.priceAtSale.toFixed(2)}</p>
+              <p className="text-danger font-bold text-lg mt-2">-R{(returning.priceAtSale * returning.qty).toFixed(2)}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setReturning(null)} className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--card-border)' }}>
+                Cancel
+              </button>
+              <button onClick={confirmReturn} disabled={isPending}
+                className="flex-1 rounded-xl py-3 text-sm font-bold"
+                style={{ background: 'var(--pill-red-bg)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', opacity: isPending ? 0.5 : 1 }}>
+                {isPending ? 'Processing…' : 'Confirm Return'}
+              </button>
+            </div>
           </div>
         </div>
       )}
