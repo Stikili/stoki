@@ -8,49 +8,71 @@ import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRep
 import { recordSale } from '@/application/sales/recordSale'
 import { getProducts } from '@/application/inventory/getProducts'
 import { parseCommand, fuzzyMatch } from '@/lib/whatsapp-parser'
-import { validateTwilioSignature } from '@/lib/twilio'
+import { sendWhatsAppText, validateMetaSignature, extractIncomingMessage } from '@/lib/whatsapp'
 
-function twiml(message: string) {
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`
-  return new NextResponse(xml, { headers: { 'Content-Type': 'text/xml' } })
-}
+// Meta webhook verification handshake.
+// Configured during webhook setup in Meta App Dashboard.
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const mode = url.searchParams.get('hub.mode')
+  const token = url.searchParams.get('hub.verify_token')
+  const challenge = url.searchParams.get('hub.challenge')
 
-function escapeXml(s: string) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  if (mode === 'subscribe' && token && token === process.env.META_VERIFY_TOKEN) {
+    return new NextResponse(challenge ?? '', { status: 200 })
+  }
+  return NextResponse.json({ error: 'Verification failed' }, { status: 403 })
 }
 
 export async function POST(req: Request) {
-  const body = await req.text()
-  const params = Object.fromEntries(new URLSearchParams(body))
+  const rawBody = await req.text()
 
-  // Validate Twilio signature in production
   if (process.env.NODE_ENV === 'production') {
-    const sig = req.headers.get('x-twilio-signature') ?? ''
-    const url = `${process.env.NEXT_PUBLIC_SITE_URL}/api/whatsapp/webhook`
-    if (!validateTwilioSignature(url, params, sig)) {
+    const sig = req.headers.get('x-hub-signature-256')
+    if (!validateMetaSignature(rawBody, sig)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
     }
   }
 
-  const from = (params.From ?? '').replace('whatsapp:', '').replace('+', '')
-  const text = params.Body ?? ''
+  let payload: unknown
+  try {
+    payload = JSON.parse(rawBody)
+  } catch {
+    return NextResponse.json({ ok: true })
+  }
 
-  if (!from || !text) return twiml('Send "help" for commands.')
+  const incoming = extractIncomingMessage(payload)
+  // Status updates, delivery receipts, etc. — acknowledge and ignore.
+  if (!incoming) return NextResponse.json({ ok: true })
 
+  const { from, text } = incoming
+
+  // Acknowledge Meta first; reply asynchronously via API.
+  // Wrapping in try/catch so a send failure doesn't return 500 and trigger Meta retries.
+  try {
+    const reply = await handleCommand(from, text)
+    if (reply) await sendWhatsAppText(from, reply)
+  } catch (err) {
+    console.error('[whatsapp webhook]', err)
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
+async function handleCommand(from: string, text: string): Promise<string | null> {
   const supabase = createAdminClient()
   const storeRepo = new StoreRepository(supabase)
 
-  // Look up store by WhatsApp number
   const store = await storeRepo.findByWhatsAppNumber(from)
   if (!store) {
-    return twiml('No store linked to this number. Open stoki Settings and add your WhatsApp number.')
+    return 'No store linked to this number. Open stoki Settings and add your WhatsApp number.'
   }
 
   const cmd = parseCommand(text)
 
   switch (cmd.command) {
     case 'help': {
-      return twiml(
+      return (
         'Stoki Commands:\n' +
         '• sell [product] [qty] — record a sale\n' +
         '• stock — check low stock\n' +
@@ -66,7 +88,7 @@ export async function POST(req: Request) {
       const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999)
       const summary = await saleRepo.summarise(store.id, dayStart, dayEnd)
-      return twiml(
+      return (
         `📊 Today at ${store.name}:\n` +
         `Revenue: R${summary.totalRevenue.toFixed(2)}\n` +
         `Sales: ${summary.transactionCount}\n` +
@@ -79,33 +101,33 @@ export async function POST(req: Request) {
       const productRepo = new ProductRepository(supabase)
       const products = await getProducts(productRepo, store.id)
       const low = products.filter(p => p.status === 'low' || p.status === 'out')
-      if (low.length === 0) return twiml('All stock levels good! 👍')
+      if (low.length === 0) return 'All stock levels good! 👍'
       const lines = low.slice(0, 10).map(p =>
-        `${p.status === 'out' ? '🔴' : '🟡'} ${p.name}: ${p.qty} left`
+        `${p.status === 'out' ? '🔴' : '🟡'} ${p.name}: ${p.qty} left`,
       )
-      return twiml(`Stock alerts (${low.length}):\n${lines.join('\n')}`)
+      return `Stock alerts (${low.length}):\n${lines.join('\n')}`
     }
 
     case 'credit': {
       const debtorRepo = new DebtorRepository(supabase)
       const debtors = await debtorRepo.findAll(store.id)
       const owing = debtors.filter(d => d.totalOwed > 0)
-      if (owing.length === 0) return twiml('No one owes you! 🎉')
+      if (owing.length === 0) return 'No one owes you! 🎉'
       const total = owing.reduce((s, d) => s + d.totalOwed, 0)
       const lines = owing.slice(0, 10).map(d => `• ${d.name}: R${d.totalOwed.toFixed(2)}`)
-      return twiml(`💳 R${total.toFixed(2)} owed by ${owing.length} customers:\n${lines.join('\n')}`)
+      return `💳 R${total.toFixed(2)} owed by ${owing.length} customers:\n${lines.join('\n')}`
     }
 
     case 'sell': {
-      if (!cmd.product) return twiml('Usage: sell [product] [qty]\nExample: sell bread 3')
+      if (!cmd.product) return 'Usage: sell [product] [qty]\nExample: sell bread 3'
       const productRepo = new ProductRepository(supabase)
       const products = await getProducts(productRepo, store.id)
       const match = fuzzyMatch(cmd.product, products.map(p => ({ id: p.id, name: p.name })))
-      if (!match) return twiml(`Can't find "${cmd.product}". Check spelling or type "stock" to see products.`)
+      if (!match) return `Can't find "${cmd.product}". Check spelling or type "stock" to see products.`
 
       const product = products.find(p => p.id === match.id)!
       const qty = cmd.qty ?? 1
-      if (product.qty < qty) return twiml(`Only ${product.qty} ${product.name} in stock.`)
+      if (product.qty < qty) return `Only ${product.qty} ${product.name} in stock.`
 
       const saleRepo = new SaleRepository(supabase)
       const alertRepo = new AlertRepository(supabase)
@@ -117,14 +139,10 @@ export async function POST(req: Request) {
       })
 
       const total = product.price * qty
-      return twiml(`✅ Sold ${qty}× ${product.name} — R${total.toFixed(2)}\nStock left: ${product.qty - qty}`)
+      return `✅ Sold ${qty}× ${product.name} — R${total.toFixed(2)}\nStock left: ${product.qty - qty}`
     }
 
     default:
-      return twiml('I didn\'t understand that. Send "help" for commands.')
+      return 'I didn\'t understand that. Send "help" for commands.'
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ status: 'Stoki WhatsApp bot is running' })
 }

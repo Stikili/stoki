@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
-import { sendWhatsApp } from '@/lib/twilio'
+import { sendWhatsAppTemplate } from '@/lib/whatsapp'
 
-// Cron: sends WhatsApp reminders to overdue debtors (3-day cooldown)
+// Cron: sends WhatsApp template reminders to overdue debtors (3-day cooldown).
+// Outside the 24h service window, Meta requires pre-approved templates — register
+// `debtor_reminder` in Meta Business Manager with body:
+//   "Hi {{1}}, friendly reminder from {{2}}: you have R{{3}} outstanding. Thank you!"
+const TEMPLATE_NAME = process.env.META_REMINDER_TEMPLATE ?? 'debtor_reminder'
+const TEMPLATE_LANG = process.env.META_REMINDER_TEMPLATE_LANG ?? 'en'
+
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
   const cronSecret = req.headers.get('x-vercel-cron') ? true : false
@@ -13,14 +19,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!process.env.TWILIO_ACCOUNT_SID) {
-    return NextResponse.json({ error: 'Twilio not configured', reminded: 0 })
+  if (!process.env.META_PHONE_NUMBER_ID || !process.env.META_ACCESS_TOKEN) {
+    return NextResponse.json({ error: 'WhatsApp not configured', reminded: 0 })
   }
 
   const supabase = createAdminClient()
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Get overdue debtors with phone numbers, not reminded in last 3 days
   const { data: debtors } = await supabase
     .from('debtors')
     .select('id, store_id, name, phone, total_owed, last_reminded_at')
@@ -33,7 +38,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ reminded: 0 })
   }
 
-  // Get store names
   const storeIds = [...new Set(debtors.map(d => d.store_id))]
   const { data: stores } = await supabase
     .from('stores')
@@ -45,17 +49,19 @@ export async function POST(req: Request) {
   let reminded = 0
   for (const debtor of debtors) {
     const storeName = storeMap.get(debtor.store_id) ?? 'Your store'
-    const msg = `Hi ${debtor.name}, friendly reminder: you owe R${Number(debtor.total_owed).toFixed(2)} at ${storeName}. Thank you!`
-
     try {
-      await sendWhatsApp(debtor.phone, msg)
+      await sendWhatsAppTemplate(debtor.phone, TEMPLATE_NAME, TEMPLATE_LANG, [
+        debtor.name,
+        storeName,
+        Number(debtor.total_owed).toFixed(2),
+      ])
       await supabase
         .from('debtors')
         .update({ last_reminded_at: new Date().toISOString() })
         .eq('id', debtor.id)
       reminded++
-    } catch {
-      // Skip failed sends (invalid number, etc.)
+    } catch (err) {
+      console.error('[reminders] failed for debtor', debtor.id, err)
     }
   }
 
