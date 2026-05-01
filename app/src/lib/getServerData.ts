@@ -25,7 +25,7 @@ export const getServerData = cache(async (): Promise<ServerData> => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  let allStores = await getCachedStores(user.id)
+  const allStores = await getCachedStores(user.id)
 
   // First-time user — create default store + bootstrap them as owner in store_users.
   if (allStores.length === 0) {

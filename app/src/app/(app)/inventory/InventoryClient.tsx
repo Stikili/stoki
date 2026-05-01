@@ -3,12 +3,27 @@
 import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
 import { Supplier } from '@/domain/entities/supplier'
-import { addProductAction, restockAction, editProductAction, archiveProductAction } from './actions'
+import { WASTAGE_REASONS } from '@/domain/entities/wastage'
+import {
+  addProductAction,
+  restockAction,
+  editProductAction,
+  archiveProductAction,
+  bulkImportProductsAction,
+  recordWasteAction,
+  type CsvImportResult,
+} from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
-import { ScanBarcode, Plus, Search } from 'lucide-react'
+import { ScanBarcode, Plus, Search, Upload } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
+
+const SAMPLE_CSV = `name,price,cost,qty,reorder_point,sku
+White Bread (700g),16.99,12.00,20,10,BREAD-W-700
+Coke 340ml Can,16.99,12.00,40,15,COKE-340
+Maggi Noodles,3.99,2.50,80,20,MAGGI-CHK
+`
 
 type Filter = 'all' | 'low' | 'out'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
@@ -31,12 +46,16 @@ export default function InventoryClient({
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [restockId, setRestockId] = useState<string | null>(null)
+  const [wasteId, setWasteId] = useState<string | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [showScanner, setShowScanner] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importResult, setImportResult] = useState<CsvImportResult | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const editProduct = products.find(p => p.id === editId)
   const restockProduct = products.find(p => p.id === restockId)
+  const wasteProduct = products.find(p => p.id === wasteId)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -53,6 +72,33 @@ export default function InventoryClient({
   function handleAdd(fd: FormData) { startTransition(async () => { await addProductAction(fd); setShowAdd(false); haptic(30); toast('Product added') }) }
   function handleRestock(fd: FormData) { startTransition(async () => { await restockAction(fd); setRestockId(null); haptic(30); toast('Stock updated') }) }
   function handleEdit(fd: FormData) { startTransition(async () => { await editProductAction(fd); setEditId(null); toast('Product updated') }) }
+  function handleWaste(fd: FormData) {
+    startTransition(async () => {
+      try {
+        await recordWasteAction(fd)
+        setWasteId(null)
+        haptic([50, 30, 50])
+        toast('Waste recorded')
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Failed', 'error')
+      }
+    })
+  }
+  function handleImport(csv: string) {
+    startTransition(async () => {
+      const result = await bulkImportProductsAction(csv)
+      setImportResult(result)
+      if (result.imported > 0) haptic(50)
+      toast(`Imported ${result.imported} products${result.skipped ? `, ${result.skipped} skipped` : ''}`)
+    })
+  }
+  function downloadSampleCsv() {
+    const blob = new Blob([SAMPLE_CSV], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'stoki-products-template.csv'
+    a.click()
+  }
 
   function handleArchive(p: ProductWithStatus) {
     haptic(50); setEditId(null)
@@ -73,6 +119,9 @@ export default function InventoryClient({
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white">{t('inventory.stock')}</h1>
         <div className="flex gap-2">
+          <button onClick={() => setShowImport(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }} title="Import CSV">
+            <Upload size={18} color="#7B8CA1" strokeWidth={1.75} />
+          </button>
           <button onClick={() => setShowScanner(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             <ScanBarcode size={18} color="#7B8CA1" strokeWidth={1.75} />
           </button>
@@ -130,8 +179,11 @@ export default function InventoryClient({
                   <span className="text-white font-bold">R{p.price.toFixed(2)}</span>
                   <span className="text-muted text-sm">{p.qty} left</span>
                   <span className="text-muted text-xs">+R{p.margin.toFixed(2)}</span>
-                  <div className="ml-auto flex gap-2">
+                  <div className="ml-auto flex gap-2 flex-wrap">
                     <button onClick={() => setRestockId(p.id)} className="pill pill-blue min-h-0 text-xs">{t('inventory.restock')}</button>
+                    {p.qty > 0 && (
+                      <button onClick={() => setWasteId(p.id)} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>Waste</button>
+                    )}
                     <button onClick={() => setEditId(p.id)} className="text-xs font-semibold px-3 py-1 rounded-lg min-h-0" style={{ background: '#1A2236', color: '#8896AB' }}>{t('inventory.edit')}</button>
                   </div>
                 </div>
@@ -243,11 +295,136 @@ export default function InventoryClient({
         </div>
       )}
 
+      {/* Waste sheet */}
+      {wasteId && wasteProduct && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setWasteId(null)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+            <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+            <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Record waste</h2>
+            <p className="text-muted text-sm mb-1">{wasteProduct.name}</p>
+            <p className="text-muted text-xs mb-4">Available: {wasteProduct.qty} · Cost per unit: R{(wasteProduct.cost ?? 0).toFixed(2)}</p>
+            <form action={handleWaste} className="flex flex-col gap-3">
+              <input type="hidden" name="productId" value={wasteId} />
+              <div>
+                <label className="text-muted text-xs ml-1 mb-1 block">Qty wasted *</label>
+                <input name="qty" type="number" min="1" max={wasteProduct.qty} required autoFocus className="input" />
+              </div>
+              <div>
+                <label className="text-muted text-xs ml-1 mb-1 block">Reason</label>
+                <select name="reason" defaultValue="expired" className="input">
+                  {WASTAGE_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <input name="notes" placeholder="Notes (optional)" className="input" />
+              <p className="text-muted text-xs -mt-1 ml-1">Decrements stock and captures cost-at-loss for P&amp;L. No revenue recorded.</p>
+              <button type="submit" disabled={isPending} className="btn-primary mt-2" style={{ background: '#F59E0B', color: '#0A0E17' }}>
+                {isPending ? 'Saving…' : 'Record Waste'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CSV import sheet */}
+      {showImport && (
+        <ImportSheet
+          isPending={isPending}
+          result={importResult}
+          onClose={() => { setShowImport(false); setImportResult(null) }}
+          onImport={handleImport}
+          onDownloadSample={downloadSampleCsv}
+        />
+      )}
+
       {/* Barcode scanner */}
       {showScanner && (
         <BarcodeScanner onScan={onBarcodeScan} onClose={() => setShowScanner(false)} />
       )}
     </>
+  )
+}
+
+function ImportSheet({
+  isPending,
+  result,
+  onClose,
+  onImport,
+  onDownloadSample,
+}: {
+  isPending: boolean
+  result: CsvImportResult | null
+  onClose: () => void
+  onImport: (csv: string) => void
+  onDownloadSample: () => void
+}) {
+  const [csvText, setCsvText] = useState('')
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCsvText(String(reader.result ?? ''))
+    reader.readAsText(file)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative rounded-t-3xl p-6 pb-24 sheet max-h-[88vh] overflow-y-auto">
+        <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Import products from CSV</h2>
+        <p className="text-muted text-sm mb-4">
+          Required columns: <code>name</code>, <code>price</code>. Optional: <code>cost</code>, <code>qty</code>, <code>reorder_point</code>, <code>sku</code>.
+        </p>
+
+        <button onClick={onDownloadSample} className="text-brand text-sm font-semibold mb-4">↓ Download template CSV</button>
+
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleFile}
+          className="block w-full text-sm mb-3 text-muted"
+        />
+
+        <textarea
+          value={csvText}
+          onChange={e => setCsvText(e.target.value)}
+          placeholder="…or paste CSV content here"
+          rows={6}
+          className="input font-mono text-xs"
+        />
+
+        {result && (
+          <div className="card p-3 mt-3" style={result.errors.length > 0 ? { borderColor: 'rgba(245,158,11,0.3)' } : {}}>
+            <p className="text-sm" style={{ color: 'var(--foreground)' }}>
+              ✓ {result.imported} imported{result.skipped ? `, ${result.skipped} failed` : ''}
+            </p>
+            {result.errors.length > 0 && (
+              <details className="mt-2">
+                <summary className="text-xs cursor-pointer text-muted">{result.errors.length} parse error{result.errors.length === 1 ? '' : 's'}</summary>
+                <ul className="text-xs text-danger mt-2 space-y-0.5">
+                  {result.errors.slice(0, 20).map((e, i) => (
+                    <li key={i}>Line {e.line}: {e.message}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={() => csvText.trim() && onImport(csvText)}
+          disabled={isPending || !csvText.trim()}
+          className="btn-primary mt-4"
+          style={{ opacity: isPending || !csvText.trim() ? 0.5 : 1 }}
+        >
+          {isPending ? 'Importing…' : 'Import'}
+        </button>
+      </div>
+    </div>
   )
 }
 
