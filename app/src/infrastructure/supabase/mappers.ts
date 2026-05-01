@@ -15,6 +15,7 @@ import { Supplier } from '@/domain/entities/supplier'
 import { StoreUser } from '@/domain/entities/store-user'
 import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
+import { Wastage } from '@/domain/entities/wastage'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -154,6 +155,22 @@ export function toInvoicePayment(row: any): InvoicePayment {
     paidAt: row.paid_at,
     paymentMethod: row.payment_method,
     notes: row.notes ?? null,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toWastage(row: any): Wastage {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    productId: row.product_id ?? null,
+    productName: row.products?.name ?? null,
+    qty: row.qty,
+    costAtLoss: Number(row.cost_at_loss ?? 0),
+    reason: row.reason ?? 'other',
+    notes: row.notes ?? null,
+    recordedAt: row.recorded_at,
     createdAt: row.created_at,
   }
 }

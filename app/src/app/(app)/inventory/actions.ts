@@ -9,7 +9,11 @@ import { ProductRepository } from '@/infrastructure/supabase/repositories/Produc
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { addProduct } from '@/application/inventory/addProduct'
 import { recordRestock } from '@/application/inventory/recordRestock'
+import { recordWastage } from '@/application/inventory/recordWastage'
 import { RestockRepository } from '@/infrastructure/supabase/repositories/RestockRepository'
+import { WastageRepository } from '@/infrastructure/supabase/repositories/WastageRepository'
+import { parseProductCsv } from '@/lib/csv-products'
+import { WastageReason } from '@/domain/entities/wastage'
 
 async function getContext() {
   const supabase = await createClient()
@@ -96,6 +100,62 @@ export async function archiveProductAction(productId: string) {
   const productRepo = new ProductRepository(supabase)
 
   await productRepo.archive(store.id, productId)
+
+  revalidateTag(TAGS.products, 'default')
+  revalidatePath('/inventory')
+  revalidatePath('/dashboard')
+}
+
+export interface CsvImportResult {
+  imported: number
+  skipped: number
+  errors: { line: number; message: string }[]
+}
+
+export async function bulkImportProductsAction(csv: string): Promise<CsvImportResult> {
+  const { supabase, store } = await getContext()
+  const productRepo = new ProductRepository(supabase)
+  const alertRepo = new AlertRepository(supabase)
+
+  const parsed = parseProductCsv(csv)
+  let imported = 0
+  let skipped = 0
+
+  for (const row of parsed.rows) {
+    try {
+      await addProduct(productRepo, alertRepo, store.id, {
+        name: row.name,
+        price: row.price,
+        cost: row.cost,
+        qty: row.qty,
+        reorderPoint: row.reorderPoint,
+        sku: row.sku ?? undefined,
+      })
+      imported++
+    } catch {
+      skipped++
+    }
+  }
+
+  revalidateTag(TAGS.products, 'default')
+  revalidatePath('/inventory')
+  revalidatePath('/dashboard')
+
+  return { imported, skipped, errors: parsed.errors }
+}
+
+export async function recordWasteAction(formData: FormData) {
+  const { supabase, store } = await getContext()
+  const productRepo = new ProductRepository(supabase)
+  const wastageRepo = new WastageRepository(supabase)
+  const alertRepo = new AlertRepository(supabase)
+
+  await recordWastage(productRepo, wastageRepo, alertRepo, store.id, {
+    productId: formData.get('productId') as string,
+    qty: parseInt(formData.get('qty') as string) || 0,
+    reason: ((formData.get('reason') as string) || 'other') as WastageReason,
+    notes: ((formData.get('notes') as string) || '').trim() || undefined,
+  })
 
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')

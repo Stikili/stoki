@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStockStatus, withStatus } from './product'
+import { getStockStatus, withStatus, daysUntilExpiry, isExpiringSoon } from './product'
 
 describe('getStockStatus', () => {
   it('returns "out" when qty is zero or negative', () => {
@@ -59,5 +59,51 @@ describe('withStatus', () => {
   it('returns 0% margin when price is 0 (avoids division by zero)', () => {
     const result = withStatus({ ...baseProduct, price: 0, cost: 0 })
     expect(result.marginPct).toBe(0)
+  })
+})
+
+describe('daysUntilExpiry', () => {
+  const NOW = new Date('2026-05-01T00:00:00Z')
+
+  it('returns null when product has no expiry date', () => {
+    expect(daysUntilExpiry({ expiryDate: null }, NOW)).toBeNull()
+  })
+
+  it('returns positive days when expiry is in the future', () => {
+    expect(daysUntilExpiry({ expiryDate: '2026-05-08T00:00:00Z' }, NOW)).toBe(7)
+  })
+
+  it('returns 0 when expiry is exactly today', () => {
+    expect(daysUntilExpiry({ expiryDate: '2026-05-01T00:00:00Z' }, NOW)).toBe(0)
+  })
+
+  it('returns negative days when product has already expired', () => {
+    expect(daysUntilExpiry({ expiryDate: '2026-04-25T00:00:00Z' }, NOW)).toBe(-6)
+  })
+})
+
+describe('isExpiringSoon', () => {
+  const NOW = new Date('2026-05-01T00:00:00Z')
+
+  it('returns false when no expiry date', () => {
+    expect(isExpiringSoon({ expiryDate: null }, 7, NOW)).toBe(false)
+  })
+
+  it('returns true within the default 7-day window', () => {
+    expect(isExpiringSoon({ expiryDate: '2026-05-05T00:00:00Z' }, 7, NOW)).toBe(true)
+    expect(isExpiringSoon({ expiryDate: '2026-05-08T00:00:00Z' }, 7, NOW)).toBe(true)
+  })
+
+  it('returns false when beyond the window', () => {
+    expect(isExpiringSoon({ expiryDate: '2026-05-15T00:00:00Z' }, 7, NOW)).toBe(false)
+  })
+
+  it('returns true for already-expired products', () => {
+    expect(isExpiringSoon({ expiryDate: '2026-04-25T00:00:00Z' }, 7, NOW)).toBe(true)
+  })
+
+  it('honours a custom window', () => {
+    expect(isExpiringSoon({ expiryDate: '2026-05-15T00:00:00Z' }, 14, NOW)).toBe(true)
+    expect(isExpiringSoon({ expiryDate: '2026-05-15T00:00:00Z' }, 3, NOW)).toBe(false)
   })
 })

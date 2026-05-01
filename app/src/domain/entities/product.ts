@@ -49,3 +49,24 @@ export function withStatus(product: Product): ProductWithStatus {
     marginPct,
   }
 }
+
+/**
+ * Whole days from `now` until expiry. Negative once expired.
+ * Returns `null` when the product has no expiry date set.
+ */
+export function daysUntilExpiry(product: Pick<Product, 'expiryDate'>, now: Date = new Date()): number | null {
+  if (!product.expiryDate) return null
+  const expiry = new Date(product.expiryDate)
+  const ms = expiry.getTime() - now.getTime()
+  return Math.ceil(ms / 86_400_000)
+}
+
+/**
+ * "Expiring soon" = within `withinDays` days, or already expired.
+ * Returns false when the product has no expiry date.
+ */
+export function isExpiringSoon(product: Pick<Product, 'expiryDate'>, withinDays = 7, now: Date = new Date()): boolean {
+  const days = daysUntilExpiry(product, now)
+  if (days === null) return false
+  return days <= withinDays
+}
