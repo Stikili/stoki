@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
+import { PAYMENT_METHODS } from '@/domain/entities/sale'
 
 interface Props {
   expectedCash: number

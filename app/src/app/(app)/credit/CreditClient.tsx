@@ -118,6 +118,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
                     <button onClick={() => { setPhotoDebtorId(d.id); fileRef.current?.click() }}
                       className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden min-h-0"
                       style={{ background: photo ? 'none' : '#1A2236' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- localStorage-stored base64 data URL; next/image needs a network loader. */}
                       {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <span className="text-muted text-sm font-bold">{d.name[0].toUpperCase()}</span>}
                     </button>
                     <div className="flex-1 min-w-0">

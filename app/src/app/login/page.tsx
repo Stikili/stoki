@@ -92,8 +92,11 @@ export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
 
+  // Hydrate remembered email from localStorage; setState-in-effect is the
+  // canonical SSR-safe pattern for browser-only state init.
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved) { setEmail(saved); setRememberMe(true); }
   }, []);
 
@@ -449,9 +452,10 @@ function InstallPrompt() {
     if (window.matchMedia('(display-mode: standalone)').matches) return
     if (localStorage.getItem('stoki_install_dismissed')) return
 
-    // iOS detection
+    // iOS detection — needs navigator API, must run client-side post-mount.
     const ua = navigator.userAgent
     const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (ios) { setIsIOS(true); setShowInstall(true); return }
 
     // Android/Chrome: listen for beforeinstallprompt
