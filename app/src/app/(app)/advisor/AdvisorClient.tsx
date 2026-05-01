@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useTransition, useCallback } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { Send, Trash2 } from 'lucide-react'
 import Logo from '@/components/Logo'
 import VoiceInput from '@/components/VoiceInput'
@@ -26,7 +26,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const initialised = useRef(false)
 
-  // Load history from localStorage on first mount
+  // Load history from localStorage on first mount.
   useEffect(() => {
     if (initialised.current) return
     initialised.current = true
@@ -34,6 +34,7 @@ export default function AdvisorClient({ storeId }: { storeId: string }) {
       const raw = localStorage.getItem(HISTORY_KEY(storeId))
       if (raw) {
         const stored: Message[] = JSON.parse(raw)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (stored.length > 0) setMessages([INTRO, ...stored])
       }
     } catch { /* ignore */ }

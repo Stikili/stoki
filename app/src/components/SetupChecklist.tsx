@@ -22,8 +22,11 @@ export default function SetupChecklist({
 }) {
   const [visible, setVisible] = useState(false)
 
+  // Hydrate dismissed flag from localStorage; setState-in-effect is the
+  // canonical SSR-safe pattern for browser-only state.
   useEffect(() => {
     const dismissed = localStorage.getItem(`${DISMISS_KEY}_${storeId}`)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!dismissed) setVisible(true)
   }, [storeId])
 

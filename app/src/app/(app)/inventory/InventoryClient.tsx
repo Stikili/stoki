@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
-import { ProductWithStatus } from '@/domain/entities/product'
+import { ProductWithStatus, daysUntilExpiry } from '@/domain/entities/product'
 import { Supplier } from '@/domain/entities/supplier'
 import { WASTAGE_REASONS } from '@/domain/entities/wastage'
 import {
@@ -56,6 +56,8 @@ export default function InventoryClient({
   const editProduct = products.find(p => p.id === editId)
   const restockProduct = products.find(p => p.id === restockId)
   const wasteProduct = products.find(p => p.id === wasteId)
+  // Capture "now" once per render so expiry calculations stay pure on a given pass.
+  const now = useMemo(() => new Date(), [])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -157,7 +159,7 @@ export default function InventoryClient({
         <div className="flex flex-col gap-2">
           {filtered.map(p => {
             const sug = getSuggestion(p.id)
-            const daysLeft = p.expiryDate ? Math.ceil((new Date(p.expiryDate).getTime() - Date.now()) / 86400000) : null
+            const daysLeft = daysUntilExpiry(p, now)
             return (
               <div key={p.id} className="card p-4">
                 <div className="flex items-start justify-between mb-2">

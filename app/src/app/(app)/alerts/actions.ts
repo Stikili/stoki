@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { getServerData } from '@/lib/getServerData'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { AlertType } from '@/domain/entities/alert'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo, useCallback } from 'react'
+import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { recordCartAction, recordReturnAction, getSalesByDateAction } from './actions'
@@ -115,7 +115,8 @@ export default function SalesClient({
     toast('CSV downloaded', 'info')
   }
 
-  let holdTimer: ReturnType<typeof setTimeout> | null = null
+  // Long-press timer for "tap and hold" qty picker. Lives across renders via ref.
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const historyTotal = historySales.reduce((s, sale) => s + sale.priceAtSale * sale.qty, 0)
 
   return (
@@ -212,9 +213,9 @@ export default function SalesClient({
                 return (
                   <button key={p.id} onClick={() => remaining > 0 && quickAdd(p)}
                     onContextMenu={e => { e.preventDefault(); setQtyForSelling(1); setSelling(p) }}
-                    onTouchStart={() => { holdTimer = setTimeout(() => { holdTimer = null; setQtyForSelling(1); setSelling(p) }, 500) }}
-                    onTouchEnd={() => holdTimer && clearTimeout(holdTimer)}
-                    onTouchMove={() => holdTimer && (clearTimeout(holdTimer), holdTimer = null)}
+                    onTouchStart={() => { holdTimer.current = setTimeout(() => { holdTimer.current = null; setQtyForSelling(1); setSelling(p) }, 500) }}
+                    onTouchEnd={() => holdTimer.current && clearTimeout(holdTimer.current)}
+                    onTouchMove={() => holdTimer.current && (clearTimeout(holdTimer.current), holdTimer.current = null)}
                     disabled={remaining <= 0}
                     className="card p-4 w-full text-left flex items-center justify-between active:scale-[0.98] transition-transform"
                     style={{ opacity: remaining <= 0 ? 0.3 : 1 }}>

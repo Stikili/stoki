@@ -18,8 +18,11 @@ export default function Walkthrough() {
   const [step, setStep] = useState(0)
   const [show, setShow] = useState(false)
 
+  // First-run check from localStorage; setState-in-effect is the canonical
+  // SSR-safe pattern for browser-only state init.
   useEffect(() => {
     if (!localStorage.getItem(WALKTHROUGH_KEY)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShow(true)
     }
   }, [])

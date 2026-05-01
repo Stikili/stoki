@@ -343,8 +343,11 @@ const LOCALE_KEY = 'stoki_locale'
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en')
 
+  // Hydrate stored locale from localStorage. setState-in-effect is the
+  // canonical pattern for SSR-safe browser-only state init.
   useEffect(() => {
     const saved = localStorage.getItem(LOCALE_KEY) as Locale | null
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved && translations[saved]) setLocaleState(saved)
   }, [])
 
