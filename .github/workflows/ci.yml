@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
-    branches: [main]
+    branches: [master, main]
 
 jobs:
-  lint-and-test:
-    name: Lint & Test
+  verify:
+    name: Lint, Typecheck & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -18,34 +18,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
-      - name: Lint API
-        run: yarn workspace stoki-api lint
+      - name: Lint
+        run: npm run lint
 
-      - name: Test API
-        run: yarn workspace stoki-api test
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Typecheck
+        run: npm run typecheck
 
-  deploy-api:
-    name: Deploy API to Railway
-    runs-on: ubuntu-latest
-    needs: lint-and-test
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy
-        run: railway up --service stoki-api
-        working-directory: api
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Test
+        run: npm test

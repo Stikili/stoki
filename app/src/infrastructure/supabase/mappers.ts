@@ -12,6 +12,9 @@ import { Alert } from '@/domain/entities/alert'
 import { Expense } from '@/domain/entities/expense'
 import { Restock } from '@/domain/entities/restock'
 import { Supplier } from '@/domain/entities/supplier'
+import { StoreUser } from '@/domain/entities/store-user'
+import { Customer } from '@/domain/entities/customer'
+import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -87,6 +90,84 @@ export function toRestock(row: any): Restock {
     supplierName: row.suppliers?.name ?? null,
     notes: row.notes ?? null,
     recordedAt: row.recorded_at,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toCustomer(row: any): Customer {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    name: row.name,
+    contactName: row.contact_name ?? null,
+    email: row.email ?? null,
+    phone: row.phone ?? null,
+    vatNumber: row.vat_number ?? null,
+    billingAddress: row.billing_address ?? null,
+    paymentTermsDays: row.payment_terms_days ?? 30,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toInvoice(row: any): Invoice {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = (row.line_items ?? []) as any[]
+  const lineItems: InvoiceLineItem[] = items.map(i => ({
+    description: i.description ?? '',
+    qty: Number(i.qty ?? 0),
+    unitPrice: Number(i.unit_price ?? i.unitPrice ?? 0),
+    vatAmount: Number(i.vat_amount ?? i.vatAmount ?? 0),
+    vatInclusive: i.vat_inclusive ?? i.vatInclusive ?? true,
+    productId: i.product_id ?? i.productId,
+  }))
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    customerId: row.customer_id ?? null,
+    customerName: row.customers?.name ?? null,
+    invoiceNumber: row.invoice_number,
+    status: row.status,
+    issuedAt: row.issued_at,
+    dueAt: row.due_at,
+    lineItems,
+    subtotalExcl: Number(row.subtotal_excl ?? 0),
+    vatAmount: Number(row.vat_amount ?? 0),
+    total: Number(row.total ?? 0),
+    amountPaid: Number(row.amount_paid ?? 0),
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toInvoicePayment(row: any): InvoicePayment {
+  return {
+    id: row.id,
+    invoiceId: row.invoice_id,
+    storeId: row.store_id,
+    amount: Number(row.amount),
+    paidAt: row.paid_at,
+    paymentMethod: row.payment_method,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toStoreUser(row: any): StoreUser {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    userId: row.user_id,
+    role: row.role,
+    email: row.email ?? null,
+    invitedBy: row.invited_by ?? null,
+    joinedAt: row.joined_at,
     createdAt: row.created_at,
   }
 }

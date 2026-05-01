@@ -1,50 +1,169 @@
 'use client'
 
-import { Debtor } from '@/domain/entities/debtor'
+import { useState, useTransition } from 'react'
+import { Customer } from '@/domain/entities/customer'
+import { addCustomerAction, editCustomerAction, archiveCustomerAction } from './actions'
+import { useToast } from '@/components/Toast'
+import { haptic } from '@/lib/haptic'
+import { Plus } from 'lucide-react'
 
-export default function CustomersClient({ debtors, totalSalesCount, totalRevenue, debtorCount }: { debtors: Debtor[]; totalSalesCount: number; totalRevenue: number; debtorCount: number }) {
-  const owing = debtors.filter(d => d.totalOwed > 0)
-  const totalOwed = owing.reduce((s, d) => s + d.totalOwed, 0)
+interface CustomerStats { outstanding: number; lastInvoice: string | null; count: number }
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export default function CustomersClient({
+  customers,
+  stats,
+}: {
+  customers: Customer[]
+  stats: Record<string, CustomerStats>
+}) {
+  const { toast } = useToast()
+  const [showAdd, setShowAdd] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  const editing = customers.find(c => c.id === editId)
+  const totalOutstanding = Object.values(stats).reduce((s, c) => s + c.outstanding, 0)
+
+  function handleAdd(fd: FormData) {
+    startTransition(async () => {
+      await addCustomerAction(fd)
+      setShowAdd(false)
+      haptic(30)
+      toast('Customer added')
+    })
+  }
+
+  function handleEdit(fd: FormData) {
+    startTransition(async () => {
+      await editCustomerAction(fd)
+      setEditId(null)
+      toast('Customer updated')
+    })
+  }
+
+  function handleArchive(id: string, name: string) {
+    if (!confirm(`Archive ${name}? Existing invoices stay intact.`)) return
+    haptic(50)
+    startTransition(async () => {
+      await archiveCustomerAction(id)
+      setEditId(null)
+      toast('Customer archived', 'info')
+    })
+  }
 
   return (
     <>
-      <h1 className="text-xl font-bold text-white mb-5">Customer Insights</h1>
-
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="card p-4"><p className="text-muted text-xs uppercase">30d Sales</p><p className="text-white font-bold text-xl mt-1">{totalSalesCount}</p></div>
-        <div className="card p-4"><p className="text-muted text-xs uppercase">30d Revenue</p><p className="text-brand font-bold text-xl mt-1">R{totalRevenue.toFixed(0)}</p></div>
-        <div className="card p-4"><p className="text-muted text-xs uppercase">Customers</p><p className="text-white font-bold text-xl mt-1">{debtorCount}</p></div>
-        <div className="card p-4"><p className="text-muted text-xs uppercase">Total Owed</p><p className="text-danger font-bold text-xl mt-1">R{totalOwed.toFixed(0)}</p></div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Customers</h1>
+        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896' }}>
+          <Plus size={20} color="white" strokeWidth={2.5} />
+        </button>
       </div>
 
-      {owing.length > 0 && (
-        <>
-          <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Top Debtors</p>
-          <div className="flex flex-col gap-2 mb-5">
-            {owing.slice(0, 10).map((d, i) => (
-              <div key={d.id} className="card px-4 py-3 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ background: i < 3 ? '#2D1518' : '#1A2236', color: i < 3 ? '#EF4444' : '#8896AB' }}>{i+1}</span>
-                <div className="flex-1 min-w-0"><p className="text-white font-semibold text-sm truncate">{d.name}</p>{d.phone && <p className="text-muted text-xs">{d.phone}</p>}</div>
-                <p className="text-danger font-bold flex-shrink-0">R{d.totalOwed.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-        </>
+      <div className="card p-5 mb-4">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">Total outstanding</p>
+        <p className={`text-3xl font-bold ${totalOutstanding > 0 ? 'text-danger' : 'text-brand'}`}>R{totalOutstanding.toFixed(2)}</p>
+        <p className="text-muted text-sm mt-1">{customers.length} customer{customers.length === 1 ? '' : 's'}</p>
+      </div>
+
+      {customers.length === 0 ? (
+        <p className="text-center text-muted py-12">No customers yet — tap + to add a B2B account.<br/>Use them when issuing formal invoices with payment terms.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {customers.map(c => {
+            const s = stats[c.id]
+            return (
+              <button key={c.id} onClick={() => setEditId(c.id)} className="card p-4 text-left">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate" style={{ color: 'var(--foreground)' }}>{c.name}</p>
+                    {c.contactName && <p className="text-muted text-xs mt-0.5">{c.contactName}</p>}
+                    <div className="flex items-center gap-3 text-muted text-[11px] mt-1.5">
+                      {c.vatNumber && <span>VAT {c.vatNumber}</span>}
+                      <span>Net {c.paymentTermsDays}d</span>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {s && s.outstanding > 0 ? (
+                      <>
+                        <p className="text-danger font-bold text-sm">R{s.outstanding.toFixed(2)}</p>
+                        <p className="text-muted text-[10px]">{s.count} invoice{s.count === 1 ? '' : 's'}</p>
+                      </>
+                    ) : s && s.count > 0 ? (
+                      <>
+                        <p className="text-brand font-bold text-sm">Paid up</p>
+                        <p className="text-muted text-[10px]">{s.count} invoice{s.count === 1 ? '' : 's'}</p>
+                      </>
+                    ) : (
+                      <p className="text-muted text-[11px]">No invoices yet</p>
+                    )}
+                    {s?.lastInvoice && <p className="text-muted text-[10px] mt-0.5">last {fmtDate(s.lastInvoice)}</p>}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
       )}
 
-      {debtors.filter(d => d.totalOwed === 0).length > 0 && (
-        <>
-          <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Clear Accounts</p>
-          <div className="flex flex-col gap-2">
-            {debtors.filter(d => d.totalOwed === 0).map(d => (
-              <div key={d.id} className="card px-4 py-3 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0" style={{ background: '#143328', color: '#00C896' }}>✓</span>
-                <div className="flex-1 min-w-0"><p className="text-white font-semibold text-sm truncate">{d.name}</p></div>
-                <p className="text-brand font-semibold text-sm">R0.00</p>
+      {showAdd && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowAdd(false)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+            <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+            <h2 className="text-lg font-bold mb-5" style={{ color: 'var(--foreground)' }}>New B2B Customer</h2>
+            <form action={handleAdd} className="flex flex-col gap-3">
+              <input name="name" placeholder="Business name *" required autoFocus className="input" />
+              <div className="grid grid-cols-2 gap-3">
+                <input name="contactName" placeholder="Contact person" className="input" />
+                <input name="phone" type="tel" placeholder="Phone" className="input" />
               </div>
-            ))}
+              <input name="email" type="email" placeholder="Email (for invoices)" className="input" />
+              <input name="vatNumber" placeholder="VAT number" className="input" />
+              <textarea name="billingAddress" placeholder="Billing address" rows={2} className="input" />
+              <div>
+                <label className="text-muted text-xs ml-1 mb-1 block">Payment terms (days)</label>
+                <input name="paymentTermsDays" type="number" defaultValue={30} min={0} max={180} className="input" />
+              </div>
+              <textarea name="notes" placeholder="Notes" rows={2} className="input" />
+              <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Add Customer'}</button>
+            </form>
           </div>
-        </>
+        </div>
+      )}
+
+      {editing && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setEditId(null)} />
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+            <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>Edit Customer</h2>
+              <button onClick={() => handleArchive(editing.id, editing.name)} disabled={isPending} className="pill pill-red min-h-0 text-xs">Archive</button>
+            </div>
+            <form action={handleEdit} className="flex flex-col gap-3">
+              <input type="hidden" name="id" value={editing.id} />
+              <input name="name" defaultValue={editing.name} required className="input" />
+              <div className="grid grid-cols-2 gap-3">
+                <input name="contactName" defaultValue={editing.contactName ?? ''} placeholder="Contact" className="input" />
+                <input name="phone" type="tel" defaultValue={editing.phone ?? ''} placeholder="Phone" className="input" />
+              </div>
+              <input name="email" type="email" defaultValue={editing.email ?? ''} placeholder="Email" className="input" />
+              <input name="vatNumber" defaultValue={editing.vatNumber ?? ''} placeholder="VAT number" className="input" />
+              <textarea name="billingAddress" defaultValue={editing.billingAddress ?? ''} placeholder="Billing address" rows={2} className="input" />
+              <div>
+                <label className="text-muted text-xs ml-1 mb-1 block">Payment terms (days)</label>
+                <input name="paymentTermsDays" type="number" defaultValue={editing.paymentTermsDays} min={0} max={180} className="input" />
+              </div>
+              <textarea name="notes" defaultValue={editing.notes ?? ''} placeholder="Notes" rows={2} className="input" />
+              <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
+            </form>
+          </div>
+        </div>
       )}
     </>
   )

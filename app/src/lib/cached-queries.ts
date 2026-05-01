@@ -49,19 +49,41 @@ export const getCachedDebtors = unstable_cache(
 )
 
 /**
- * All stores for a user — cached until revalidateTag('stores').
+ * All stores the user has access to — owned OR invited as a team member.
+ * Cached until revalidateTag('stores').
+ *
+ * Pre-migration-008 fallback: if store_users doesn't exist yet, fall back to the
+ * old owner_id-based lookup so the app keeps working until the migration is run.
  */
 export const getCachedStores = unstable_cache(
   async (userId: string): Promise<Store[]> => {
     const db = createAdminClient()
     const { data, error } = await db
+      .from('store_users')
+      .select('stores(*)')
+      .eq('user_id', userId)
+
+    if (!error) {
+      type Row = { stores: unknown }
+      const rows = (data ?? []) as unknown as Row[]
+      return rows
+        .map(r => r.stores)
+        .filter((s): s is NonNullable<typeof s> => Boolean(s))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((s: any) => s.deleted_at == null)
+        .map(toStore)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    }
+
+    // Fallback path — store_users table missing.
+    const { data: ownedRows, error: ownedErr } = await db
       .from('stores')
       .select('*')
       .eq('owner_id', userId)
       .is('deleted_at', null)
       .order('created_at')
-    if (error) throw new Error(error.message)
-    return (data ?? []).map(toStore)
+    if (ownedErr) throw new Error(ownedErr.message)
+    return (ownedRows ?? []).map(toStore)
   },
   [TAGS.stores],
   { tags: [TAGS.stores], revalidate: 3600 }
