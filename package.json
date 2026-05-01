@@ -1,0 +1,14 @@
+{
+  "name": "stoki",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "app"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=app",
+    "build": "npm run build --workspace=app",
+    "lint": "npm run lint --workspace=app --if-present",
+    "test": "npm run test --workspace=app --if-present"
+  }
+}
