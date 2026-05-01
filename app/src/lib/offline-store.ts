@@ -3,17 +3,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
+import { PaymentMethod } from '@/domain/entities/sale'
 
 export interface OfflineSale {
   id: string
   items: { productId: string; qty: number; priceAtSale: number }[]
+  paymentMethod: PaymentMethod
   queuedAt: string
 }
 
 interface OfflineState {
   pendingSales: OfflineSale[]
   isSyncing: boolean
-  queueSale: (items: OfflineSale['items']) => void
+  queueSale: (items: OfflineSale['items'], paymentMethod?: PaymentMethod) => void
   sync: () => Promise<void>
   clearAll: () => void
 }
@@ -24,10 +26,11 @@ export const useOfflineStore = create<OfflineState>()(
       pendingSales: [],
       isSyncing: false,
 
-      queueSale(items) {
+      queueSale(items, paymentMethod = 'cash') {
         const sale: OfflineSale = {
           id: crypto.randomUUID(),
           items,
+          paymentMethod,
           queuedAt: new Date().toISOString(),
         }
         setState(s => ({ pendingSales: [...s.pendingSales, sale] }))
@@ -38,13 +41,12 @@ export const useOfflineStore = create<OfflineState>()(
         if (pendingSales.length === 0) return
         setState({ isSyncing: true })
 
-        // Dynamic import to avoid bundling server action at module level
         const { recordCartAction } = await import('@/app/(app)/sales/actions')
 
         const remaining: OfflineSale[] = []
         for (const sale of pendingSales) {
           try {
-            await recordCartAction(sale.items)
+            await recordCartAction(sale.items, sale.paymentMethod)
           } catch {
             remaining.push(sale)
           }

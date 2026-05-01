@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { saveStoreAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
-import { Bot } from 'lucide-react'
+import LogoMark from '@/components/Logo'
 
 type Step = 'type' | 'name' | 'pack'
 
@@ -17,7 +17,7 @@ const CATEGORIES: { value: StoreCategory; label: string; emoji: string; desc: st
 const Logo = () => (
   <div className="mb-4 flex justify-center">
     <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#00C896' }}>
-      <Bot size={32} color="white" strokeWidth={1.75} />
+      <LogoMark size={32} color="white" />
     </div>
   </div>
 )

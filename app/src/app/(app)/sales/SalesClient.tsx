@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
-import { Sale } from '@/domain/entities/sale'
+import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { recordCartAction, recordReturnAction, getSalesByDateAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
@@ -17,7 +17,27 @@ function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1
 
 interface CartItem { product: ProductWithStatus; qty: number }
 
-export default function SalesClient({ products, todaySales, storeName, topProducts = [] }: { products: ProductWithStatus[]; todaySales: Sale[]; storeName: string; topProducts?: ProductWithStatus[] }) {
+export default function SalesClient({
+  products,
+  todaySales,
+  storeName,
+  topProducts = [],
+  vatRegistered = false,
+  vatNumber = null,
+  vatRate = 15,
+  businessAddress = null,
+  businessPhone = null,
+}: {
+  products: ProductWithStatus[]
+  todaySales: Sale[]
+  storeName: string
+  topProducts?: ProductWithStatus[]
+  vatRegistered?: boolean
+  vatNumber?: string | null
+  vatRate?: number
+  businessAddress?: string | null
+  businessPhone?: string | null
+}) {
   const { toast } = useToast()
   const { t } = useI18n()
   const { isOnline } = useOnlineStatus()
@@ -27,8 +47,9 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
   const [cart, setCart] = useState<CartItem[]>([])
   const [selling, setSelling] = useState<ProductWithStatus | null>(null)
   const [qtyForSelling, setQtyForSelling] = useState(1)
-  const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number }[]; total: number } | null>(null)
+  const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number; vatInclusive?: boolean }[]; total: number; invoiceNumber: number | null } | null>(null)
   const [returning, setReturning] = useState<Sale | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
 
   const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
@@ -50,21 +71,21 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
   function confirmCart() {
     if (!cart.length || isPending) return
     haptic([50, 30, 50])
-    const items = cart.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price }))
+    const items = cart.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price, vatInclusive: i.product.vatInclusive }))
     const cartItems = cart.map(i => ({ productId: i.product.id, qty: i.qty, priceAtSale: i.product.price }))
     const total = cartTotal
 
     if (!isOnline) {
-      queueSale(cartItems)
-      setReceipt({ items, total })
+      queueSale(cartItems, paymentMethod)
+      setReceipt({ items, total, invoiceNumber: null })
       toast(t('offline.saleSaved'), 'info')
       setCart([])
       return
     }
 
     startTransition(async () => {
-      await recordCartAction(cartItems)
-      setReceipt({ items, total })
+      const { invoiceNumber } = await recordCartAction(cartItems, paymentMethod)
+      setReceipt({ items, total, invoiceNumber })
       toast(`Sale recorded — R${total.toFixed(2)}`)
       setCart([])
     })
@@ -145,6 +166,21 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
                   style={{ background: '#00C896', color: '#0A0E17', opacity: isPending ? 0.5 : 1 }}>
                   {isPending ? t('common.saving') : `${t('sales.charge')} →`}
                 </button>
+              </div>
+              {/* Payment method picker */}
+              <div className="flex gap-1.5 mt-3 overflow-x-auto -mx-1 px-1 pb-1">
+                {PAYMENT_METHODS.filter(m => m.value !== 'credit').map(m => (
+                  <button
+                    key={m.value}
+                    onClick={() => setPaymentMethod(m.value)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg min-h-0 flex-shrink-0"
+                    style={paymentMethod === m.value
+                      ? { background: '#00C896', color: '#0A0E17' }
+                      : { background: '#141B2D', color: '#8896AB', border: '1px solid #1E293B' }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
               </div>
               {/* Cart items */}
               <div className="flex flex-col gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid #1E293B' }}>
@@ -320,9 +356,19 @@ export default function SalesClient({ products, todaySales, storeName, topProduc
       )}
 
       {receipt && (
-        <Receipt storeName={storeName} items={receipt.items} total={receipt.total}
+        <Receipt
+          storeName={storeName}
+          items={receipt.items}
+          total={receipt.total}
           date={new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}
-          onClose={() => setReceipt(null)} />
+          invoiceNumber={receipt.invoiceNumber}
+          vatRegistered={vatRegistered}
+          vatNumber={vatNumber}
+          vatRate={vatRate}
+          businessAddress={businessAddress}
+          businessPhone={businessPhone}
+          onClose={() => setReceipt(null)}
+        />
       )}
     </>
   )

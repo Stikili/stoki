@@ -1,0 +1,287 @@
+import Anthropic from '@anthropic-ai/sdk'
+import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod'
+import { z } from 'zod'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Store } from '@/domain/entities/store'
+import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
+import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
+import { DebtorRepository } from '@/infrastructure/supabase/repositories/DebtorRepository'
+import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
+import { recordSale } from '@/application/sales/recordSale'
+import { getProducts } from '@/application/inventory/getProducts'
+import { fuzzyMatch } from '@/lib/whatsapp-parser'
+
+type Period = 'today' | 'yesterday' | 'this_week' | 'this_month'
+
+function periodRange(p: Period): { from: Date; to: Date; label: string } {
+  const now = new Date()
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999)
+  switch (p) {
+    case 'today':
+      return { from: todayStart, to: todayEnd, label: 'today' }
+    case 'yesterday': {
+      const start = new Date(todayStart); start.setDate(start.getDate() - 1)
+      const end = new Date(todayEnd); end.setDate(end.getDate() - 1)
+      return { from: start, to: end, label: 'yesterday' }
+    }
+    case 'this_week': {
+      const start = new Date(todayStart)
+      const day = start.getDay() || 7
+      start.setDate(start.getDate() - (day - 1))
+      return { from: start, to: todayEnd, label: 'this week' }
+    }
+    case 'this_month': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+      return { from: start, to: todayEnd, label: 'this month' }
+    }
+  }
+}
+
+const SYSTEM_PROMPT = `You are Stoki, an AI assistant for South African SMME shop owners — spaza shops, township retailers, food stalls, hair salons. You communicate via WhatsApp.
+
+Your job: help the owner run their business. Answer questions about their data, record sales and returns, surface insights grounded in their actual numbers.
+
+Style:
+- Brief. WhatsApp users want quick answers — aim for 1-3 short paragraphs.
+- Currency in rand (R), formatted with two decimals.
+- South African business context — understand local goods (bread, mealie-meal, airtime, vetkoek, magwinya, simba, etc.) and township pricing.
+- Conversational, match the owner's tone. Don't be formal or corporate.
+
+Rules:
+- Always use tools for factual claims about their data. Never make up numbers.
+- When recording sales/returns, fuzzy-match product names — don't ask for exact spelling.
+- If a product can't be found, list close suggestions from inventory.
+- For broad questions ("how is business?"), pull today's revenue, low stock, and overdue debtors before answering.
+- If a question genuinely can't be answered with the data available, say so plainly.
+
+You have tools to: record sales, record returns, check inventory and stock, view debtors, get sales summaries (today/yesterday/this week/this month), see top products, view unread alerts.`
+
+export async function askBrain(
+  supabase: SupabaseClient,
+  store: Store,
+  userMessage: string,
+): Promise<string> {
+  const productRepo = new ProductRepository(supabase)
+  const saleRepo = new SaleRepository(supabase)
+  const debtorRepo = new DebtorRepository(supabase)
+  const alertRepo = new AlertRepository(supabase)
+
+  const tools = [
+    betaZodTool({
+      name: 'get_sales_summary',
+      description: 'Get sales summary for a period: revenue, sale count, items sold, profit margin.',
+      inputSchema: z.object({
+        period: z.enum(['today', 'yesterday', 'this_week', 'this_month']),
+      }),
+      run: async ({ period }) => {
+        const { from, to, label } = periodRange(period)
+        const s = await saleRepo.summarise(store.id, from, to)
+        return JSON.stringify({
+          period: label,
+          revenue: Number(s.totalRevenue.toFixed(2)),
+          sales_count: s.transactionCount,
+          items_sold: s.itemsSold,
+          profit: Number(s.totalMargin.toFixed(2)),
+        })
+      },
+    }),
+
+    betaZodTool({
+      name: 'get_top_products',
+      description: 'Best-selling products for a period, ranked by quantity sold. Excludes returns.',
+      inputSchema: z.object({
+        period: z.enum(['today', 'yesterday', 'this_week', 'this_month']),
+        limit: z.number().int().positive().max(20).default(5),
+      }),
+      run: async ({ period, limit }) => {
+        const { from, to, label } = periodRange(period)
+        const sales = await saleRepo.findByPeriod(store.id, from, to)
+        const tally = new Map<string, { name: string; qty: number; revenue: number }>()
+        for (const sale of sales) {
+          if (sale.type === 'return') continue
+          const id = sale.productId ?? 'unknown'
+          const name = sale.productName ?? 'Unknown'
+          const t = tally.get(id) ?? { name, qty: 0, revenue: 0 }
+          t.qty += sale.qty
+          t.revenue += sale.priceAtSale * sale.qty
+          tally.set(id, t)
+        }
+        const sorted = [...tally.values()]
+          .sort((a, b) => b.qty - a.qty)
+          .slice(0, limit)
+          .map(t => ({ name: t.name, qty: t.qty, revenue: Number(t.revenue.toFixed(2)) }))
+        return JSON.stringify({ period: label, top: sorted })
+      },
+    }),
+
+    betaZodTool({
+      name: 'get_low_stock',
+      description: 'List products at or below their reorder point (low or out of stock).',
+      inputSchema: z.object({}),
+      run: async () => {
+        const products = await getProducts(productRepo, store.id)
+        const low = products.filter(p => p.status === 'low' || p.status === 'out')
+        return JSON.stringify(low.map(p => ({
+          name: p.name,
+          qty: p.qty,
+          status: p.status,
+          reorder_point: p.reorderPoint,
+        })))
+      },
+    }),
+
+    betaZodTool({
+      name: 'get_inventory',
+      description: 'Search inventory by name (substring match) or list first 30 products. Prefer get_low_stock for stock-status questions.',
+      inputSchema: z.object({
+        search: z.string().optional().describe('Substring match against product name'),
+      }),
+      run: async ({ search }) => {
+        const products = await getProducts(productRepo, store.id)
+        const filtered = search
+          ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+          : products
+        return JSON.stringify(filtered.slice(0, 30).map(p => ({
+          name: p.name,
+          qty: p.qty,
+          price: p.price,
+          status: p.status,
+        })))
+      },
+    }),
+
+    betaZodTool({
+      name: 'get_debtors',
+      description: 'Customers who currently owe money, sorted by amount owed descending.',
+      inputSchema: z.object({}),
+      run: async () => {
+        const debtors = await debtorRepo.findAll(store.id)
+        const owing = debtors.filter(d => d.totalOwed > 0)
+        return JSON.stringify(owing.map(d => ({
+          name: d.name,
+          owed: Number(d.totalOwed.toFixed(2)),
+          last_reminded: d.lastRemindedAt,
+        })))
+      },
+    }),
+
+    betaZodTool({
+      name: 'get_unread_alerts',
+      description: 'Unread alerts: out-of-stock warnings, low-stock alerts, AI insights, debtor reminders.',
+      inputSchema: z.object({}),
+      run: async () => {
+        const alerts = await alertRepo.findUnread(store.id)
+        return JSON.stringify(alerts.slice(0, 10).map(a => ({
+          type: a.type,
+          message: a.message,
+          created: a.createdAt,
+        })))
+      },
+    }),
+
+    betaZodTool({
+      name: 'record_sale',
+      description: 'Record a sale. Performs fuzzy match on product name. Returns ok=true with details, or ok=false with suggestions.',
+      inputSchema: z.object({
+        product_name: z.string().describe('Product name (fuzzy matched against inventory)'),
+        qty: z.number().int().positive(),
+      }),
+      run: async ({ product_name, qty }) => {
+        const products = await getProducts(productRepo, store.id)
+        const match = fuzzyMatch(product_name, products.map(p => ({ id: p.id, name: p.name })))
+        if (!match) {
+          const suggestions = products.slice(0, 5).map(p => p.name)
+          return JSON.stringify({ ok: false, error: `No product matching "${product_name}"`, suggestions })
+        }
+        const product = products.find(p => p.id === match.id)!
+        if (product.qty < qty) {
+          return JSON.stringify({ ok: false, error: `Only ${product.qty} ${product.name} in stock` })
+        }
+        await recordSale(saleRepo, productRepo, alertRepo, store, {
+          productId: product.id,
+          qty,
+          priceAtSale: product.price,
+          channel: 'whatsapp',
+        })
+        return JSON.stringify({
+          ok: true,
+          product: product.name,
+          qty,
+          unit_price: product.price,
+          total: Number((product.price * qty).toFixed(2)),
+          stock_left: product.qty - qty,
+        })
+      },
+    }),
+
+    betaZodTool({
+      name: 'record_return',
+      description: 'Record a return — reverses a sale and adds stock back.',
+      inputSchema: z.object({
+        product_name: z.string().describe('Product name (fuzzy matched)'),
+        qty: z.number().int().positive(),
+      }),
+      run: async ({ product_name, qty }) => {
+        const products = await getProducts(productRepo, store.id)
+        const match = fuzzyMatch(product_name, products.map(p => ({ id: p.id, name: p.name })))
+        if (!match) return JSON.stringify({ ok: false, error: `No product matching "${product_name}"` })
+        const product = products.find(p => p.id === match.id)!
+        await recordSale(saleRepo, productRepo, alertRepo, store, {
+          productId: product.id,
+          qty,
+          priceAtSale: product.price,
+          type: 'return',
+          channel: 'whatsapp',
+        })
+        return JSON.stringify({
+          ok: true,
+          product: product.name,
+          qty_returned: qty,
+          refunded: Number((product.price * qty).toFixed(2)),
+        })
+      },
+    }),
+  ]
+
+  // Lightweight snapshot so Claude has immediate context without tool calls
+  const products = await getProducts(productRepo, store.id)
+  const lowCount = products.filter(p => p.status === 'low' || p.status === 'out').length
+  const debtors = await debtorRepo.findAll(store.id)
+  const owingDebtors = debtors.filter(d => d.totalOwed > 0)
+  const totalOwed = owingDebtors.reduce((s, d) => s + d.totalOwed, 0)
+  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999)
+  const today = await saleRepo.summarise(store.id, dayStart, dayEnd)
+
+  const snapshot = [
+    `[Store: ${store.name}]`,
+    `Today so far: R${today.totalRevenue.toFixed(2)} (${today.transactionCount} sales)`,
+    `Low/out of stock: ${lowCount} items`,
+    `Debtors owing: ${owingDebtors.length} customers (R${totalOwed.toFixed(2)} total)`,
+  ].join('\n')
+
+  const client = new Anthropic()
+
+  const finalMessage = await client.beta.messages.toolRunner({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'medium' },
+    system: [
+      { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ],
+    tools,
+    messages: [
+      { role: 'user', content: `${snapshot}\n\nUser asks: ${userMessage}` },
+    ],
+  })
+
+  const text = finalMessage.content
+    .filter(b => b.type === 'text')
+    .map(b => (b as { type: 'text'; text: string }).text)
+    .join('\n')
+    .trim()
+
+  return text || 'Sorry — I couldn\'t put together an answer for that. Try "help" to see what I can do.'
+}

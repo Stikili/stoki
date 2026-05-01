@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition, useCallback } from 'react'
-import { Bot, Send, Trash2 } from 'lucide-react'
+import { Send, Trash2 } from 'lucide-react'
+import Logo from '@/components/Logo'
 import VoiceInput from '@/components/VoiceInput'
 
 interface Message { role: 'user' | 'assistant'; content: string }
@@ -16,7 +17,7 @@ const HISTORY_KEY = (storeId: string) => `stoki_advisor_${storeId}`
 const MAX_STORED = 60   // kept in localStorage
 const MAX_CONTEXT = 40  // sent to API per turn
 
-const StokiIcon = ({ size = 22 }: { size?: number }) => <Bot size={size} color="white" strokeWidth={2} />
+const StokiIcon = ({ size = 22 }: { size?: number }) => <Logo size={size} color="white" />
 
 export default function AdvisorClient({ storeId }: { storeId: string }) {
   const [messages, setMessages] = useState<Message[]>([INTRO])

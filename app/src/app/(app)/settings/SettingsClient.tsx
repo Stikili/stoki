@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { createClient } from '@/infrastructure/supabase/client'
 import { Store } from '@/domain/entities/store'
-import { updateStoreAction, deleteStoreAction } from './actions'
+import { updateStoreAction, updateVatAction, deleteStoreAction } from './actions'
 import PushSubscribeButton from '@/components/PushSubscribeButton'
 import { useI18n, LOCALE_NAMES, type Locale } from '@/lib/i18n'
 import { useTheme } from '@/components/ThemeProvider'
@@ -118,6 +118,15 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
               Link your number to use the stoki WhatsApp bot — send &quot;help&quot; to get started
             </p>
           </div>
+          <div>
+            <textarea
+              name="businessAddress"
+              defaultValue={store.businessAddress ?? ''}
+              placeholder="Business address (printed on tax invoices)"
+              rows={2}
+              style={inputStyle}
+            />
+          </div>
           <button
             type="submit"
             disabled={isPending}
@@ -144,6 +153,9 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
           </button>
         )}
       </div>
+
+      {/* VAT & Tax Invoices */}
+      <VatCard store={store} />
 
       {/* Add / update email */}
       <div className="rounded-2xl p-4" style={cardStyle}>
@@ -218,6 +230,30 @@ export default function SettingsClient({ store, canDelete }: { store: Store; can
         </div>
       </div>
 
+      {/* Manage */}
+      <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+        <a href="/cashup" className="flex items-center justify-between px-4 py-3.5 text-sm font-semibold" style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--foreground)' }}>
+          <span>Cash up</span>
+          <span className="text-muted">→</span>
+        </a>
+        <a href="/expenses" className="flex items-center justify-between px-4 py-3.5 text-sm font-semibold" style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--foreground)' }}>
+          <span>Expenses</span>
+          <span className="text-muted">→</span>
+        </a>
+        <a href="/suppliers" className="flex items-center justify-between px-4 py-3.5 text-sm font-semibold" style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--foreground)' }}>
+          <span>Suppliers</span>
+          <span className="text-muted">→</span>
+        </a>
+        <a href="/customers" className="flex items-center justify-between px-4 py-3.5 text-sm font-semibold" style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--foreground)' }}>
+          <span>Customers</span>
+          <span className="text-muted">→</span>
+        </a>
+        <a href="/pricelist" className="flex items-center justify-between px-4 py-3.5 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+          <span>Price list</span>
+          <span className="text-muted">→</span>
+        </a>
+      </div>
+
       {/* Data export */}
       <div className="rounded-2xl p-4" style={cardStyle}>
         <p className="text-white font-semibold mb-1">Data Backup</p>
@@ -289,6 +325,95 @@ function LanguageSelector() {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+function VatCard({ store }: { store: Store }) {
+  const [vatOn, setVatOn] = useState(store.vatRegistered)
+  const [saved, setSaved] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  function handleSubmit(fd: FormData) {
+    startTransition(async () => {
+      await updateVatAction(fd)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    })
+  }
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>VAT &amp; Tax Invoices</p>
+      <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+        Toggle on if your business is VAT-registered. Receipts then become SARS-compliant tax invoices with sequential numbering and a VAT breakdown.
+      </p>
+      {saved && (
+        <div className="rounded-xl px-4 py-3 text-sm font-semibold mb-3" style={{ background: '#143328', color: '#00C896', border: '1px solid #1E4D3F' }}>
+          ✓ VAT settings updated
+        </div>
+      )}
+      <form action={handleSubmit} className="flex flex-col gap-3">
+        <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+          <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>I am VAT-registered</span>
+          <input
+            type="checkbox"
+            name="vatRegistered"
+            checked={vatOn}
+            onChange={(e) => setVatOn(e.target.checked)}
+            className="w-5 h-5 accent-brand"
+          />
+        </label>
+        {vatOn && (
+          <>
+            <input
+              name="vatNumber"
+              defaultValue={store.vatNumber ?? ''}
+              placeholder="VAT number (e.g. 4123456789)"
+              required
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--card-border)',
+                borderRadius: '14px',
+                padding: '14px 16px',
+                color: 'var(--foreground)',
+                fontSize: '16px',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+            <div>
+              <input
+                name="vatRate"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                defaultValue={store.vatRate ?? 15}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
+                  color: 'var(--foreground)',
+                  fontSize: '16px',
+                  outline: 'none',
+                  width: '100%',
+                }}
+              />
+              <p className="text-muted text-xs mt-1.5 ml-1">VAT rate (%) — SA standard is 15.00</p>
+            </div>
+          </>
+        )}
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-xl py-3 font-semibold text-sm"
+          style={{ background: '#00C896', color: '#080f1a', opacity: isPending ? 0.6 : 1 }}
+        >
+          {isPending ? 'Saving…' : 'Save VAT settings'}
+        </button>
+      </form>
     </div>
   )
 }

@@ -60,6 +60,10 @@ export class StoreRepository implements IStoreRepository {
     location?: string
     whatsappNumber?: string
     onboardingCompleted?: boolean
+    vatRegistered?: boolean
+    vatNumber?: string | null
+    vatRate?: number
+    businessAddress?: string | null
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -68,6 +72,10 @@ export class StoreRepository implements IStoreRepository {
     if (patch.location !== undefined) dbPatch.location = patch.location
     if (patch.whatsappNumber !== undefined) dbPatch.whatsapp_number = patch.whatsappNumber ? normalizeZAPhone(patch.whatsappNumber) : null
     if (patch.onboardingCompleted !== undefined) dbPatch.onboarding_completed = patch.onboardingCompleted
+    if (patch.vatRegistered !== undefined) dbPatch.vat_registered = patch.vatRegistered
+    if (patch.vatNumber !== undefined) dbPatch.vat_number = patch.vatNumber || null
+    if (patch.vatRate !== undefined) dbPatch.vat_rate = patch.vatRate
+    if (patch.businessAddress !== undefined) dbPatch.business_address = patch.businessAddress || null
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

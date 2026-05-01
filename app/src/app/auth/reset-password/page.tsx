@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/infrastructure/supabase/client";
 import { useRouter } from "next/navigation";
-import { Bot } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
         {/* Logo */}
         <div className="mb-10 text-center flex flex-col items-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: '#00C896' }}>
-            <Bot size={36} color="white" strokeWidth={1.75} />
+            <Logo size={36} color="white" />
           </div>
           <h1 className="text-4xl font-black tracking-tight lowercase" style={{ color: 'var(--foreground)' }}>
             stoki

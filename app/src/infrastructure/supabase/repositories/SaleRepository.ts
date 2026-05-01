@@ -15,14 +15,23 @@ export class SaleRepository implements ISaleRepository {
         qty: data.qty,
         price_at_sale: data.priceAtSale,
         cost_at_sale: data.costAtSale ?? 0,
+        vat_amount: data.vatAmount ?? 0,
+        invoice_number: data.invoiceNumber ?? null,
         type: data.type ?? 'sale',
         channel: data.channel ?? 'app',
+        payment_method: data.paymentMethod ?? 'cash',
       })
       .select('*, products(name)')
       .single()
 
     if (error || !row) throw new Error(error?.message ?? 'Failed to record sale')
     return toSale(row)
+  }
+
+  async claimInvoiceNumber(storeId: string): Promise<number> {
+    const { data, error } = await this.db.rpc('claim_next_invoice_no', { p_store_id: storeId })
+    if (error) throw new Error(error.message)
+    return Number(data)
   }
 
   async findByPeriod(storeId: string, from: Date, to: Date): Promise<Sale[]> {
