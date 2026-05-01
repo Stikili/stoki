@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { IStoreRepository } from '@/domain/repositories/IStoreRepository'
 import { Store, StoreCategory } from '@/domain/entities/store'
 import { toStore } from '../mappers'
+import { normalizeZAPhone } from '@/lib/whatsapp'
 
 export class StoreRepository implements IStoreRepository {
   constructor(private db: SupabaseClient) {}
@@ -42,11 +43,10 @@ export class StoreRepository implements IStoreRepository {
   }
 
   async findByWhatsAppNumber(phone: string): Promise<Store | null> {
-    const normalized = phone.replace(/\D/g, '')
     const { data, error } = await this.db
       .from('stores')
       .select('*')
-      .eq('whatsapp_number', normalized)
+      .eq('whatsapp_number', normalizeZAPhone(phone))
       .is('deleted_at', null)
       .single()
     if (error || !data) return null
@@ -66,7 +66,7 @@ export class StoreRepository implements IStoreRepository {
     if (patch.phone !== undefined) dbPatch.phone = patch.phone
     if (patch.category !== undefined) dbPatch.category = patch.category
     if (patch.location !== undefined) dbPatch.location = patch.location
-    if (patch.whatsappNumber !== undefined) dbPatch.whatsapp_number = patch.whatsappNumber
+    if (patch.whatsappNumber !== undefined) dbPatch.whatsapp_number = patch.whatsappNumber ? normalizeZAPhone(patch.whatsappNumber) : null
     if (patch.onboardingCompleted !== undefined) dbPatch.onboarding_completed = patch.onboardingCompleted
     const { data, error } = await this.db
       .from('stores')
