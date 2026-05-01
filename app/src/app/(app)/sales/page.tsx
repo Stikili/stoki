@@ -30,7 +30,17 @@ export default async function SalesPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <SalesClient products={products} todaySales={todaySales} storeName={store.name} topProducts={topProducts} />
+      <SalesClient
+        products={products}
+        todaySales={todaySales}
+        storeName={store.name}
+        topProducts={topProducts}
+        vatRegistered={store.vatRegistered}
+        vatNumber={store.vatNumber}
+        vatRate={store.vatRate}
+        businessAddress={store.businessAddress}
+        businessPhone={store.phone}
+      />
     </div>
   )
 }

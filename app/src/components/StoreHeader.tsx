@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { Bell, Settings, ChevronDown, Check, Bot, Sun, Moon } from 'lucide-react'
-import { useTheme } from '@/components/ThemeProvider'
+import { Bell, Settings, ChevronDown, Check } from 'lucide-react'
+import Logo from '@/components/Logo'
 import { useI18n } from '@/lib/i18n'
 
 const MUTED = '#7B8CA1';
@@ -17,7 +17,6 @@ export default function StoreHeader({
 }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const { theme, toggle } = useTheme()
   const { t } = useI18n()
   const hasMultiple = allStores.length > 1
 
@@ -34,7 +33,7 @@ export default function StoreHeader({
           className="flex items-center gap-2.5 min-h-0"
           style={{ cursor: hasMultiple ? 'pointer' : 'default' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#00C896' }}>
-            <Bot size={16} color="white" strokeWidth={2} />
+            <Logo size={16} color="white" />
           </div>
           <span className="font-semibold text-sm truncate max-w-[160px]" style={{ color: 'var(--foreground)' }}>{store.name}</span>
           {hasMultiple && <ChevronDown size={14} color={MUTED} />}
@@ -49,9 +48,6 @@ export default function StoreHeader({
               </div>
             )}
           </Link>
-          <button onClick={toggle} className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-            {theme === 'dark' ? <Sun size={18} color={MUTED} strokeWidth={1.75} /> : <Moon size={18} color={MUTED} strokeWidth={1.75} />}
-          </button>
           <Link href="/settings" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             <Settings size={18} color={MUTED} strokeWidth={1.75} />
           </Link>

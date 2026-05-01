@@ -12,6 +12,10 @@ export interface Store {
   location: string | null
   whatsappNumber: string | null
   onboardingCompleted: boolean
+  vatRegistered: boolean
+  vatNumber: string | null
+  vatRate: number
+  businessAddress: string | null
   createdAt: string
   updatedAt: string
 }

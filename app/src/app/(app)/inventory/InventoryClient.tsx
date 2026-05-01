@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
+import { Supplier } from '@/domain/entities/supplier'
 import { addProductAction, restockAction, editProductAction, archiveProductAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
@@ -13,7 +14,17 @@ type Filter = 'all' | 'low' | 'out'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
 const statusText = { ok: 'In Stock', low: 'Low', out: 'Out' }
 
-export default function InventoryClient({ products, salesVelocity }: { products: ProductWithStatus[]; salesVelocity?: Record<string, number> }) {
+export default function InventoryClient({
+  products,
+  salesVelocity,
+  suppliers = [],
+  storeVatRegistered = false,
+}: {
+  products: ProductWithStatus[]
+  salesVelocity?: Record<string, number>
+  suppliers?: Supplier[]
+  storeVatRegistered?: boolean
+}) {
   const { toast, toastUndo } = useToast()
   const { t } = useI18n()
   const [filter, setFilter] = useState<Filter>('all')
@@ -156,13 +167,36 @@ export default function InventoryClient({ products, salesVelocity }: { products:
           <div className="absolute inset-0 bg-black/70" onClick={() => setRestockId(null)} />
           <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
-            <h2 className="text-lg font-bold text-white mb-1">Restock</h2>
-            <p className="text-muted text-sm mb-5">{restockProduct.name}</p>
+            <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>{t('inventory.restock')}</h2>
+            <p className="text-muted text-sm mb-1">{restockProduct.name}</p>
+            <p className="text-muted text-xs mb-4">Current cost: R{(restockProduct.cost ?? 0).toFixed(2)}</p>
             {getSuggestion(restockId) && <p className="pill pill-blue text-xs mb-4">Suggested: {getSuggestion(restockId)} units</p>}
             <form action={handleRestock} className="flex flex-col gap-3">
               <input type="hidden" name="productId" value={restockId} />
-              <input name="qty" type="number" min="1" placeholder="Units to add *" required autoFocus defaultValue={getSuggestion(restockId) ?? undefined} className="input" />
-              <button type="submit" disabled={isPending} className="btn-primary">{isPending ? 'Saving…' : 'Add Stock'}</button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-muted text-xs ml-1 mb-1 block">Units to add *</label>
+                  <input name="qty" type="number" min="1" required autoFocus defaultValue={getSuggestion(restockId) ?? undefined} className="input" />
+                </div>
+                <div>
+                  <label className="text-muted text-xs ml-1 mb-1 block">Cost per unit (R)</label>
+                  <input name="cost" type="number" step="0.01" min="0" placeholder="Optional" className="input" />
+                </div>
+              </div>
+              {suppliers.length > 0 && (
+                <div>
+                  <label className="text-muted text-xs ml-1 mb-1 block">Supplier</label>
+                  <select name="supplierId" defaultValue="" className="input">
+                    <option value="">— None —</option>
+                    {suppliers.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <input name="notes" placeholder="Notes (optional)" className="input" />
+              <p className="text-muted text-xs -mt-1 ml-1">Cost updates the unit cost using a weighted average so margins stay accurate.</p>
+              <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? t('common.saving') : 'Add Stock'}</button>
             </form>
           </div>
         </div>
@@ -192,6 +226,17 @@ export default function InventoryClient({ products, salesVelocity }: { products:
               <input name="sku" placeholder="SKU / Barcode" defaultValue={editProduct.sku ?? ''} className="input" />
               <input name="expiryDate" type="date" defaultValue={editProduct.expiryDate ?? ''} className="input" />
               <p className="text-muted text-xs -mt-1">Expiry date (for perishables)</p>
+              {storeVatRegistered && (
+                <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                  <span className="text-sm" style={{ color: 'var(--foreground)' }}>Price includes VAT</span>
+                  <input
+                    type="checkbox"
+                    name="vatInclusive"
+                    defaultChecked={editProduct.vatInclusive ?? true}
+                    className="w-5 h-5 accent-brand"
+                  />
+                </label>
+              )}
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
             </form>
           </div>

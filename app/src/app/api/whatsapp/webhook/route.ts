@@ -9,6 +9,7 @@ import { recordSale } from '@/application/sales/recordSale'
 import { getProducts } from '@/application/inventory/getProducts'
 import { parseCommand, fuzzyMatch } from '@/lib/whatsapp-parser'
 import { sendWhatsAppText, validateMetaSignature, extractIncomingMessage } from '@/lib/whatsapp'
+import { askBrain } from '@/lib/whatsapp-brain'
 
 // Meta webhook verification handshake.
 // Configured during webhook setup in Meta App Dashboard.
@@ -131,7 +132,7 @@ async function handleCommand(from: string, text: string): Promise<string | null>
 
       const saleRepo = new SaleRepository(supabase)
       const alertRepo = new AlertRepository(supabase)
-      await recordSale(saleRepo, productRepo, alertRepo, store.id, {
+      await recordSale(saleRepo, productRepo, alertRepo, store, {
         productId: product.id,
         qty,
         priceAtSale: product.price,
@@ -143,6 +144,7 @@ async function handleCommand(from: string, text: string): Promise<string | null>
     }
 
     default:
-      return 'I didn\'t understand that. Send "help" for commands.'
+      // Route conversational queries through Claude with full data access.
+      return askBrain(supabase, store, text)
   }
 }

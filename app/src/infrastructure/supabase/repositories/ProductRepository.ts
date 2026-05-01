@@ -42,6 +42,7 @@ export class ProductRepository implements IProductRepository {
         qty: data.qty,
         reorder_point: data.reorderPoint,
         sku: data.sku ?? null,
+        vat_inclusive: data.vatInclusive ?? true,
       })
       .select()
       .single()
@@ -59,6 +60,7 @@ export class ProductRepository implements IProductRepository {
     if (data.reorderPoint !== undefined) patch.reorder_point = data.reorderPoint
     if (data.sku !== undefined) patch.sku = data.sku
     if (data.expiryDate !== undefined) patch.expiry_date = data.expiryDate || null
+    if (data.vatInclusive !== undefined) patch.vat_inclusive = data.vatInclusive
 
     const { data: row, error } = await this.db
       .from('products')

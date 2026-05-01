@@ -9,7 +9,12 @@ export interface IStoreRepository {
     phone?: string
     category?: StoreCategory
     location?: string
+    whatsappNumber?: string
     onboardingCompleted?: boolean
+    vatRegistered?: boolean
+    vatNumber?: string | null
+    vatRate?: number
+    businessAddress?: string | null
   }): Promise<Store>
   delete(storeId: string): Promise<void>
 }

@@ -1,8 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { IExpenseRepository } from '@/domain/repositories/IExpenseRepository'
 import { Expense, NewExpense } from '@/domain/entities/expense'
 import { toExpense } from '../mappers'
 
-export class ExpenseRepository {
+export class ExpenseRepository implements IExpenseRepository {
   constructor(private db: SupabaseClient) {}
 
   async findByPeriod(storeId: string, from: Date, to: Date): Promise<Expense[]> {
