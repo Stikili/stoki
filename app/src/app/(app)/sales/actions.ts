@@ -8,8 +8,17 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
+import { AirtimePinRepository } from '@/infrastructure/supabase/repositories/AirtimePinRepository'
 import { recordSale } from '@/application/sales/recordSale'
+import { dispenseAirtimePin, checkAirtimeAvailability } from '@/application/airtime/dispenseAirtimePin'
 import { PaymentMethod } from '@/domain/entities/sale'
+
+export interface DispensedPin {
+  productId: string
+  productName: string
+  pin: string
+  serial: string | null
+}
 
 export async function recordSaleAction(
   productId: string,
@@ -47,7 +56,7 @@ export async function recordSaleAction(
 export async function recordCartAction(
   items: { productId: string; qty: number; priceAtSale: number }[],
   paymentMethod: PaymentMethod = 'cash',
-): Promise<{ invoiceNumber: number | null }> {
+): Promise<{ invoiceNumber: number | null; dispensedPins: DispensedPin[]; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -59,14 +68,26 @@ export async function recordCartAction(
   const saleRepo = new SaleRepository(supabase)
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
+  const pinRepo = new AirtimePinRepository(supabase)
+
+  // Pre-flight: refuse the entire cart if airtime stock can't cover it.
+  // Better to fail fast than to record a partial sale + half-dispense PINs.
+  const shortages = await checkAirtimeAvailability(productRepo, pinRepo, store.id, items)
+  if (shortages.length > 0) {
+    const msg = shortages
+      .map((s) => `${s.productName}: ${s.requested} requested, ${s.available} in stock`)
+      .join('; ')
+    return { invoiceNumber: null, dispensedPins: [], error: `Airtime sold out — ${msg}` }
+  }
 
   // One invoice number per cart, shared across all line items.
   const invoiceNumber = store.vatRegistered
     ? await saleRepo.claimInvoiceNumber(store.id)
     : null
 
+  const dispensedPins: DispensedPin[] = []
   for (const item of items) {
-    await recordSale(saleRepo, productRepo, alertRepo, store, {
+    const sale = await recordSale(saleRepo, productRepo, alertRepo, store, {
       productId: item.productId,
       qty: item.qty,
       priceAtSale: item.priceAtSale,
@@ -74,6 +95,23 @@ export async function recordCartAction(
       paymentMethod,
       invoiceNumber,
     })
+
+    // Airtime products dispense one PIN per qty unit (a "qty 3" cart line
+    // hands the customer 3 separate vouchers).
+    const product = await productRepo.findById(store.id, item.productId)
+    if (product?.isAirtime) {
+      for (let i = 0; i < item.qty; i++) {
+        const pin = await dispenseAirtimePin(productRepo, pinRepo, store.id, item.productId, sale.id)
+        if (pin) {
+          dispensedPins.push({
+            productId: product.id,
+            productName: product.name,
+            pin: pin.pin,
+            serial: pin.serial,
+          })
+        }
+      }
+    }
   }
 
   revalidateTag(TAGS.products, 'default')
@@ -81,8 +119,9 @@ export async function recordCartAction(
   revalidatePath('/dashboard')
   revalidatePath('/alerts')
   revalidatePath('/cashup')
+  revalidatePath('/airtime')
 
-  return { invoiceNumber }
+  return { invoiceNumber, dispensedPins }
 }
 
 export async function recordReturnAction(

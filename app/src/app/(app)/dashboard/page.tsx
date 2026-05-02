@@ -10,6 +10,7 @@ import {
   Tags,
   ClipboardCheck,
   Banknote,
+  Smartphone,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
@@ -303,6 +304,7 @@ export default async function DashboardPage() {
             { href: '/suppliers', label: 'Suppliers', Icon: Truck,          roles: ['owner', 'manager'] },
             { href: '/stocktake', label: 'Stocktake', Icon: ClipboardCheck, roles: ['owner', 'manager'] },
             { href: '/reconcile', label: 'Reconcile', Icon: Banknote,       roles: ['owner', 'manager'] },
+            { href: '/airtime',   label: 'Airtime',   Icon: Smartphone,     roles: ['owner', 'manager'] },
             { href: '/pricelist', label: 'Prices',    Icon: Tags,           roles: ['owner', 'manager', 'cashier'] },
             { href: '/settings',  label: 'Settings',  Icon: FileText,       roles: ['owner', 'manager', 'cashier'] },
           ]
