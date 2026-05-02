@@ -16,6 +16,7 @@ import { StoreUser } from '@/domain/entities/store-user'
 import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
 import { Wastage } from '@/domain/entities/wastage'
+import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -172,6 +173,34 @@ export function toWastage(row: any): Wastage {
     notes: row.notes ?? null,
     recordedAt: row.recorded_at,
     createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toStocktakeLine(row: any): StocktakeLine {
+  return {
+    id: row.id,
+    productId: row.product_id ?? null,
+    productName: row.products?.name ?? null,
+    systemQty: row.system_qty,
+    countedQty: row.counted_qty,
+    variance: row.variance,
+    costPerUnit: Number(row.cost_per_unit ?? 0),
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toStocktake(row: any): Stocktake {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawLines = (row.lines ?? []) as any[]
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    performedBy: row.performed_by ?? null,
+    performedAt: row.performed_at,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    lines: rawLines.map(toStocktakeLine),
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
-import { ProductWithStatus, daysUntilExpiry } from '@/domain/entities/product'
+import { ProductWithStatus, daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import { Supplier } from '@/domain/entities/supplier'
 import { WASTAGE_REASONS } from '@/domain/entities/wastage'
 import type { StoreRole } from '@/domain/entities/store-user'
@@ -26,7 +26,7 @@ Coke 340ml Can,16.99,12.00,40,15,COKE-340
 Maggi Noodles,3.99,2.50,80,20,MAGGI-CHK
 `
 
-type Filter = 'all' | 'low' | 'out'
+type Filter = 'all' | 'low' | 'out' | 'expiring'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
 const statusText = { ok: 'In Stock', low: 'Low', out: 'Out' }
 
@@ -36,18 +36,20 @@ export default function InventoryClient({
   suppliers = [],
   storeVatRegistered = false,
   role = 'owner',
+  initialFilter = 'all',
 }: {
   products: ProductWithStatus[]
   salesVelocity?: Record<string, number>
   suppliers?: Supplier[]
   storeVatRegistered?: boolean
   role?: StoreRole
+  initialFilter?: Filter
 }) {
   // Cashier hides cost/margin info — they record sales but don't see profit.
   const canSeeMargins = role !== 'cashier'
   const { toast, toastUndo } = useToast()
   const { t } = useI18n()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<Filter>(initialFilter)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [restockId, setRestockId] = useState<string | null>(null)
@@ -69,10 +71,11 @@ export default function InventoryClient({
     return products.filter(p => {
       if (filter === 'low' && p.status !== 'low') return false
       if (filter === 'out' && p.status !== 'out') return false
+      if (filter === 'expiring' && !isExpiringSoon(p, 7, now)) return false
       if (q && !p.name.toLowerCase().includes(q) && !(p.sku ?? '').toLowerCase().includes(q)) return false
       return true
     })
-  }, [products, filter, search])
+  }, [products, filter, search, now])
 
   function getSuggestion(id: string) { const r = salesVelocity?.[id]; return r && r >= 0.1 ? Math.ceil(r * 7) : null }
 
@@ -156,11 +159,14 @@ export default function InventoryClient({
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-5">
-        {(['all','low','out'] as Filter[]).map(f => (
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {(['all','low','out','expiring'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)} className="px-4 py-2.5 rounded-xl text-sm font-semibold"
             style={filter === f ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB' }}>
-            {f === 'all' ? t('inventory.all') : f === 'low' ? t('inventory.lowStock') : t('inventory.outOfStock')}
+            {f === 'all' ? t('inventory.all')
+              : f === 'low' ? t('inventory.lowStock')
+              : f === 'out' ? t('inventory.outOfStock')
+              : 'Expiring'}
           </button>
         ))}
       </div>

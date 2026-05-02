@@ -4,9 +4,18 @@ import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepos
 import { SupplierRepository } from '@/infrastructure/supabase/repositories/SupplierRepository'
 import InventoryClient from './InventoryClient'
 
-export default async function InventoryPage() {
+type InventoryFilter = 'all' | 'low' | 'out' | 'expiring'
+
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>
+}) {
   const { supabase, store, role } = await getServerData()
   const products = await getCachedProducts(store.id)
+  const { filter } = await searchParams
+  const initialFilter: InventoryFilter =
+    filter === 'low' || filter === 'out' || filter === 'expiring' ? filter : 'all'
 
   const saleRepo = new SaleRepository(supabase)
   const supplierRepo = new SupplierRepository(supabase)
@@ -41,6 +50,7 @@ export default async function InventoryPage() {
         suppliers={suppliers}
         storeVatRegistered={store.vatRegistered}
         role={role}
+        initialFilter={initialFilter}
       />
     </div>
   )
