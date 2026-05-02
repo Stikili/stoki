@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStockStatus, withStatus, daysUntilExpiry, isExpiringSoon } from './product'
+import { getStockStatus, withStatus, daysUntilExpiry, isExpiringSoon, formatQty, qtyStep, Product } from './product'
 
 describe('getStockStatus', () => {
   it('returns "out" when qty is zero or negative', () => {
@@ -25,7 +25,7 @@ describe('getStockStatus', () => {
 })
 
 describe('withStatus', () => {
-  const baseProduct = {
+  const baseProduct: Product = {
     id: 'p1',
     storeId: 's1',
     name: 'Bread',
@@ -39,6 +39,8 @@ describe('withStatus', () => {
     vatInclusive: true,
     isAirtime: false,
     isBundle: false,
+    isWeighable: false,
+    unitLabel: 'each',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
   }
@@ -107,5 +109,58 @@ describe('isExpiringSoon', () => {
   it('honours a custom window', () => {
     expect(isExpiringSoon({ expiryDate: '2026-05-15T00:00:00Z' }, 14, NOW)).toBe(true)
     expect(isExpiringSoon({ expiryDate: '2026-05-15T00:00:00Z' }, 3, NOW)).toBe(false)
+  })
+})
+
+describe('formatQty', () => {
+  it('shows piece-good qtys as bare integers', () => {
+    expect(formatQty(12, { isWeighable: false, unitLabel: 'each' })).toBe('12')
+    expect(formatQty(0, { isWeighable: false, unitLabel: 'each' })).toBe('0')
+  })
+
+  it('shows weighable qtys with the unit label', () => {
+    expect(formatQty(1.5, { isWeighable: true, unitLabel: 'kg' })).toBe('1.500 kg')
+    expect(formatQty(2, { isWeighable: true, unitLabel: 'kg' })).toBe('2.000 kg')
+  })
+
+  it('auto-converts <1 kg to grams for readability', () => {
+    expect(formatQty(0.25, { isWeighable: true, unitLabel: 'kg' })).toBe('250g')
+    expect(formatQty(0.005, { isWeighable: true, unitLabel: 'kg' })).toBe('5g')
+  })
+
+  it('auto-converts <1 L to ml for readability', () => {
+    expect(formatQty(0.5, { isWeighable: true, unitLabel: 'l' })).toBe('500ml')
+  })
+
+  it('skips the auto-convert when qty >= 1', () => {
+    expect(formatQty(1.0, { isWeighable: true, unitLabel: 'kg' })).toBe('1.000 kg')
+    expect(formatQty(1.5, { isWeighable: true, unitLabel: 'l' })).toBe('1.500 l')
+  })
+
+  it('does not auto-convert for native g / ml products (they already are small units)', () => {
+    expect(formatQty(0.5, { isWeighable: true, unitLabel: 'g' })).toBe('0.500 g')
+    expect(formatQty(0.5, { isWeighable: true, unitLabel: 'ml' })).toBe('0.500 ml')
+  })
+
+  it('handles isWeighable=true with unitLabel=each (defensive — UI lets owner toggle)', () => {
+    expect(formatQty(3, { isWeighable: true, unitLabel: 'each' })).toBe('3')
+  })
+
+  it('shows unexpected fractional qty for piece goods with 3 decimals (data import oddity)', () => {
+    expect(formatQty(2.5, { isWeighable: false, unitLabel: 'each' })).toBe('2.500')
+  })
+})
+
+describe('qtyStep', () => {
+  it('returns "1" for piece goods', () => {
+    expect(qtyStep({ isWeighable: false, unitLabel: 'each' })).toBe('1')
+  })
+
+  it('returns "0.001" for weighables', () => {
+    expect(qtyStep({ isWeighable: true, unitLabel: 'kg' })).toBe('0.001')
+  })
+
+  it('returns "1" when isWeighable=true but unit is each', () => {
+    expect(qtyStep({ isWeighable: true, unitLabel: 'each' })).toBe('1')
   })
 })
