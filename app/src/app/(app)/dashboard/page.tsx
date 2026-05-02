@@ -8,6 +8,7 @@ import {
   Truck,
   Receipt,
   Tags,
+  ClipboardCheck,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
@@ -17,6 +18,7 @@ import { ExpenseRepository } from '@/infrastructure/supabase/repositories/Expens
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
+import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
 import { isOverdue } from '@/domain/entities/debtor'
 import DashboardHeader from './DashboardHeader'
@@ -61,6 +63,14 @@ export default async function DashboardPage() {
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
+  // Surface anything expiring within 7 days (already-expired included).
+  // Already-expired items are also flagged separately so the pill copy can
+  // shout when there's stock that should not be on the shelf right now.
+  const expiringProducts = allProducts.filter((p) => isExpiringSoon(p, 7, now))
+  const expiredCount = expiringProducts.filter((p) => {
+    const days = daysUntilExpiry(p, now)
+    return days !== null && days <= 0
+  }).length
   const totalOutstanding = allDebtors.reduce((sum, d) => sum + d.totalOwed, 0)
   const monthNetProfit = monthSales.totalMargin - monthExpenses
   const expectedCashToday = todayCashSales
@@ -224,6 +234,13 @@ export default async function DashboardPage() {
         {lowStockCount > 0 && (
           <Link href="/inventory" className="pill pill-red min-h-0">{lowStockCount} low stock</Link>
         )}
+        {expiringProducts.length > 0 && (
+          <Link href="/inventory?filter=expiring" className={`pill min-h-0 ${expiredCount > 0 ? 'pill-red' : 'pill-orange'}`}>
+            {expiredCount > 0
+              ? `${expiredCount} expired${expiringProducts.length > expiredCount ? `, +${expiringProducts.length - expiredCount} soon` : ''}`
+              : `${expiringProducts.length} expiring`}
+          </Link>
+        )}
         {totalOutstanding > 0 && (
           <Link href="/credit" className="pill pill-orange min-h-0">R{totalOutstanding.toFixed(0)} owed</Link>
         )}
@@ -267,14 +284,15 @@ export default async function DashboardPage() {
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2 ml-1">Manage</p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { href: '/cashup',    label: 'Cash up',  Icon: Calculator, roles: ['owner', 'manager'] },
-            { href: '/reports',   label: 'Reports',  Icon: BarChart3,  roles: ['owner', 'manager'] },
-            { href: '/invoices',  label: 'Invoices', Icon: Receipt,    roles: ['owner', 'manager'] },
-            { href: '/customers', label: 'Customers', Icon: Users,     roles: ['owner', 'manager'] },
-            { href: '/expenses',  label: 'Expenses', Icon: Wallet,     roles: ['owner', 'manager'] },
-            { href: '/suppliers', label: 'Suppliers', Icon: Truck,     roles: ['owner', 'manager'] },
-            { href: '/pricelist', label: 'Prices',   Icon: Tags,       roles: ['owner', 'manager', 'cashier'] },
-            { href: '/settings',  label: 'Settings', Icon: FileText,   roles: ['owner', 'manager', 'cashier'] },
+            { href: '/cashup',    label: 'Cash up',   Icon: Calculator,     roles: ['owner', 'manager'] },
+            { href: '/reports',   label: 'Reports',   Icon: BarChart3,      roles: ['owner', 'manager'] },
+            { href: '/invoices',  label: 'Invoices',  Icon: Receipt,        roles: ['owner', 'manager'] },
+            { href: '/customers', label: 'Customers', Icon: Users,          roles: ['owner', 'manager'] },
+            { href: '/expenses',  label: 'Expenses',  Icon: Wallet,         roles: ['owner', 'manager'] },
+            { href: '/suppliers', label: 'Suppliers', Icon: Truck,          roles: ['owner', 'manager'] },
+            { href: '/stocktake', label: 'Stocktake', Icon: ClipboardCheck, roles: ['owner', 'manager'] },
+            { href: '/pricelist', label: 'Prices',    Icon: Tags,           roles: ['owner', 'manager', 'cashier'] },
+            { href: '/settings',  label: 'Settings',  Icon: FileText,       roles: ['owner', 'manager', 'cashier'] },
           ]
             .filter((tile) => tile.roles.includes(role))
             .map(({ href, label, Icon }) => (
