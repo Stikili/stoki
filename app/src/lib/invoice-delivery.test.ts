@@ -34,6 +34,7 @@ const baseCustomer: Customer = {
   billingAddress: '12 Main St, Joburg',
   paymentTermsDays: 30,
   notes: null,
+  marketingOptIn: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 }

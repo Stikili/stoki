@@ -19,6 +19,7 @@ import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
 import { BundleComponent } from '@/domain/entities/bundle'
+import { WhatsAppBroadcast, BroadcastRecipient } from '@/domain/entities/whatsapp-broadcast'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -113,6 +114,7 @@ export function toCustomer(row: any): Customer {
     billingAddress: row.billing_address ?? null,
     paymentTermsDays: row.payment_terms_days ?? 30,
     notes: row.notes ?? null,
+    marketingOptIn: row.marketing_opt_in ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -205,6 +207,40 @@ export function toStocktake(row: any): Stocktake {
     notes: row.notes ?? null,
     createdAt: row.created_at,
     lines: rawLines.map(toStocktakeLine),
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toWhatsAppBroadcast(row: any): WhatsAppBroadcast {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    templateName: row.template_name,
+    languageCode: row.language_code ?? 'en',
+    bodyParams: Array.isArray(row.body_params) ? row.body_params : [],
+    notes: row.notes ?? null,
+    sentBy: row.sent_by ?? null,
+    sentAt: row.sent_at ?? null,
+    recipientCount: row.recipient_count ?? 0,
+    sentCount: row.sent_count ?? 0,
+    failedCount: row.failed_count ?? 0,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toBroadcastRecipient(row: any): BroadcastRecipient {
+  return {
+    id: row.id,
+    broadcastId: row.broadcast_id,
+    storeId: row.store_id,
+    customerId: row.customer_id ?? null,
+    customerName: row.customers?.name ?? null,
+    phone: row.phone,
+    status: row.status,
+    error: row.error ?? null,
+    sentAt: row.sent_at ?? null,
+    createdAt: row.created_at,
   }
 }
 

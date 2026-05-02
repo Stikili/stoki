@@ -50,9 +50,11 @@ export async function editCustomerAction(formData: FormData) {
     billingAddress: ((formData.get('billingAddress') as string) ?? '').trim(),
     paymentTermsDays: parseInt((formData.get('paymentTermsDays') as string) ?? '30') || 30,
     notes:          ((formData.get('notes') as string) ?? '').trim(),
+    marketingOptIn: formData.get('marketingOptIn') === 'on',
   })
   revalidatePath('/customers')
   revalidatePath('/invoices')
+  revalidatePath('/broadcasts')
 }
 
 export async function archiveCustomerAction(customerId: string) {
