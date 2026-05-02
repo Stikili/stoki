@@ -9,7 +9,8 @@ import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepos
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { AirtimePinRepository } from '@/infrastructure/supabase/repositories/AirtimePinRepository'
-import { recordSale } from '@/application/sales/recordSale'
+import { BundleComponentRepository } from '@/infrastructure/supabase/repositories/BundleComponentRepository'
+import { recordBundleSale } from '@/application/sales/recordBundleSale'
 import { dispenseAirtimePin, checkAirtimeAvailability } from '@/application/airtime/dispenseAirtimePin'
 import { PaymentMethod } from '@/domain/entities/sale'
 
@@ -37,8 +38,9 @@ export async function recordSaleAction(
   const saleRepo = new SaleRepository(supabase)
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
+  const bundleRepo = new BundleComponentRepository(supabase)
 
-  await recordSale(saleRepo, productRepo, alertRepo, store, {
+  await recordBundleSale(saleRepo, productRepo, bundleRepo, alertRepo, store, {
     productId,
     qty,
     priceAtSale,
@@ -69,6 +71,7 @@ export async function recordCartAction(
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
   const pinRepo = new AirtimePinRepository(supabase)
+  const bundleRepo = new BundleComponentRepository(supabase)
 
   // Pre-flight: refuse the entire cart if airtime stock can't cover it.
   // Better to fail fast than to record a partial sale + half-dispense PINs.
@@ -87,7 +90,10 @@ export async function recordCartAction(
 
   const dispensedPins: DispensedPin[] = []
   for (const item of items) {
-    const sale = await recordSale(saleRepo, productRepo, alertRepo, store, {
+    // recordBundleSale handles both bundles (decomposes to components) and
+    // plain products (delegates to recordSale) — single entry point keeps
+    // the cart loop simple.
+    const sale = await recordBundleSale(saleRepo, productRepo, bundleRepo, alertRepo, store, {
       productId: item.productId,
       qty: item.qty,
       priceAtSale: item.priceAtSale,
@@ -139,6 +145,7 @@ export async function recordReturnAction(
   const saleRepo = new SaleRepository(supabase)
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
+  const bundleRepo = new BundleComponentRepository(supabase)
 
   // Look up the original sale and validate. Prevents over-returning (refunding
   // qty 5 against a sale of qty 2) which would create phantom stock.
@@ -147,7 +154,7 @@ export async function recordReturnAction(
   if (sale.type === 'return') return { ok: false, error: 'Cannot return a return.' }
   if (!sale.productId) return { ok: false, error: 'This sale has no linked product to return.' }
 
-  await recordSale(saleRepo, productRepo, alertRepo, store, {
+  await recordBundleSale(saleRepo, productRepo, bundleRepo, alertRepo, store, {
     productId: sale.productId,
     qty: sale.qty,
     priceAtSale: sale.priceAtSale,

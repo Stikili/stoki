@@ -18,6 +18,7 @@ import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invo
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
+import { BundleComponent } from '@/domain/entities/bundle'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -56,6 +57,7 @@ export function toProduct(row: any): Product {
     expiryDate: row.expiry_date ?? null,
     vatInclusive: row.vat_inclusive ?? true,
     isAirtime: row.is_airtime ?? false,
+    isBundle: row.is_bundle ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -203,6 +205,21 @@ export function toStocktake(row: any): Stocktake {
     notes: row.notes ?? null,
     createdAt: row.created_at,
     lines: rawLines.map(toStocktakeLine),
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toBundleComponent(row: any): BundleComponent {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    bundleId: row.bundle_id,
+    componentId: row.component_id,
+    componentName: row.component?.name ?? null,
+    componentCost: row.component?.cost != null ? Number(row.component.cost) : null,
+    componentQty: row.component?.qty ?? null,
+    qty: row.qty,
+    createdAt: row.created_at,
   }
 }
 

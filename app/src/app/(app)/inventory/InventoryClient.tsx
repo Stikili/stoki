@@ -326,6 +326,23 @@ export default function InventoryClient({
                   className="w-5 h-5 accent-brand"
                 />
               </label>
+              <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>Combo bundle</p>
+                  <p className="text-muted text-[10px] mt-0.5">Selling decrements stock from chosen components — manage on /bundles</p>
+                </div>
+                <input
+                  type="checkbox"
+                  name="isBundle"
+                  defaultChecked={editProduct.isBundle ?? false}
+                  className="w-5 h-5 accent-brand"
+                />
+              </label>
+              {editProduct.isBundle && (
+                <a href={`/bundles/${editProduct.id}`} className="text-brand text-sm font-semibold ml-1">
+                  → Manage components
+                </a>
+              )}
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
             </form>
           </div>

@@ -57,7 +57,7 @@ function makeProduct(id: string, qty: number, cost = 10): Product {
   return {
     id, storeId: 's1', name: `Product ${id}`,
     price: 20, cost, qty, reorderPoint: 5,
-    sku: null, photoUrl: null, expiryDate: null, vatInclusive: true, isAirtime: false,
+    sku: null, photoUrl: null, expiryDate: null, vatInclusive: true, isAirtime: false, isBundle: false,
     createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
   }
 }
