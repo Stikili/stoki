@@ -23,7 +23,7 @@ import DashboardHeader from './DashboardHeader'
 import AskStokiPrompt from './AskStokiPrompt'
 
 export default async function DashboardPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
 
   const saleRepo = new SaleRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -97,6 +97,8 @@ export default async function DashboardPage() {
   ]
 
   const hasAnyMoneyData = todaySales.transactionCount > 0 || monthSales.transactionCount > 0 || monthExpenses > 0
+  // Cashier role hides P&L/cost/margin/reports — they record sales only.
+  const isCashier = role === 'cashier'
 
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
@@ -144,14 +146,15 @@ export default async function DashboardPage() {
         </p>
         <div className="flex items-center gap-4 mt-3 text-sm">
           <span className="text-muted">{todaySales.transactionCount} sale{todaySales.transactionCount !== 1 ? 's' : ''}</span>
-          {todaySales.totalMargin > 0 && (
+          {!isCashier && todaySales.totalMargin > 0 && (
             <span className="text-brand font-semibold">R{todaySales.totalMargin.toFixed(2)} profit</span>
           )}
         </div>
       </div>
 
-      {/* Money — End of day · Month-to-date · Awaiting payment */}
-      {hasAnyMoneyData && (
+      {/* Money — End of day · Month-to-date · Awaiting payment.
+          Cashiers don't see margins/expenses/invoices — hide entirely. */}
+      {!isCashier && hasAnyMoneyData && (
         <div className="card overflow-hidden">
           <Link
             href="/cashup"
@@ -251,7 +254,7 @@ export default async function DashboardPage() {
             )
           })}
         </div>
-        {weekSales.totalMargin > 0 && (
+        {!isCashier && weekSales.totalMargin > 0 && (
           <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid #1E293B' }}>
             <p className="text-muted text-xs">Week profit</p>
             <p className="text-brand font-bold text-sm">R{weekSales.totalMargin.toFixed(2)}</p>
@@ -259,20 +262,23 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Manage — full feature grid */}
+      {/* Manage — feature grid. Filtered by role: cashiers see only what
+          they need to record sales (Pricelist + Settings for store switch). */}
       <div>
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2 ml-1">Manage</p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { href: '/cashup',    label: 'Cash up',  Icon: Calculator },
-            { href: '/reports',   label: 'Reports',  Icon: BarChart3 },
-            { href: '/invoices',  label: 'Invoices', Icon: Receipt },
-            { href: '/customers', label: 'Customers', Icon: Users },
-            { href: '/expenses',  label: 'Expenses', Icon: Wallet },
-            { href: '/suppliers', label: 'Suppliers', Icon: Truck },
-            { href: '/pricelist', label: 'Prices',   Icon: Tags },
-            { href: '/settings',  label: 'Settings', Icon: FileText },
-          ].map(({ href, label, Icon }) => (
+            { href: '/cashup',    label: 'Cash up',  Icon: Calculator, roles: ['owner', 'manager'] },
+            { href: '/reports',   label: 'Reports',  Icon: BarChart3,  roles: ['owner', 'manager'] },
+            { href: '/invoices',  label: 'Invoices', Icon: Receipt,    roles: ['owner', 'manager'] },
+            { href: '/customers', label: 'Customers', Icon: Users,     roles: ['owner', 'manager'] },
+            { href: '/expenses',  label: 'Expenses', Icon: Wallet,     roles: ['owner', 'manager'] },
+            { href: '/suppliers', label: 'Suppliers', Icon: Truck,     roles: ['owner', 'manager'] },
+            { href: '/pricelist', label: 'Prices',   Icon: Tags,       roles: ['owner', 'manager', 'cashier'] },
+            { href: '/settings',  label: 'Settings', Icon: FileText,   roles: ['owner', 'manager', 'cashier'] },
+          ]
+            .filter((tile) => tile.roles.includes(role))
+            .map(({ href, label, Icon }) => (
             <Link key={href} href={href} className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform">
               <Icon size={20} color="#7B8CA1" strokeWidth={1.75} />
               <span className="text-[10px] font-semibold mt-1.5" style={{ color: 'var(--muted)' }}>{label}</span>

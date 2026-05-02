@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
 import { ProductWithStatus, daysUntilExpiry } from '@/domain/entities/product'
 import { Supplier } from '@/domain/entities/supplier'
 import { WASTAGE_REASONS } from '@/domain/entities/wastage'
+import type { StoreRole } from '@/domain/entities/store-user'
 import {
   addProductAction,
   restockAction,
@@ -34,12 +35,16 @@ export default function InventoryClient({
   salesVelocity,
   suppliers = [],
   storeVatRegistered = false,
+  role = 'owner',
 }: {
   products: ProductWithStatus[]
   salesVelocity?: Record<string, number>
   suppliers?: Supplier[]
   storeVatRegistered?: boolean
+  role?: StoreRole
 }) {
+  // Cashier hides cost/margin info — they record sales but don't see profit.
+  const canSeeMargins = role !== 'cashier'
   const { toast, toastUndo } = useToast()
   const { t } = useI18n()
   const [filter, setFilter] = useState<Filter>('all')
@@ -180,7 +185,7 @@ export default function InventoryClient({
                 <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid #1E293B' }}>
                   <span className="text-white font-bold">R{p.price.toFixed(2)}</span>
                   <span className="text-muted text-sm">{p.qty} left</span>
-                  <span className="text-muted text-xs">+R{p.margin.toFixed(2)}</span>
+                  {canSeeMargins && <span className="text-muted text-xs">+R{p.margin.toFixed(2)}</span>}
                   <div className="ml-auto flex gap-2 flex-wrap">
                     <button onClick={() => setRestockId(p.id)} className="pill pill-blue min-h-0 text-xs">{t('inventory.restock')}</button>
                     {p.qty > 0 && (

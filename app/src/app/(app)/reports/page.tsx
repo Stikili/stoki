@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getServerData } from '@/lib/getServerData'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
@@ -7,7 +8,20 @@ import ReportsClient from './ReportsClient'
 interface SearchParamsRaw { from?: string; to?: string }
 
 export default async function ReportsPage(props: { searchParams: Promise<SearchParamsRaw> }) {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+
+  // Reports expose profit, costs and margins — manager / owner only.
+  if (role === 'cashier') {
+    return (
+      <div className="px-4 pt-12 pb-4 text-center">
+        <p className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)' }}>Reports are restricted</p>
+        <p className="text-muted text-sm mb-6">
+          P&amp;L, VAT and sales detail are available to managers and the store owner.
+        </p>
+        <Link href="/dashboard" className="text-brand text-sm font-semibold">← Back to dashboard</Link>
+      </div>
+    )
+  }
 
   const params = await props.searchParams
   const now = new Date()

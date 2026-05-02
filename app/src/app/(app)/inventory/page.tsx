@@ -5,7 +5,7 @@ import { SupplierRepository } from '@/infrastructure/supabase/repositories/Suppl
 import InventoryClient from './InventoryClient'
 
 export default async function InventoryPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
   const products = await getCachedProducts(store.id)
 
   const saleRepo = new SaleRepository(supabase)
@@ -40,6 +40,7 @@ export default async function InventoryPage() {
         salesVelocity={velocity}
         suppliers={suppliers}
         storeVatRegistered={store.vatRegistered}
+        role={role}
       />
     </div>
   )
