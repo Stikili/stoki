@@ -57,7 +57,7 @@ class FakePinRepo implements IAirtimePinRepository {
 function makeProduct(id: string, isAirtime: boolean, name = 'Vodacom R10'): Product {
   return {
     id, storeId: 's1', name, price: 10, cost: 9.5, qty: 0, reorderPoint: 10,
-    sku: null, photoUrl: null, expiryDate: null, vatInclusive: true, isAirtime,
+    sku: null, photoUrl: null, expiryDate: null, vatInclusive: true, isAirtime, isBundle: false,
     createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
   }
 }
