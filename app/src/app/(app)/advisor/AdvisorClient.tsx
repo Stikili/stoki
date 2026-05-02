@@ -19,9 +19,9 @@ const MAX_CONTEXT = 40  // sent to API per turn
 
 const StokiIcon = ({ size = 22 }: { size?: number }) => <Logo size={size} color="white" />
 
-export default function AdvisorClient({ storeId }: { storeId: string }) {
+export default function AdvisorClient({ storeId, prefill = '' }: { storeId: string; prefill?: string }) {
   const [messages, setMessages] = useState<Message[]>([INTRO])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(prefill)
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
   const initialised = useRef(false)
