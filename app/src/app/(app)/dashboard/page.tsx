@@ -26,6 +26,7 @@ import SetupChecklist from '@/components/SetupChecklist'
 import SassaPayCard from '@/components/SassaPayCard'
 import { isOverdue } from '@/domain/entities/debtor'
 import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
+import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
 import DashboardHeader from './DashboardHeader'
 import AskStokiPrompt from './AskStokiPrompt'
 
@@ -42,6 +43,10 @@ export default async function DashboardPage() {
   const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999)
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6); weekStart.setHours(0, 0, 0, 0)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Same weekday a week ago — used for the "vs last Tuesday" comparison line.
+  // Going back exactly 7 calendar days keeps weekday alignment even across DST.
+  const lastWeekDayStart = new Date(dayStart); lastWeekDayStart.setDate(lastWeekDayStart.getDate() - 7)
+  const lastWeekDayEnd   = new Date(dayEnd);   lastWeekDayEnd.setDate(lastWeekDayEnd.getDate() - 7)
 
   const [
     todaySales,
@@ -54,6 +59,7 @@ export default async function DashboardPage() {
     allProducts,
     allDebtors,
     openInvoices,
+    lastWeekSameDay,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -65,6 +71,7 @@ export default async function DashboardPage() {
     getCachedProducts(store.id),
     getCachedDebtors(store.id),
     invoiceRepo.findOpen(store.id).catch(() => []),
+    saleRepo.summarise(store.id, lastWeekDayStart, lastWeekDayEnd),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -119,6 +126,14 @@ export default async function DashboardPage() {
   // from this signal too — they're the ones who handle the foot-traffic spike.
   const upcomingPayEvent = imminentPayEvent(nextSassaPayDates(now, 3), 7, now)
 
+  // Today vs same weekday last week — gives the revenue hero context. Pure
+  // helper returns null when there's nothing useful to say (both days dead).
+  const revenueComparison = compareToLastWeek(
+    todaySales.totalRevenue,
+    lastWeekSameDay.totalRevenue,
+    weekdayName(now),
+  )
+
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
@@ -166,6 +181,19 @@ export default async function DashboardPage() {
         <p className="text-[42px] font-bold text-white leading-none">
           R{todaySales.totalRevenue.toFixed(2)}
         </p>
+        {revenueComparison && (
+          <p
+            className={`text-xs font-semibold mt-2 inline-flex items-center gap-1 ${
+              revenueComparison.kind === 'ahead'  ? 'text-brand'
+              : revenueComparison.kind === 'behind' ? 'text-danger'
+              : 'text-muted'
+            }`}
+          >
+            {revenueComparison.kind === 'ahead'  && <span aria-hidden>↑</span>}
+            {revenueComparison.kind === 'behind' && <span aria-hidden>↓</span>}
+            {revenueComparison.text}
+          </p>
+        )}
         <div className="flex items-center gap-4 mt-3 text-sm">
           <span className="text-muted">{todaySales.transactionCount} sale{todaySales.transactionCount !== 1 ? 's' : ''}</span>
           {!isCashier && todaySales.totalMargin > 0 && (
