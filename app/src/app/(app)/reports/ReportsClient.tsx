@@ -7,6 +7,7 @@ import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
 import { Restock } from '@/domain/entities/restock'
 import { Store } from '@/domain/entities/store'
 import { Printer, Download, ArrowLeft } from 'lucide-react'
+import { PRESETS, isoDateLocal } from '@/lib/date-presets'
 
 type Tab = 'pnl' | 'sales' | 'vat'
 
@@ -48,6 +49,17 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
   function applyRange() {
     const q = new URLSearchParams({ from: fromDate, to: toDate }).toString()
     router.push(`/reports?${q}`)
+  }
+
+  function applyPreset(presetKey: typeof PRESETS[number]['key']) {
+    const preset = PRESETS.find(p => p.key === presetKey)
+    if (!preset) return
+    const range = preset.range()
+    const f = isoDateLocal(range.from)
+    const t = isoDateLocal(range.to)
+    setFromDate(f)
+    setToDate(t)
+    router.push(`/reports?${new URLSearchParams({ from: f, to: t }).toString()}`)
   }
 
   // P&L aggregates
@@ -127,6 +139,18 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
       {/* Date range */}
       <div className="card p-4 mb-4 print:hidden">
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">Period</p>
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+          {PRESETS.map(p => (
+            <button
+              key={p.key}
+              onClick={() => applyPreset(p.key)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--card-border)' }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="input" />
           <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="input" />

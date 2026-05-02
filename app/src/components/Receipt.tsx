@@ -16,6 +16,9 @@ interface ReceiptProps {
   total: number
   date: string
   onClose: () => void
+  /** Optional: triggered by "New sale" — closes the receipt and signals the
+   *  parent to reset the cart for the next transaction. */
+  onNewSale?: () => void
   /** Sequential invoice number (per-store). Required for SARS-compliant tax invoices. */
   invoiceNumber?: number | null
   /** Store-level VAT info — receipt becomes a TAX INVOICE when present. */
@@ -36,6 +39,7 @@ export default function Receipt({
   total,
   date,
   onClose,
+  onNewSale,
   invoiceNumber,
   vatRegistered = false,
   vatNumber,
@@ -156,21 +160,32 @@ export default function Receipt({
           <p className="text-center text-[10px] text-gray-400">Powered by stoki</p>
         </div>
 
-        <div className="flex gap-2 p-4 pt-0">
-          <button
-            onClick={share}
-            className="flex-1 py-3 rounded-xl font-semibold text-sm text-white"
-            style={{ background: '#25D366' }}
-          >
-            Share Receipt
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl font-semibold text-sm"
-            style={{ background: '#e5e7eb', color: '#374151' }}
-          >
-            Done
-          </button>
+        <div className="flex flex-col gap-2 p-4 pt-0">
+          <div className="flex gap-2">
+            <button
+              onClick={share}
+              className="flex-1 py-3 rounded-xl font-semibold text-sm text-white"
+              style={{ background: '#25D366' }}
+            >
+              Share Receipt
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl font-semibold text-sm"
+              style={{ background: '#e5e7eb', color: '#374151' }}
+            >
+              Done
+            </button>
+          </div>
+          {onNewSale && (
+            <button
+              onClick={onNewSale}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white"
+              style={{ background: '#00C896' }}
+            >
+              + New Sale
+            </button>
+          )}
         </div>
       </div>
     </div>

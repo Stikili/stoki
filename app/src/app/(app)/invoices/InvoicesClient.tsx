@@ -20,9 +20,11 @@ import {
   updateInvoiceStatusAction,
   archiveInvoiceAction,
 } from './actions'
+import { addCustomerAction } from '../customers/actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Plus, Printer, Trash2 } from 'lucide-react'
+import { Plus, Printer, Trash2, Mail, MessageCircle } from 'lucide-react'
+import { buildMailtoUrl, buildWhatsAppUrl } from '@/lib/invoice-delivery'
 
 type FilterState = 'all' | InvoiceStatus
 
@@ -221,6 +223,7 @@ export default function InvoicesClient({
         <InvoiceDetailSheet
           store={store}
           invoice={openInvoice}
+          customer={customers.find((c) => c.id === openInvoice.customerId) ?? null}
           isPending={isPending}
           onClose={() => setOpenInvoiceId(null)}
           onStatusUpdate={(s) => handleStatusUpdate(openInvoice.id, s)}
@@ -272,6 +275,7 @@ function CreateInvoiceSheet({
   const [lines, setLines] = useState<LineDraft[]>([{ ...EMPTY_LINE }])
   const [notes, setNotes] = useState('')
   const [sendImmediately, setSendImmediately] = useState(true)
+  const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(customers.length === 0)
   const [isPending, startTransition] = useTransition()
 
   function setLine(idx: number, patch: Partial<LineDraft>) {
@@ -341,7 +345,16 @@ function CreateInvoiceSheet({
 
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-muted text-xs ml-1 mb-1 block">Customer *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-muted text-xs ml-1 block">Customer *</label>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddCustomer(true)}
+                className="text-brand text-xs font-semibold"
+              >
+                + New customer
+              </button>
+            </div>
             <select value={customerId} onChange={e => {
               const next = e.target.value
               setCustomerId(next)
@@ -437,6 +450,67 @@ function CreateInvoiceSheet({
             {isPending ? 'Creating…' : `Create Invoice · ${fmtMoney(totals.total)}`}
           </button>
         </div>
+
+        {showQuickAddCustomer && (
+          <QuickAddCustomerSheet
+            onClose={() => setShowQuickAddCustomer(false)}
+            onCreated={(id, defaultTermsDays) => {
+              setShowQuickAddCustomer(false)
+              setCustomerId(id)
+              setDueDays(String(defaultTermsDays))
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function QuickAddCustomerSheet({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (id: string, paymentTermsDays: number) => void
+}) {
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+
+  function submit(fd: FormData) {
+    startTransition(async () => {
+      const result = await addCustomerAction(fd)
+      if (result.ok && result.id) {
+        const terms = parseInt((fd.get('paymentTermsDays') as string) ?? '30') || 30
+        onCreated(result.id, terms)
+        toast('Customer added')
+      } else {
+        toast(result.error ?? 'Could not add customer', 'error')
+      }
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+        <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Quick add customer</h2>
+        <p className="text-muted text-sm mb-5">Add the basics now — fill in VAT number / address later from /customers.</p>
+        <form action={submit} className="flex flex-col gap-3">
+          <input name="name" placeholder="Business name *" required autoFocus className="input" />
+          <div className="grid grid-cols-2 gap-3">
+            <input name="contactName" placeholder="Contact" className="input" />
+            <input name="phone" type="tel" placeholder="Phone" className="input" />
+          </div>
+          <input name="email" type="email" placeholder="Email (for invoice delivery)" className="input" />
+          <div>
+            <label className="text-muted text-xs ml-1 mb-1 block">Payment terms (days)</label>
+            <input name="paymentTermsDays" type="number" defaultValue={30} min={0} max={180} className="input" />
+          </div>
+          <button type="submit" disabled={isPending} className="btn-primary mt-2">
+            {isPending ? 'Saving…' : 'Add Customer'}
+          </button>
+        </form>
       </div>
     </div>
   )
@@ -445,6 +519,7 @@ function CreateInvoiceSheet({
 function InvoiceDetailSheet({
   store,
   invoice,
+  customer,
   isPending,
   onClose,
   onStatusUpdate,
@@ -453,6 +528,7 @@ function InvoiceDetailSheet({
 }: {
   store: Store
   invoice: Invoice
+  customer: Customer | null
   isPending: boolean
   onClose: () => void
   onStatusUpdate: (s: InvoiceStatus) => void
@@ -461,6 +537,8 @@ function InvoiceDetailSheet({
 }) {
   const balance = balanceOf(invoice)
   const overdue = isOverdue(invoice)
+  const mailtoUrl = buildMailtoUrl(store, invoice, customer)
+  const whatsappUrl = buildWhatsAppUrl(store, invoice, customer)
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end">
@@ -480,9 +558,31 @@ function InvoiceDetailSheet({
           <h2 className="text-xl font-bold print:text-2xl" style={{ color: 'var(--foreground)' }}>
             {store.vatRegistered ? 'TAX INVOICE' : 'INVOICE'}
           </h2>
-          <button onClick={() => window.print()} className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 print:hidden" style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}>
-            <Printer size={12} /> Print
-          </button>
+          <div className="flex items-center gap-1.5 print:hidden">
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-white"
+                style={{ background: '#25D366' }}
+              >
+                <MessageCircle size={12} /> WhatsApp
+              </a>
+            )}
+            {mailtoUrl && (
+              <a
+                href={mailtoUrl}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5"
+                style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}
+              >
+                <Mail size={12} /> Email
+              </a>
+            )}
+            <button onClick={() => window.print()} className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5" style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}>
+              <Printer size={12} /> Print
+            </button>
+          </div>
         </div>
         <p className="text-muted text-sm mb-4 print:text-black">{`INV-${String(invoice.invoiceNumber).padStart(5, '0')}`}</p>
 

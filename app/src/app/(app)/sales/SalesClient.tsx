@@ -50,6 +50,7 @@ export default function SalesClient({
   const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number; vatInclusive?: boolean }[]; total: number; invoiceNumber: number | null } | null>(null)
   const [returning, setReturning] = useState<Sale | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
+  const [productSearch, setProductSearch] = useState('')
 
   const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
@@ -57,7 +58,14 @@ export default function SalesClient({
   const [historySales, setHistorySales] = useState<Sale[]>(todaySales)
   const [historyLoading, setHistoryLoading] = useState(false)
 
-  const available = products.filter((p) => p.qty > 0)
+  const available = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    return products.filter((p) => {
+      if (p.qty <= 0) return false
+      if (!q) return true
+      return p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q)
+    })
+  }, [products, productSearch])
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0)
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   const cartMap = useMemo(() => { const m: Record<string, number> = {}; for (const i of cart) m[i.product.id] = i.qty; return m }, [cart])
@@ -204,11 +212,35 @@ export default function SalesClient({
             </div>
           )}
 
+          {/* Search */}
+          {products.filter(p => p.qty > 0).length > 5 && (
+            <div className="mb-3">
+              <input
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Search products or SKU…"
+                className="input"
+              />
+            </div>
+          )}
+
           {/* Product list */}
           {available.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-white font-semibold mb-1">{products.length === 0 ? t('sales.noProducts') : t('sales.outOfStock')}</p>
-              <p className="text-muted text-sm">{products.length === 0 ? t('inventory.addProduct') : t('inventory.restock')}</p>
+              <p className="text-white font-semibold mb-1">
+                {products.length === 0
+                  ? t('sales.noProducts')
+                  : productSearch
+                    ? 'No matches'
+                    : t('sales.outOfStock')}
+              </p>
+              <p className="text-muted text-sm">
+                {products.length === 0
+                  ? t('inventory.addProduct')
+                  : productSearch
+                    ? 'Try a different name or SKU'
+                    : t('inventory.restock')}
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -373,6 +405,11 @@ export default function SalesClient({
           businessAddress={businessAddress}
           businessPhone={businessPhone}
           onClose={() => setReceipt(null)}
+          onNewSale={() => {
+            setReceipt(null)
+            setProductSearch('')
+            setTab('sell')
+          }}
         />
       )}
     </>

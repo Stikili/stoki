@@ -16,12 +16,12 @@ async function getContext() {
   return { supabase, store }
 }
 
-export async function addCustomerAction(formData: FormData) {
+export async function addCustomerAction(formData: FormData): Promise<{ ok: boolean; id?: string; error?: string }> {
   const { supabase, store } = await getContext()
   const name = ((formData.get('name') as string) ?? '').trim()
-  if (!name) return
+  if (!name) return { ok: false, error: 'Name is required' }
   const repo = new CustomerRepository(supabase)
-  await repo.create(store.id, {
+  const customer = await repo.create(store.id, {
     name,
     contactName: ((formData.get('contactName') as string) ?? '').trim() || undefined,
     email:       ((formData.get('email') as string) ?? '').trim() || undefined,
@@ -33,6 +33,7 @@ export async function addCustomerAction(formData: FormData) {
   })
   revalidatePath('/customers')
   revalidatePath('/invoices')
+  return { ok: true, id: customer.id }
 }
 
 export async function editCustomerAction(formData: FormData) {
