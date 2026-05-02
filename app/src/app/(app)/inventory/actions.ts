@@ -78,6 +78,7 @@ export async function editProductAction(formData: FormData) {
   const vatInclusive = vatInclusiveRaw !== null
     ? vatInclusiveRaw === 'on'
     : undefined
+  const isAirtime = formData.get('isAirtime') === 'on'
 
   await productRepo.update(store.id, productId, {
     name: formData.get('name') as string,
@@ -88,6 +89,7 @@ export async function editProductAction(formData: FormData) {
     sku: (formData.get('sku') as string) || undefined,
     expiryDate: (formData.get('expiryDate') as string) || undefined,
     vatInclusive,
+    isAirtime,
   })
 
   revalidateTag(TAGS.products, 'default')

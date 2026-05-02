@@ -17,6 +17,7 @@ import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
+import { AirtimePin } from '@/domain/entities/airtime-pin'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toStore(row: any): Store {
@@ -54,6 +55,7 @@ export function toProduct(row: any): Product {
     photoUrl: row.photo_url ?? null,
     expiryDate: row.expiry_date ?? null,
     vatInclusive: row.vat_inclusive ?? true,
+    isAirtime: row.is_airtime ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -201,6 +203,21 @@ export function toStocktake(row: any): Stocktake {
     notes: row.notes ?? null,
     createdAt: row.created_at,
     lines: rawLines.map(toStocktakeLine),
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toAirtimePin(row: any): AirtimePin {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    productId: row.product_id,
+    pin: row.pin,
+    serial: row.serial ?? null,
+    expiresAt: row.expires_at ?? null,
+    soldAt: row.sold_at ?? null,
+    soldInSaleId: row.sold_in_sale_id ?? null,
+    createdAt: row.created_at,
   }
 }
 

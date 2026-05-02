@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
 import { ProductWithStatus } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
-import { recordCartAction, recordReturnAction, getSalesByDateAction } from './actions'
+import { recordCartAction, recordReturnAction, getSalesByDateAction, type DispensedPin } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import Receipt from '@/components/Receipt'
@@ -48,6 +48,7 @@ export default function SalesClient({
   const [selling, setSelling] = useState<ProductWithStatus | null>(null)
   const [qtyForSelling, setQtyForSelling] = useState(1)
   const [receipt, setReceipt] = useState<{ items: { name: string; qty: number; price: number; vatInclusive?: boolean }[]; total: number; invoiceNumber: number | null } | null>(null)
+  const [dispensedPins, setDispensedPins] = useState<DispensedPin[] | null>(null)
   const [returning, setReturning] = useState<Sale | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [productSearch, setProductSearch] = useState('')
@@ -92,8 +93,17 @@ export default function SalesClient({
     }
 
     startTransition(async () => {
-      const { invoiceNumber } = await recordCartAction(cartItems, paymentMethod)
-      setReceipt({ items, total, invoiceNumber })
+      const result = await recordCartAction(cartItems, paymentMethod)
+      if (result.error) {
+        toast(result.error, 'error')
+        return
+      }
+      setReceipt({ items, total, invoiceNumber: result.invoiceNumber })
+      // Show the dispensed-PIN modal AFTER the receipt closes so the cashier
+      // sees the receipt for confirmation, then the voucher to read aloud.
+      if (result.dispensedPins.length > 0) {
+        setDispensedPins(result.dispensedPins)
+      }
       toast(`Sale recorded — R${total.toFixed(2)}`)
       setCart([])
     })
@@ -411,6 +421,35 @@ export default function SalesClient({
             setTab('sell')
           }}
         />
+      )}
+
+      {/* Airtime voucher modal — shown once after sale. Cashier reads the PIN
+          to the customer; closing the modal is the only chance to see it. */}
+      {dispensedPins && dispensedPins.length > 0 && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/85" />
+          <div className="relative w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            <div className="p-6">
+              <p className="text-xs font-bold tracking-widest uppercase text-brand mb-3">Airtime voucher{dispensedPins.length > 1 ? 's' : ''}</p>
+              <p className="text-muted text-xs mb-5">Read these to the customer. They&apos;ll only show once.</p>
+              <div className="flex flex-col gap-3">
+                {dispensedPins.map((p, i) => (
+                  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                    <p className="text-muted text-[10px] uppercase tracking-widest mb-1">{p.productName}</p>
+                    <p className="font-mono text-2xl font-bold tracking-wider" style={{ color: 'var(--foreground)' }}>{p.pin}</p>
+                    {p.serial && <p className="text-muted text-xs mt-1">Serial: {p.serial}</p>}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setDispensedPins(null)}
+                className="btn-primary w-full mt-5"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

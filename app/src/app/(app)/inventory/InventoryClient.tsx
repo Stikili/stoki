@@ -314,6 +314,18 @@ export default function InventoryClient({
                   />
                 </label>
               )}
+              <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>Airtime voucher</p>
+                  <p className="text-muted text-[10px] mt-0.5">Each sale dispenses a pre-loaded PIN from /airtime</p>
+                </div>
+                <input
+                  type="checkbox"
+                  name="isAirtime"
+                  defaultChecked={editProduct.isAirtime ?? false}
+                  className="w-5 h-5 accent-brand"
+                />
+              </label>
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
             </form>
           </div>
