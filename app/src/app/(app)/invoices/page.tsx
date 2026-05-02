@@ -2,10 +2,19 @@ import { getServerData } from '@/lib/getServerData'
 import { CustomerRepository } from '@/infrastructure/supabase/repositories/CustomerRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { getCachedProducts } from '@/lib/cached-queries'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import InvoicesClient from './InvoicesClient'
 
 export default async function InvoicesPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Invoices are restricted"
+        description="Creating invoices and recording B2B payments is available to managers and the store owner."
+      />
+    )
+  }
   const customerRepo = new CustomerRepository(supabase)
   const invoiceRepo = new InvoiceRepository(supabase)
 

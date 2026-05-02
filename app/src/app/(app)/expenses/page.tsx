@@ -1,9 +1,18 @@
 import { getServerData } from '@/lib/getServerData'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import ExpensesClient from './ExpensesClient'
 
 export default async function ExpensesPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Expenses are restricted"
+        description="Recording business expenses is available to managers and the store owner."
+      />
+    )
+  }
   const expenseRepo = new ExpenseRepository(supabase)
 
   const now = new Date()

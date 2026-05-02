@@ -1,6 +1,7 @@
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts } from '@/lib/cached-queries'
 import { StocktakeRepository } from '@/infrastructure/supabase/repositories/StocktakeRepository'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import StocktakeClient from './StocktakeClient'
 
 export default async function StocktakePage() {
@@ -9,9 +10,10 @@ export default async function StocktakePage() {
   // Cashiers shouldn't be able to adjust stock counts — they sell, not audit.
   if (role === 'cashier') {
     return (
-      <div className="px-4 pt-6 pb-4">
-        <p className="text-muted text-sm">Stocktake is restricted to owners and managers.</p>
-      </div>
+      <RestrictedNotice
+        title="Stocktake is restricted"
+        description="Counting stock and adjusting inventory is available to managers and the store owner."
+      />
     )
   }
 

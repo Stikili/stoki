@@ -2,10 +2,19 @@ import { getServerData } from '@/lib/getServerData'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { PaymentMethod } from '@/domain/entities/sale'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import CashUpClient from './CashUpClient'
 
 export default async function CashUpPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Cash up is restricted"
+        description="The end-of-day reconciliation view is for managers and the store owner."
+      />
+    )
+  }
   const saleRepo = new SaleRepository(supabase)
   const expenseRepo = new ExpenseRepository(supabase)
 
