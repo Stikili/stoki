@@ -79,4 +79,24 @@ export class CustomerRepository implements ICustomerRepository {
       .eq('id', id)
     if (error) throw new Error(error.message)
   }
+
+  async findArchived(storeId: string): Promise<Customer[]> {
+    const { data, error } = await this.db
+      .from('customers')
+      .select('*')
+      .eq('store_id', storeId)
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(toCustomer)
+  }
+
+  async restore(storeId: string, id: string): Promise<void> {
+    const { error } = await this.db
+      .from('customers')
+      .update({ deleted_at: null })
+      .eq('store_id', storeId)
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+  }
 }

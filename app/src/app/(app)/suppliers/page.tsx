@@ -13,8 +13,9 @@ export default async function SuppliersPage() {
   const ninetyDaysAgo = new Date(now); ninetyDaysAgo.setDate(now.getDate() - 90)
 
   // Pre-migration-006 fallback so the app still loads if the SQL hasn't been applied yet.
-  const [suppliers, recentRestocks] = await Promise.all([
+  const [suppliers, archived, recentRestocks] = await Promise.all([
     supplierRepo.findAll(store.id).catch(() => []),
+    supplierRepo.findArchived(store.id).catch(() => []),
     restockRepo.findByPeriod(store.id, ninetyDaysAgo, now).catch(() => []),
   ])
 
@@ -31,7 +32,7 @@ export default async function SuppliersPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <SuppliersClient suppliers={suppliers} stats={stats} />
+      <SuppliersClient suppliers={suppliers} archived={archived} stats={stats} />
     </div>
   )
 }
