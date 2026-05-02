@@ -101,10 +101,14 @@ export default function SalesClient({
   function confirmReturn() {
     if (!returning || !returning.productId || isPending) return
     startTransition(async () => {
-      await recordReturnAction(returning.productId!, returning.qty, returning.priceAtSale)
-      toast(`Return recorded — R${(returning.priceAtSale * returning.qty).toFixed(2)}`, 'info')
-      setReturning(null)
-      loadHistory(fromDate, toDate)
+      const result = await recordReturnAction(returning.id, paymentMethod)
+      if (result.ok) {
+        toast(`Return recorded — R${(returning.priceAtSale * returning.qty).toFixed(2)}`, 'info')
+        setReturning(null)
+        loadHistory(fromDate, toDate)
+      } else {
+        toast(result.error ?? 'Could not record return', 'error')
+      }
     })
   }
 

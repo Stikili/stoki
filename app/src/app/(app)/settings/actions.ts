@@ -44,6 +44,19 @@ export async function updateVatAction(formData: FormData) {
   revalidatePath('/', 'layout')
 }
 
+// Bulk-set the vat_inclusive flag across every product in the store. Used after
+// turning on VAT for the first time when existing prices were ex-VAT (or vice versa).
+export async function setAllProductsVatInclusiveAction(vatInclusive: boolean): Promise<{ updated: number }> {
+  const { supabase, store } = await getServerData()
+  const { ProductRepository } = await import('@/infrastructure/supabase/repositories/ProductRepository')
+  const repo = new ProductRepository(supabase)
+  const updated = await repo.setVatInclusiveAll(store.id, vatInclusive)
+  revalidateTag(TAGS.products, 'default')
+  revalidatePath('/inventory')
+  revalidatePath('/settings')
+  return { updated }
+}
+
 // Team management — owner only. Looks up an existing Stoki user by email
 // and adds them to the current store with the chosen role.
 // If the email isn't registered yet, sends them a Supabase magic-link invite

@@ -92,4 +92,15 @@ export class ProductRepository implements IProductRepository {
 
     if (error) throw new Error(error.message)
   }
+
+  async setVatInclusiveAll(storeId: string, vatInclusive: boolean): Promise<number> {
+    const { data, error } = await this.db
+      .from('products')
+      .update({ vat_inclusive: vatInclusive })
+      .eq('store_id', storeId)
+      .is('deleted_at', null)
+      .select('id')
+    if (error) throw new Error(error.message)
+    return (data ?? []).length
+  }
 }

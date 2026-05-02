@@ -77,6 +77,14 @@ describe('validateMetaSignature', () => {
     vi.stubEnv('META_APP_SECRET', SECRET)
     expect(validateMetaSignature('body', 'sha256=short')).toBe(false)
   })
+
+  it('rejects a tampered payload regardless of NODE_ENV', () => {
+    // Webhook caller must validate whenever META_APP_SECRET is set, not gate on
+    // NODE_ENV=production (the previous bug let staging accept any payload).
+    vi.stubEnv('META_APP_SECRET', SECRET)
+    vi.stubEnv('NODE_ENV', 'development')
+    expect(validateMetaSignature('tampered', sign('original'))).toBe(false)
+  })
 })
 
 describe('extractIncomingMessage', () => {

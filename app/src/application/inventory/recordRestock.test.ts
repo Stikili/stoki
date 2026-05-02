@@ -25,6 +25,7 @@ class FakeProductRepo implements IProductRepository {
     this.products.set(productId, { ...p, qty: p.qty + delta })
   }
   async archive(): Promise<void> {}
+  async setVatInclusiveAll(): Promise<number> { return 0 }
 }
 
 class FakeRestockRepo implements IRestockRepository {

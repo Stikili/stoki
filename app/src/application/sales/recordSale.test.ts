@@ -34,6 +34,9 @@ class FakeSaleRepo implements ISaleRepository {
     this.sales.push(sale)
     return sale
   }
+  async findById(_storeId: string, saleId: string): Promise<Sale | null> {
+    return this.sales.find(s => s.id === saleId) ?? null
+  }
   async findByPeriod(): Promise<Sale[]> { return [] }
   async summarise(): Promise<SalesSummary> {
     return { totalRevenue: 0, totalCost: 0, totalMargin: 0, totalVat: 0, transactionCount: 0, itemsSold: 0 }
@@ -61,6 +64,7 @@ class FakeProductRepo implements IProductRepository {
     this.products.set(productId, { ...p, qty: p.qty + delta })
   }
   async archive(): Promise<void> {}
+  async setVatInclusiveAll(): Promise<number> { return 0 }
 }
 
 class FakeAlertRepo implements IAlertRepository {

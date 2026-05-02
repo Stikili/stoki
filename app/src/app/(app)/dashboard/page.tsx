@@ -83,12 +83,15 @@ export default async function DashboardPage() {
     return ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
   })
 
-  const hasQty = allProducts.some((p) => p.qty > 0)
+  // "Have you started building inventory?" — once any product exists this is
+  // done (whether qty was set on creation or bumped via a later restock).
+  // Previously gated on `qty > 0` which re-flipped to undone after selling out.
+  const hasAnyProduct = allProducts.length > 0
   const hasAnySale = weekSales.transactionCount > 0
   const hasAnyDebtor = allDebtors.length > 0
   const checklistItems = [
     { key: 'store', label: 'Store created', done: true, href: '/settings', cta: 'View settings' },
-    { key: 'stock', label: 'Add stock quantities', done: hasQty, href: '/inventory', cta: 'Add quantities' },
+    { key: 'stock', label: 'Add your products', done: hasAnyProduct, href: '/inventory', cta: 'Add a product' },
     { key: 'sale', label: 'Record your first sale', done: hasAnySale, href: '/sales', cta: 'Record a sale' },
     { key: 'debtor', label: 'Add a credit customer', done: hasAnyDebtor, href: '/credit', cta: 'Add a customer' },
   ]
