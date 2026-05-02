@@ -53,3 +53,11 @@ export async function archiveSupplierAction(supplierId: string) {
   revalidatePath('/suppliers')
   revalidatePath('/inventory')
 }
+
+export async function restoreSupplierAction(supplierId: string) {
+  const { supabase, store } = await getContext()
+  const repo = new SupplierRepository(supabase)
+  await repo.restore(store.id, supplierId)
+  revalidatePath('/suppliers')
+  revalidatePath('/inventory')
+}

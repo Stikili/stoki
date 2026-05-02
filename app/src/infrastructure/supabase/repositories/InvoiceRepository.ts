@@ -17,6 +17,18 @@ export class InvoiceRepository implements IInvoiceRepository {
     return (data ?? []).map(toInvoice)
   }
 
+  async findOpen(storeId: string): Promise<Invoice[]> {
+    const { data, error } = await this.db
+      .from('invoices')
+      .select('*, customers(name)')
+      .eq('store_id', storeId)
+      .is('deleted_at', null)
+      .in('status', ['draft', 'sent'])
+      .order('due_at', { ascending: true })
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(toInvoice)
+  }
+
   async findById(storeId: string, id: string): Promise<Invoice | null> {
     const { data, error } = await this.db
       .from('invoices')

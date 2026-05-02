@@ -19,6 +19,7 @@ import {
   recordInvoicePaymentAction,
   updateInvoiceStatusAction,
   archiveInvoiceAction,
+  duplicateInvoiceAction,
 } from './actions'
 import { addCustomerAction } from '../customers/actions'
 import { useToast } from '@/components/Toast'
@@ -99,6 +100,19 @@ export default function InvoicesClient({
       await archiveInvoiceAction(id)
       setOpenInvoiceId(null)
       toast('Archived', 'info')
+    })
+  }
+
+  function handleDuplicate(id: string) {
+    startTransition(async () => {
+      const result = await duplicateInvoiceAction(id)
+      if (result.ok && result.invoiceId) {
+        haptic(30)
+        setOpenInvoiceId(result.invoiceId)
+        toast('Duplicated as draft')
+      } else {
+        toast(result.error ?? 'Could not duplicate', 'error')
+      }
     })
   }
 
@@ -228,6 +242,7 @@ export default function InvoicesClient({
           onClose={() => setOpenInvoiceId(null)}
           onStatusUpdate={(s) => handleStatusUpdate(openInvoice.id, s)}
           onArchive={() => handleArchive(openInvoice.id)}
+          onDuplicate={() => handleDuplicate(openInvoice.id)}
           onRecordPayment={(fd) => handleRecordPayment(openInvoice.id, fd)}
         />
       )}
@@ -524,6 +539,7 @@ function InvoiceDetailSheet({
   onClose,
   onStatusUpdate,
   onArchive,
+  onDuplicate,
   onRecordPayment,
 }: {
   store: Store
@@ -533,6 +549,7 @@ function InvoiceDetailSheet({
   onClose: () => void
   onStatusUpdate: (s: InvoiceStatus) => void
   onArchive: () => void
+  onDuplicate: () => void
   onRecordPayment: (fd: FormData) => void
 }) {
   const balance = balanceOf(invoice)
@@ -680,6 +697,9 @@ function InvoiceDetailSheet({
               Mark as Sent
             </button>
           )}
+          <button onClick={onDuplicate} disabled={isPending} className="flex-1 py-2.5 rounded-xl text-xs font-semibold" style={{ background: 'var(--surface)', color: 'var(--foreground)', border: '1px solid var(--card-border)' }}>
+            Duplicate
+          </button>
           {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
             <button onClick={() => onStatusUpdate('cancelled')} disabled={isPending} className="flex-1 py-2.5 rounded-xl text-xs font-semibold" style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>
               Cancel

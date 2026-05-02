@@ -76,4 +76,25 @@ export class SupplierRepository implements ISupplierRepository {
 
     if (error) throw new Error(error.message)
   }
+
+  async findArchived(storeId: string): Promise<Supplier[]> {
+    const { data, error } = await this.db
+      .from('suppliers')
+      .select('*')
+      .eq('store_id', storeId)
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(toSupplier)
+  }
+
+  async restore(storeId: string, supplierId: string): Promise<void> {
+    const { error } = await this.db
+      .from('suppliers')
+      .update({ deleted_at: null })
+      .eq('store_id', storeId)
+      .eq('id', supplierId)
+
+    if (error) throw new Error(error.message)
+  }
 }

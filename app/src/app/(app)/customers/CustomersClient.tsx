@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Customer } from '@/domain/entities/customer'
-import { addCustomerAction, editCustomerAction, archiveCustomerAction } from './actions'
+import { addCustomerAction, editCustomerAction, archiveCustomerAction, restoreCustomerAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import { Plus } from 'lucide-react'
@@ -15,18 +15,28 @@ function fmtDate(iso: string) {
 
 export default function CustomersClient({
   customers,
+  archived = [],
   stats,
 }: {
   customers: Customer[]
+  archived?: Customer[]
   stats: Record<string, CustomerStats>
 }) {
   const { toast } = useToast()
   const [showAdd, setShowAdd] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const editing = customers.find(c => c.id === editId)
   const totalOutstanding = Object.values(stats).reduce((s, c) => s + c.outstanding, 0)
+
+  function handleRestore(id: string, name: string) {
+    startTransition(async () => {
+      await restoreCustomerAction(id)
+      toast(`Restored ${name}`)
+    })
+  }
 
   function handleAdd(fd: FormData) {
     startTransition(async () => {
@@ -107,6 +117,38 @@ export default function CustomersClient({
               </button>
             )
           })}
+        </div>
+      )}
+
+      {/* Archived — collapsible. Only renders the toggle when there's something to restore. */}
+      {archived.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowArchived(s => !s)}
+            className="text-muted text-xs font-semibold"
+          >
+            {showArchived ? '▾' : '▸'} Archived ({archived.length})
+          </button>
+          {showArchived && (
+            <div className="flex flex-col gap-2 mt-3">
+              {archived.map(c => (
+                <div key={c.id} className="card p-3 flex items-center justify-between gap-3" style={{ opacity: 0.7 }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--foreground)' }}>{c.name}</p>
+                    <p className="text-muted text-xs">archived</p>
+                  </div>
+                  <button
+                    onClick={() => handleRestore(c.id, c.name)}
+                    disabled={isPending}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                    style={{ background: 'var(--pill-green-bg)', color: '#00C896' }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

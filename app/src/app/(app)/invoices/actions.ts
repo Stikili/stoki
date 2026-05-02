@@ -124,3 +124,23 @@ export async function getInvoicePaymentsAction(invoiceId: string) {
   const repo = new InvoiceRepository(supabase)
   return repo.findPayments(store.id, invoiceId)
 }
+
+export async function duplicateInvoiceAction(invoiceId: string): Promise<{ ok: boolean; invoiceId?: string; error?: string }> {
+  const { supabase, store } = await getContext()
+  const repo = new InvoiceRepository(supabase)
+  const source = await repo.findById(store.id, invoiceId)
+  if (!source) return { ok: false, error: 'Invoice not found' }
+  if (!source.customerId) return { ok: false, error: 'Source invoice has no customer' }
+  return createInvoiceAction({
+    customerId: source.customerId,
+    status: 'draft',
+    notes: source.notes ?? undefined,
+    lines: source.lineItems.map(l => ({
+      description: l.description,
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+      vatInclusive: l.vatInclusive,
+      productId: l.productId,
+    })),
+  })
+}

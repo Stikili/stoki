@@ -9,8 +9,9 @@ export default async function CustomersPage() {
   const invoiceRepo = new InvoiceRepository(supabase)
 
   // Pre-migration-009 fallback so the page still loads if migration hasn't run.
-  const [customers, invoices] = await Promise.all([
+  const [customers, archived, invoices] = await Promise.all([
     customerRepo.findAll(store.id).catch(() => []),
+    customerRepo.findArchived(store.id).catch(() => []),
     invoiceRepo.findAll(store.id).catch(() => []),
   ])
 
@@ -28,7 +29,7 @@ export default async function CustomersPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <CustomersClient customers={customers} stats={stats} />
+      <CustomersClient customers={customers} archived={archived} stats={stats} />
     </div>
   )
 }

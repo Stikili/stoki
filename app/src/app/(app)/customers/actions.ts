@@ -62,3 +62,11 @@ export async function archiveCustomerAction(customerId: string) {
   revalidatePath('/customers')
   revalidatePath('/invoices')
 }
+
+export async function restoreCustomerAction(customerId: string) {
+  const { supabase, store } = await getContext()
+  const repo = new CustomerRepository(supabase)
+  await repo.restore(store.id, customerId)
+  revalidatePath('/customers')
+  revalidatePath('/invoices')
+}

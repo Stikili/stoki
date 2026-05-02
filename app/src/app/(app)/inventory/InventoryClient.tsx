@@ -94,9 +94,17 @@ export default function InventoryClient({
   function handleImport(csv: string) {
     startTransition(async () => {
       const result = await bulkImportProductsAction(csv)
-      setImportResult(result)
       if (result.imported > 0) haptic(50)
       toast(`Imported ${result.imported} products${result.skipped ? `, ${result.skipped} skipped` : ''}`)
+      // Auto-close on a clean import so the user sees the new products
+      // immediately. Keep the sheet open with a result panel only when there
+      // were parse errors the user might want to inspect.
+      if (result.errors.length === 0 && result.skipped === 0) {
+        setShowImport(false)
+        setImportResult(null)
+      } else {
+        setImportResult(result)
+      }
     })
   }
   function downloadSampleCsv() {
@@ -242,7 +250,7 @@ export default function InventoryClient({
                   <input name="cost" type="number" step="0.01" min="0" placeholder="Optional" className="input" />
                 </div>
               </div>
-              {suppliers.length > 0 && (
+              {suppliers.length > 0 ? (
                 <div>
                   <label className="text-muted text-xs ml-1 mb-1 block">Supplier</label>
                   <select name="supplierId" defaultValue="" className="input">
@@ -252,6 +260,10 @@ export default function InventoryClient({
                     ))}
                   </select>
                 </div>
+              ) : (
+                <a href="/suppliers" className="text-brand text-xs font-semibold ml-1">
+                  + Add a supplier to track who you buy from
+                </a>
               )}
               <input name="notes" placeholder="Notes (optional)" className="input" />
               <p className="text-muted text-xs -mt-1 ml-1">Cost updates the unit cost using a weighted average so margins stay accurate.</p>

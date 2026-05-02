@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     weekDaily,
     allProducts,
     allDebtors,
-    invoices,
+    openInvoices,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
     getWeeklySummary(saleRepo, store.id),
     getCachedProducts(store.id),
     getCachedDebtors(store.id),
-    invoiceRepo.findAll(store.id).catch(() => []),
+    invoiceRepo.findOpen(store.id).catch(() => []),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -67,8 +67,7 @@ export default async function DashboardPage() {
     .filter((s) => s.paymentMethod === 'cash')
     .reduce((sum, s) => sum + s.priceAtSale * s.qty * (s.type === 'return' ? -1 : 1), 0)
 
-  // Awaiting-payment summary across non-paid / non-cancelled invoices
-  const openInvoices = invoices.filter((inv) => inv.status !== 'paid' && inv.status !== 'cancelled')
+  // Awaiting-payment summary — repo already filters to draft/sent rows.
   const totalInvoiceOutstanding = openInvoices.reduce((sum, inv) => sum + balanceOf(inv), 0)
   const overdueInvoices = openInvoices.filter((inv) => isInvoiceOverdue(inv, now))
   const worstOverdueDays = overdueInvoices.reduce(
