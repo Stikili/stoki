@@ -1,10 +1,19 @@
 import { getServerData } from '@/lib/getServerData'
 import { CustomerRepository } from '@/infrastructure/supabase/repositories/CustomerRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import CustomersClient from './CustomersClient'
 
 export default async function CustomersPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Customers are restricted"
+        description="The B2B customer book is available to managers and the store owner."
+      />
+    )
+  }
   const customerRepo = new CustomerRepository(supabase)
   const invoiceRepo = new InvoiceRepository(supabase)
 

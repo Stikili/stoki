@@ -2,13 +2,22 @@ import { getServerData } from '@/lib/getServerData'
 import { getCachedDebtors } from '@/lib/cached-queries'
 import { CreditEntryRepository } from '@/infrastructure/supabase/repositories/CreditEntryRepository'
 import { CreditEntry } from '@/domain/entities/credit-entry'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import CreditClient from './CreditClient'
 import { Debtor } from '@/domain/entities/debtor'
 
 export type DebtorWithEntries = Debtor & { entries: CreditEntry[] }
 
 export default async function CreditPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Credit book is restricted"
+        description="Managing customer credit and chasing debtors is available to managers and the store owner."
+      />
+    )
+  }
   const creditRepo = new CreditEntryRepository(supabase)
 
   // Debtors from cache; credit entries always fresh (volatile per-debtor state)

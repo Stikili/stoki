@@ -1,10 +1,19 @@
 import { getServerData } from '@/lib/getServerData'
 import { SupplierRepository } from '@/infrastructure/supabase/repositories/SupplierRepository'
 import { RestockRepository } from '@/infrastructure/supabase/repositories/RestockRepository'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import SuppliersClient from './SuppliersClient'
 
 export default async function SuppliersPage() {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  if (role === 'cashier') {
+    return (
+      <RestrictedNotice
+        title="Suppliers are restricted"
+        description="Supplier records and purchasing history are available to managers and the store owner."
+      />
+    )
+  }
 
   const supplierRepo = new SupplierRepository(supabase)
   const restockRepo = new RestockRepository(supabase)

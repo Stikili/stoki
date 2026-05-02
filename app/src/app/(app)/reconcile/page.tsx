@@ -1,6 +1,7 @@
 import { getServerData } from '@/lib/getServerData'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
+import RestrictedNotice from '@/components/RestrictedNotice'
 import ReconcileClient from './ReconcileClient'
 
 export default async function ReconcilePage() {
@@ -8,9 +9,10 @@ export default async function ReconcilePage() {
 
   if (role === 'cashier') {
     return (
-      <div className="px-4 pt-6 pb-4">
-        <p className="text-muted text-sm">Bank reconciliation is restricted to owners and managers.</p>
-      </div>
+      <RestrictedNotice
+        title="Bank reconciliation is restricted"
+        description="Matching bank statements to invoices and expenses is available to managers and the store owner."
+      />
     )
   }
 
