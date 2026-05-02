@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
-import { ProductWithStatus } from '@/domain/entities/product'
+import { ProductWithStatus, formatQty } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { recordCartAction, recordReturnAction, getSalesByDateAction, type DispensedPin } from './actions'
 import { useToast } from '@/components/Toast'
@@ -209,7 +209,7 @@ export default function SalesClient({
               <div className="flex flex-col gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid #1E293B' }}>
                 {cart.map(item => (
                   <div key={item.product.id} className="flex items-center justify-between">
-                    <span className="text-white text-sm">{item.qty}× {item.product.name}</span>
+                    <span className="text-white text-sm">{formatQty(item.qty, item.product)}{item.product.isWeighable && item.product.unitLabel !== 'each' ? '' : '×'} {item.product.name}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-muted text-sm">R{(item.product.price * item.qty).toFixed(2)}</span>
                       <button onClick={() => setCart(prev => prev.filter(i => i.product.id !== item.product.id))}
@@ -357,12 +357,36 @@ export default function SalesClient({
           <div className="relative rounded-t-3xl p-6 pb-24 sheet">
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold text-white mb-0.5">{selling.name}</h2>
-            <p className="text-muted text-sm mb-6">R{selling.price.toFixed(2)} each · {selling.qty - (cartMap[selling.id] ?? 0)} available</p>
-            <div className="flex items-center justify-center gap-6 mb-6">
-              <button onClick={() => setQtyForSelling(q => Math.max(1, q-1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>−</button>
-              <div className="text-center min-w-[60px]"><p className="text-5xl font-black text-white">{qtyForSelling}</p></div>
-              <button onClick={() => setQtyForSelling(q => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q+1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>+</button>
-            </div>
+            <p className="text-muted text-sm mb-6">
+              R{selling.price.toFixed(2)}{selling.isWeighable && selling.unitLabel !== 'each' ? `/${selling.unitLabel}` : ' each'} · {formatQty(selling.qty - (cartMap[selling.id] ?? 0), selling)} available
+            </p>
+            {selling.isWeighable && selling.unitLabel !== 'each' ? (
+              // Weighable products take a typed weight (decimal). Cashier weighs
+              // on a scale and types the reading — stepper would be tedious.
+              <div className="flex flex-col items-center gap-2 mb-6">
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  max={selling.qty - (cartMap[selling.id] ?? 0)}
+                  value={qtyForSelling}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (Number.isFinite(n) && n > 0) setQtyForSelling(n)
+                  }}
+                  className="text-center text-4xl font-black text-white bg-transparent border-b-2 w-40"
+                  style={{ borderColor: '#1A2236' }}
+                  autoFocus
+                />
+                <p className="text-muted text-sm">{selling.unitLabel}</p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-6 mb-6">
+                <button onClick={() => setQtyForSelling(q => Math.max(1, q-1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>−</button>
+                <div className="text-center min-w-[60px]"><p className="text-5xl font-black text-white">{qtyForSelling}</p></div>
+                <button onClick={() => setQtyForSelling(q => Math.min(selling.qty - (cartMap[selling.id] ?? 0), q+1))} className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: '#1A2236', color: 'white' }}>+</button>
+              </div>
+            )}
             <div className="card p-4 mb-5 flex items-center justify-between">
               <span className="text-muted text-sm">Subtotal</span>
               <span className="text-brand font-bold text-xl">R{(selling.price * qtyForSelling).toFixed(2)}</span>

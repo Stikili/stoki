@@ -1,5 +1,15 @@
 export type StockStatus = 'ok' | 'low' | 'out'
 
+export type ProductUnit = 'each' | 'kg' | 'g' | 'l' | 'ml'
+
+export const PRODUCT_UNITS: { value: ProductUnit; label: string }[] = [
+  { value: 'each', label: 'Each' },
+  { value: 'kg',   label: 'Kilograms' },
+  { value: 'g',    label: 'Grams' },
+  { value: 'l',    label: 'Litres' },
+  { value: 'ml',   label: 'Millilitres' },
+]
+
 export interface Product {
   id: string
   storeId: string
@@ -14,6 +24,9 @@ export interface Product {
   vatInclusive: boolean
   isAirtime: boolean
   isBundle: boolean
+  /** When true, qty is treated as a decimal weight/volume in `unitLabel`. */
+  isWeighable: boolean
+  unitLabel: ProductUnit
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +48,8 @@ export interface NewProduct {
   vatInclusive?: boolean
   isAirtime?: boolean
   isBundle?: boolean
+  isWeighable?: boolean
+  unitLabel?: ProductUnit
 }
 
 export function getStockStatus(qty: number, reorderPoint: number): StockStatus {
@@ -73,4 +88,28 @@ export function isExpiringSoon(product: Pick<Product, 'expiryDate'>, withinDays 
   const days = daysUntilExpiry(product, now)
   if (days === null) return false
   return days <= withinDays
+}
+
+/**
+ * Render qty for display. Piece goods → bare integer ("12"). Weighables →
+ * decimal qty with unit ("1.250 kg") or auto-converted to a smaller unit
+ * ("250 g" instead of "0.250 kg") to keep the number readable.
+ */
+export function formatQty(
+  qty: number,
+  product: Pick<Product, 'isWeighable' | 'unitLabel'>,
+): string {
+  if (!product.isWeighable || product.unitLabel === 'each') {
+    // Drop trailing decimals for whole numbers, otherwise show up to 3.
+    return Number.isInteger(qty) ? String(qty) : qty.toFixed(3)
+  }
+  if (product.unitLabel === 'kg' && qty > 0 && qty < 1) return `${Math.round(qty * 1000)}g`
+  if (product.unitLabel === 'l' && qty > 0 && qty < 1)  return `${Math.round(qty * 1000)}ml`
+  return `${qty.toFixed(3)} ${product.unitLabel}`
+}
+
+/** Step value for HTML number inputs — piece goods step by 1, weighables by 0.001. */
+export function qtyStep(product: Pick<Product, 'isWeighable' | 'unitLabel'>): string {
+  if (!product.isWeighable || product.unitLabel === 'each') return '1'
+  return '0.001'
 }

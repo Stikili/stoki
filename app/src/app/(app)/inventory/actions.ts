@@ -30,12 +30,14 @@ export async function addProductAction(formData: FormData) {
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
 
+  // qty / reorder_point are numeric(10,3) post-migration-015 — parseFloat
+  // accepts both integers (piece goods) and decimal weights uniformly.
   await addProduct(productRepo, alertRepo, store.id, {
     name: formData.get('name') as string,
     price: parseFloat(formData.get('price') as string) || 0,
     cost: parseFloat(formData.get('cost') as string) || 0,
-    qty: parseInt(formData.get('qty') as string) || 0,
-    reorderPoint: parseInt(formData.get('reorderPoint') as string) || 5,
+    qty: parseFloat(formData.get('qty') as string) || 0,
+    reorderPoint: parseFloat(formData.get('reorderPoint') as string) || 5,
     sku: (formData.get('sku') as string) || undefined,
   })
 
@@ -57,7 +59,7 @@ export async function restockAction(formData: FormData) {
 
   await recordRestock(productRepo, restockRepo, alertRepo, store.id, {
     productId: formData.get('productId') as string,
-    qtyAdded: parseInt(formData.get('qty') as string) || 0,
+    qtyAdded: parseFloat(formData.get('qty') as string) || 0,
     cost: cost && cost > 0 ? cost : undefined,
     supplierId: supplierIdRaw && supplierIdRaw.trim() ? supplierIdRaw : undefined,
     notes: notesRaw && notesRaw.trim() ? notesRaw : undefined,
@@ -79,17 +81,25 @@ export async function editProductAction(formData: FormData) {
     ? vatInclusiveRaw === 'on'
     : undefined
   const isAirtime = formData.get('isAirtime') === 'on'
+  const isWeighable = formData.get('isWeighable') === 'on'
+  const unitLabelRaw = formData.get('unitLabel') as string | null
+  const unitLabel: 'each' | 'kg' | 'g' | 'l' | 'ml' = (() => {
+    if (unitLabelRaw === 'kg' || unitLabelRaw === 'g' || unitLabelRaw === 'l' || unitLabelRaw === 'ml') return unitLabelRaw
+    return 'each'
+  })()
 
   await productRepo.update(store.id, productId, {
     name: formData.get('name') as string,
     price: parseFloat(formData.get('price') as string) || 0,
     cost: parseFloat(formData.get('cost') as string) || 0,
-    qty: parseInt(formData.get('qty') as string) || 0,
-    reorderPoint: parseInt(formData.get('reorderPoint') as string) || 5,
+    qty: parseFloat(formData.get('qty') as string) || 0,
+    reorderPoint: parseFloat(formData.get('reorderPoint') as string) || 5,
     sku: (formData.get('sku') as string) || undefined,
     expiryDate: (formData.get('expiryDate') as string) || undefined,
     vatInclusive,
     isAirtime,
+    isWeighable,
+    unitLabel,
   })
 
   revalidateTag(TAGS.products, 'default')
@@ -154,7 +164,7 @@ export async function recordWasteAction(formData: FormData) {
 
   await recordWastage(productRepo, wastageRepo, alertRepo, store.id, {
     productId: formData.get('productId') as string,
-    qty: parseInt(formData.get('qty') as string) || 0,
+    qty: parseFloat(formData.get('qty') as string) || 0,
     reason: ((formData.get('reason') as string) || 'other') as WastageReason,
     notes: ((formData.get('notes') as string) || '').trim() || undefined,
   })

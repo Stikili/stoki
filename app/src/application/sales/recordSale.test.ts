@@ -117,6 +117,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     vatInclusive: true,
     isAirtime: false,
     isBundle: false,
+    isWeighable: false,
+    unitLabel: 'each',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...overrides,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
-import { ProductWithStatus, daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
+import { ProductWithStatus, daysUntilExpiry, isExpiringSoon, formatQty, qtyStep, PRODUCT_UNITS } from '@/domain/entities/product'
 import { Supplier } from '@/domain/entities/supplier'
 import { WASTAGE_REASONS } from '@/domain/entities/wastage'
 import type { StoreRole } from '@/domain/entities/store-user'
@@ -197,8 +197,8 @@ export default function InventoryClient({
                   <p className="pill pill-blue text-xs mb-2">Suggested restock: {sug} units</p>
                 )}
                 <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid #1E293B' }}>
-                  <span className="text-white font-bold">R{p.price.toFixed(2)}</span>
-                  <span className="text-muted text-sm">{p.qty} left</span>
+                  <span className="text-white font-bold">R{p.price.toFixed(2)}{p.isWeighable && p.unitLabel !== 'each' ? `/${p.unitLabel}` : ''}</span>
+                  <span className="text-muted text-sm">{formatQty(p.qty, p)} left</span>
                   {canSeeMargins && <span className="text-muted text-xs">+R{p.margin.toFixed(2)}</span>}
                   <div className="ml-auto flex gap-2 flex-wrap">
                     <button onClick={() => setRestockId(p.id)} className="pill pill-blue min-h-0 text-xs">{t('inventory.restock')}</button>
@@ -297,8 +297,8 @@ export default function InventoryClient({
                 <input name="cost" type="number" step="0.01" min="0" defaultValue={editProduct.cost ?? ''} className="input" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input name="qty" type="number" min="0" defaultValue={editProduct.qty} className="input" />
-                <input name="reorderPoint" type="number" min="0" defaultValue={editProduct.reorderPoint} className="input" />
+                <input name="qty" type="number" step={qtyStep(editProduct)} min="0" defaultValue={editProduct.qty} className="input" />
+                <input name="reorderPoint" type="number" step={qtyStep(editProduct)} min="0" defaultValue={editProduct.reorderPoint} className="input" />
               </div>
               <input name="sku" placeholder="SKU / Barcode" defaultValue={editProduct.sku ?? ''} className="input" />
               <input name="expiryDate" type="date" defaultValue={editProduct.expiryDate ?? ''} className="input" />
@@ -343,6 +343,26 @@ export default function InventoryClient({
                   → Manage components
                 </a>
               )}
+              <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>Weighable</p>
+                  <p className="text-muted text-[10px] mt-0.5">Sell by weight or volume — price is per the chosen unit.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  name="isWeighable"
+                  defaultChecked={editProduct.isWeighable ?? false}
+                  className="w-5 h-5 accent-brand"
+                />
+              </label>
+              <div>
+                <label className="text-muted text-xs ml-1 mb-1 block">Unit</label>
+                <select name="unitLabel" defaultValue={editProduct.unitLabel ?? 'each'} className="input">
+                  {PRODUCT_UNITS.map((u) => (
+                    <option key={u.value} value={u.value}>{u.label} ({u.value})</option>
+                  ))}
+                </select>
+              </div>
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
             </form>
           </div>
@@ -365,7 +385,8 @@ export default function InventoryClient({
                 <input
                   name="qty"
                   type="number"
-                  min="1"
+                  step={qtyStep(wasteProduct)}
+                  min={qtyStep(wasteProduct)}
                   max={wasteProduct.qty}
                   required
                   autoFocus
@@ -374,7 +395,7 @@ export default function InventoryClient({
                     // Clamp paste / manual typing so the form can't submit a value
                     // higher than available stock. Browser `max` only enforces nudge buttons.
                     const el = e.currentTarget
-                    const n = parseInt(el.value)
+                    const n = parseFloat(el.value)
                     if (Number.isFinite(n) && n > wasteProduct.qty) el.value = String(wasteProduct.qty)
                   }}
                 />
