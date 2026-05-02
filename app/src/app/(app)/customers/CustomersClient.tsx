@@ -202,6 +202,18 @@ export default function CustomersClient({
                 <input name="paymentTermsDays" type="number" defaultValue={editing.paymentTermsDays} min={0} max={180} className="input" />
               </div>
               <textarea name="notes" defaultValue={editing.notes ?? ''} placeholder="Notes" rows={2} className="input" />
+              <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>Receives marketing</p>
+                  <p className="text-muted text-[10px] mt-0.5">Customer agreed to WhatsApp broadcasts (POPIA opt-in).</p>
+                </div>
+                <input
+                  type="checkbox"
+                  name="marketingOptIn"
+                  defaultChecked={editing.marketingOptIn ?? false}
+                  className="w-5 h-5 accent-brand"
+                />
+              </label>
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Save Changes'}</button>
             </form>
           </div>

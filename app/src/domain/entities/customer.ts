@@ -12,6 +12,9 @@ export interface Customer {
   billingAddress: string | null
   paymentTermsDays: number
   notes: string | null
+  /** Customer has explicitly agreed to receive marketing broadcasts on WhatsApp.
+   *  POPIA-compliant: defaults to false, only sendable when true. */
+  marketingOptIn: boolean
   createdAt: string
   updatedAt: string
 }
@@ -25,4 +28,5 @@ export interface NewCustomer {
   billingAddress?: string
   paymentTermsDays?: number
   notes?: string
+  marketingOptIn?: boolean
 }

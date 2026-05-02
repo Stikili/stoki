@@ -42,6 +42,7 @@ export class CustomerRepository implements ICustomerRepository {
         billing_address: data.billingAddress ?? null,
         payment_terms_days: data.paymentTermsDays ?? 30,
         notes: data.notes ?? null,
+        marketing_opt_in: data.marketingOptIn ?? false,
       })
       .select()
       .single()
@@ -59,6 +60,7 @@ export class CustomerRepository implements ICustomerRepository {
     if (data.billingAddress !== undefined) patch.billing_address = data.billingAddress || null
     if (data.paymentTermsDays !== undefined) patch.payment_terms_days = data.paymentTermsDays
     if (data.notes !== undefined) patch.notes = data.notes || null
+    if (data.marketingOptIn !== undefined) patch.marketing_opt_in = data.marketingOptIn
 
     const { data: row, error } = await this.db
       .from('customers')
