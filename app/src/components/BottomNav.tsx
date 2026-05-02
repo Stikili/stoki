@@ -18,7 +18,7 @@ const navItems = [
 const ACTIVE = '#00C896';
 const INACTIVE = '#7B8CA1';
 
-export default function BottomNav() {
+export default function BottomNav({ unreadInsights = 0 }: { unreadInsights?: number }) {
   const pathname = usePathname();
   const { t } = useI18n();
 
@@ -43,14 +43,26 @@ export default function BottomNav() {
                 className="flex flex-1 flex-col items-center justify-end gap-1 pb-2 pt-1"
               >
                 <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center -mt-7 shadow-lg ring-4"
+                  className="w-14 h-14 rounded-full flex items-center justify-center -mt-7 shadow-lg ring-4 relative"
                   style={{
                     background: ACTIVE,
-                    // Ring matches the page background so the FAB looks notched into the nav bar.
                     boxShadow: '0 6px 16px rgba(0, 200, 150, 0.35)',
                   }}
                 >
                   <Icon size={28} color="white" />
+                  {unreadInsights > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                      style={{
+                        background: '#EF4444',
+                        color: 'white',
+                        border: '2px solid var(--background)',
+                      }}
+                      aria-label={`${unreadInsights} new insight${unreadInsights === 1 ? '' : 's'}`}
+                    >
+                      {unreadInsights > 9 ? '9+' : unreadInsights}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] font-semibold mt-0.5" style={{ color: ACTIVE }}>
                   {t(key)}

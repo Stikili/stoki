@@ -54,15 +54,17 @@ export class SaleRepository implements ISaleRepository {
         const sign = sale.type === 'return' ? -1 : 1
         const revenue = sale.priceAtSale * sale.qty * sign
         const cost = sale.costAtSale * sale.qty * sign
+        const vat = sale.vatAmount * sign
         return {
           totalRevenue: acc.totalRevenue + revenue,
           totalCost: acc.totalCost + cost,
           totalMargin: acc.totalMargin + (revenue - cost),
+          totalVat: acc.totalVat + vat,
           transactionCount: acc.transactionCount + 1,
           itemsSold: acc.itemsSold + sale.qty * sign,
         }
       },
-      { totalRevenue: 0, totalCost: 0, totalMargin: 0, transactionCount: 0, itemsSold: 0 }
+      { totalRevenue: 0, totalCost: 0, totalMargin: 0, totalVat: 0, transactionCount: 0, itemsSold: 0 }
     )
   }
 }

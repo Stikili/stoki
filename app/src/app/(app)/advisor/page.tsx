@@ -1,7 +1,10 @@
 import { getServerData } from '@/lib/getServerData'
 import AdvisorClient from './AdvisorClient'
 
-export default async function AdvisorPage() {
+interface SearchParams { q?: string }
+
+export default async function AdvisorPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const { store } = await getServerData()
-  return <AdvisorClient storeId={store.id} />
+  const { q } = await searchParams
+  return <AdvisorClient storeId={store.id} prefill={q ?? ''} />
 }

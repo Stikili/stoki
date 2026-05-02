@@ -36,7 +36,7 @@ class FakeSaleRepo implements ISaleRepository {
   }
   async findByPeriod(): Promise<Sale[]> { return [] }
   async summarise(): Promise<SalesSummary> {
-    return { totalRevenue: 0, totalCost: 0, totalMargin: 0, transactionCount: 0, itemsSold: 0 }
+    return { totalRevenue: 0, totalCost: 0, totalMargin: 0, totalVat: 0, transactionCount: 0, itemsSold: 0 }
   }
   async claimInvoiceNumber(): Promise<number> {
     return ++this.invoiceCounter

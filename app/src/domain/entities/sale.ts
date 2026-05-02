@@ -47,6 +47,7 @@ export interface SalesSummary {
   totalRevenue: number
   totalCost: number
   totalMargin: number
+  totalVat: number
   transactionCount: number
   itemsSold: number
 }

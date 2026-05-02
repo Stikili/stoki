@@ -25,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const alertRepo = new AlertRepository(supabase)
   const unreadAlerts = await alertRepo.findUnread(store.id)
+  const unreadInsights = unreadAlerts.filter((a) => a.type === 'ai_insight').length
 
   return (
     <div className="flex flex-col flex-1 min-h-screen">
@@ -33,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="flex-1 overflow-y-auto pb-24">
         {children}
       </main>
-      <BottomNav />
+      <BottomNav unreadInsights={unreadInsights} />
       <Walkthrough />
     </div>
   )
