@@ -2,7 +2,6 @@ import Link from 'next/link'
 import {
   Wallet,
   Calculator,
-  FileText,
   Users,
   BarChart3,
   Truck,
@@ -31,7 +30,7 @@ import DashboardHeader from './DashboardHeader'
 import AskStokiPrompt from './AskStokiPrompt'
 
 export default async function DashboardPage() {
-  const { supabase, store, role } = await getServerData()
+  const { supabase, store, role, allStores } = await getServerData()
 
   const saleRepo = new SaleRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -137,7 +136,7 @@ export default async function DashboardPage() {
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
-      <DashboardHeader storeName={store.name} hour={hour} />
+      <DashboardHeader storeName={store.name} hour={hour} storeCount={allStores.length} />
 
       {/* Checklist */}
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
@@ -336,7 +335,6 @@ export default async function DashboardPage() {
             { href: '/airtime',   label: 'Airtime',   Icon: Smartphone,     roles: ['owner', 'manager'] },
             { href: '/broadcasts',label: 'Broadcasts',Icon: Megaphone,      roles: ['owner', 'manager'] },
             { href: '/pricelist', label: 'Prices',    Icon: Tags,           roles: ['owner', 'manager', 'cashier'] },
-            { href: '/settings',  label: 'Settings',  Icon: FileText,       roles: ['owner', 'manager', 'cashier'] },
           ]
             .filter((tile) => tile.roles.includes(role))
             .map(({ href, label, Icon }) => (
