@@ -1,5 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+import { encodeReceipt } from '@/lib/escpos'
+import { isPrinterSupported, printBytes } from '@/lib/bluetooth-printer'
+
 interface ReceiptItem {
   name: string
   qty: number
@@ -101,6 +105,42 @@ export default function Receipt({
     }
   }
 
+  const [printing, setPrinting] = useState(false)
+  const printSupported = isPrinterSupported()
+
+  async function print() {
+    if (printing) return
+    setPrinting(true)
+    try {
+      const bytes = encodeReceipt({
+        storeName,
+        headerLabel,
+        invoiceNumber: numberLabel,
+        vatNumber: vatRegistered ? vatNumber ?? null : null,
+        businessAddress: businessAddress ?? null,
+        businessPhone: businessPhone ?? null,
+        date,
+        items: items.map((i) => ({
+          name: i.name,
+          qty: i.qty,
+          total: i.price * i.qty,
+        })),
+        subtotalExcl: vatRegistered ? subtotalExcl : null,
+        vatAmount: vatRegistered ? vatBasketTotal : null,
+        vatRate: vatRegistered ? vatRate : null,
+        total,
+      })
+      await printBytes(bytes)
+    } catch (e) {
+      // User cancellation throws "User cancelled the requestDevice() chooser"
+      // — silently ignore those, surface real failures.
+      const msg = e instanceof Error ? e.message : 'Print failed'
+      if (!/cancel/i.test(msg)) alert(msg)
+    } finally {
+      setPrinting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
@@ -177,6 +217,16 @@ export default function Receipt({
               Done
             </button>
           </div>
+          {printSupported && (
+            <button
+              onClick={print}
+              disabled={printing}
+              className="w-full py-3 rounded-xl font-semibold text-sm"
+              style={{ background: '#374151', color: 'white', opacity: printing ? 0.6 : 1 }}
+            >
+              {printing ? 'Connecting…' : 'Print to Bluetooth printer'}
+            </button>
+          )}
           {onNewSale && (
             <button
               onClick={onNewSale}
