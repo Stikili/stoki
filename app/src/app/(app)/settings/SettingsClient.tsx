@@ -7,6 +7,7 @@ import { StoreUser, StoreRole, STORE_ROLES } from '@/domain/entities/store-user'
 import {
   updateStoreAction,
   updateVatAction,
+  setAllProductsVatInclusiveAction,
   deleteStoreAction,
   inviteMemberAction,
   updateMemberRoleAction,
@@ -490,6 +491,7 @@ function TeamCard({ storeId, members, currentUserId }: { storeId: string; member
 function VatCard({ store }: { store: Store }) {
   const [vatOn, setVatOn] = useState(store.vatRegistered)
   const [saved, setSaved] = useState(false)
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(fd: FormData) {
@@ -497,6 +499,16 @@ function VatCard({ store }: { store: Store }) {
       await updateVatAction(fd)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    })
+  }
+
+  function applyBulkVat(inclusive: boolean) {
+    const label = inclusive ? 'including VAT' : 'excluding VAT'
+    if (!confirm(`Mark every existing product as priced ${label}?\nUse this when first turning VAT on so legacy prices are interpreted correctly.`)) return
+    startTransition(async () => {
+      const { updated } = await setAllProductsVatInclusiveAction(inclusive)
+      setBulkMessage(`Updated ${updated} product${updated === 1 ? '' : 's'} → ${label}.`)
+      setTimeout(() => setBulkMessage(null), 5000)
     })
   }
 
@@ -572,6 +584,44 @@ function VatCard({ store }: { store: Store }) {
           {isPending ? 'Saving…' : 'Save VAT settings'}
         </button>
       </form>
+
+      {/* Bulk VAT-inclusive toggle — used when first turning VAT on so legacy
+          product prices are interpreted correctly (incl. vs ex VAT). */}
+      {vatOn && (
+        <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--card-border)' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
+            Existing products
+          </p>
+          <p className="text-muted text-xs mb-3">
+            Were the prices on your existing products set including VAT, or excluding? Set this once so VAT is calculated correctly.
+          </p>
+          {bulkMessage && (
+            <div className="rounded-xl px-4 py-2 text-xs font-semibold mb-3" style={{ background: '#143328', color: '#00C896', border: '1px solid #1E4D3F' }}>
+              ✓ {bulkMessage}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => applyBulkVat(true)}
+              disabled={isPending}
+              className="rounded-xl py-2.5 text-xs font-semibold"
+              style={{ background: 'var(--surface)', color: 'var(--foreground)', border: '1px solid var(--card-border)' }}
+            >
+              All include VAT
+            </button>
+            <button
+              type="button"
+              onClick={() => applyBulkVat(false)}
+              disabled={isPending}
+              className="rounded-xl py-2.5 text-xs font-semibold"
+              style={{ background: 'var(--surface)', color: 'var(--foreground)', border: '1px solid var(--card-border)' }}
+            >
+              All exclude VAT
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

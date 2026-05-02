@@ -86,11 +86,9 @@ export async function recordCartAction(
 }
 
 export async function recordReturnAction(
-  productId: string,
-  qty: number,
-  priceAtSale: number,
+  saleId: string,
   paymentMethod: PaymentMethod = 'cash',
-) {
+): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -103,10 +101,17 @@ export async function recordReturnAction(
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
 
+  // Look up the original sale and validate. Prevents over-returning (refunding
+  // qty 5 against a sale of qty 2) which would create phantom stock.
+  const sale = await saleRepo.findById(store.id, saleId)
+  if (!sale) return { ok: false, error: 'Sale not found' }
+  if (sale.type === 'return') return { ok: false, error: 'Cannot return a return.' }
+  if (!sale.productId) return { ok: false, error: 'This sale has no linked product to return.' }
+
   await recordSale(saleRepo, productRepo, alertRepo, store, {
-    productId,
-    qty,
-    priceAtSale,
+    productId: sale.productId,
+    qty: sale.qty,
+    priceAtSale: sale.priceAtSale,
     type: 'return',
     channel: 'app',
     paymentMethod,
@@ -116,6 +121,7 @@ export async function recordReturnAction(
   revalidatePath('/sales')
   revalidatePath('/dashboard')
   revalidatePath('/cashup')
+  return { ok: true }
 }
 
 export async function getSalesByDateAction(from: string, to: string) {

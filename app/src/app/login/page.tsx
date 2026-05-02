@@ -96,7 +96,6 @@ export default function LoginPage() {
   // canonical SSR-safe pattern for browser-only state init.
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved) { setEmail(saved); setRememberMe(true); }
   }, []);
 
@@ -159,24 +158,45 @@ export default function LoginPage() {
   }
 
   // ── Phone OTP ─────────────────────────────────────────────────
+  function humaniseOtpError(raw: string): string {
+    // Supabase returns cryptic messages when Twilio Verify isn't configured
+    // ("Phone signups disabled" / "Sms provider not found"). Surface a clearer
+    // hint so users know to use email instead of staring at a useless error.
+    const r = raw.toLowerCase()
+    if (r.includes('phone') && (r.includes('disabled') || r.includes('provider') || r.includes('not found'))) {
+      return 'Phone login is not enabled for this app yet. Please use email or password to sign in.'
+    }
+    return raw
+  }
+
   async function sendOtp() {
     if (!phoneValid) return;
     setLoading(true);
     clearError();
-    const { error } = await supabase.auth.signInWithOtp({ phone: normalised });
-    if (error) setError(error.message);
-    else setPhoneStep("otp");
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ phone: normalised });
+      if (error) setError(humaniseOtpError(error.message));
+      else setPhoneStep("otp");
+    } catch (e) {
+      setError(e instanceof Error ? humaniseOtpError(e.message) : 'Failed to send code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function verifyOtp() {
     if (!otpValid) return;
     setLoading(true);
     clearError();
-    const { error } = await supabase.auth.verifyOtp({ phone: normalised, token: otp, type: "sms" });
-    if (error) setError(error.message);
-    else router.push("/dashboard");
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.verifyOtp({ phone: normalised, token: otp, type: "sms" });
+      if (error) setError(humaniseOtpError(error.message));
+      else router.push("/dashboard");
+    } catch (e) {
+      setError(e instanceof Error ? humaniseOtpError(e.message) : 'Failed to verify code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── Forgot password overlay ───────────────────────────────────

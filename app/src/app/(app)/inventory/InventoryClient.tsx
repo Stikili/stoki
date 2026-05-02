@@ -310,7 +310,22 @@ export default function InventoryClient({
               <input type="hidden" name="productId" value={wasteId} />
               <div>
                 <label className="text-muted text-xs ml-1 mb-1 block">Qty wasted *</label>
-                <input name="qty" type="number" min="1" max={wasteProduct.qty} required autoFocus className="input" />
+                <input
+                  name="qty"
+                  type="number"
+                  min="1"
+                  max={wasteProduct.qty}
+                  required
+                  autoFocus
+                  className="input"
+                  onInput={(e) => {
+                    // Clamp paste / manual typing so the form can't submit a value
+                    // higher than available stock. Browser `max` only enforces nudge buttons.
+                    const el = e.currentTarget
+                    const n = parseInt(el.value)
+                    if (Number.isFinite(n) && n > wasteProduct.qty) el.value = String(wasteProduct.qty)
+                  }}
+                />
               </div>
               <div>
                 <label className="text-muted text-xs ml-1 mb-1 block">Reason</label>

@@ -7,4 +7,6 @@ export interface IProductRepository {
   update(storeId: string, productId: string, data: Partial<NewProduct>): Promise<Product>
   updateQty(storeId: string, productId: string, delta: number): Promise<void>
   archive(storeId: string, productId: string): Promise<void>
+  /** Bulk-set vat_inclusive across every active product. Returns row count updated. */
+  setVatInclusiveAll(storeId: string, vatInclusive: boolean): Promise<number>
 }

@@ -34,6 +34,17 @@ export class SaleRepository implements ISaleRepository {
     return Number(data)
   }
 
+  async findById(storeId: string, saleId: string): Promise<Sale | null> {
+    const { data, error } = await this.db
+      .from('sales')
+      .select('*, products(name)')
+      .eq('store_id', storeId)
+      .eq('id', saleId)
+      .single()
+    if (error || !data) return null
+    return toSale(data)
+  }
+
   async findByPeriod(storeId: string, from: Date, to: Date): Promise<Sale[]> {
     const { data, error } = await this.db
       .from('sales')

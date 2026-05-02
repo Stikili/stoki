@@ -28,7 +28,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const rawBody = await req.text()
 
-  if (process.env.NODE_ENV === 'production') {
+  // Always validate when the secret is set — including staging deployments.
+  // Skipping signature checks on non-prod made publicly-reachable staging URLs
+  // accept any payload from anyone.
+  if (process.env.META_APP_SECRET) {
     const sig = req.headers.get('x-hub-signature-256')
     if (!validateMetaSignature(rawBody, sig)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
