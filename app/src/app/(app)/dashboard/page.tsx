@@ -21,7 +21,9 @@ import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
 import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
+import SassaPayCard from '@/components/SassaPayCard'
 import { isOverdue } from '@/domain/entities/debtor'
+import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
 import DashboardHeader from './DashboardHeader'
 import AskStokiPrompt from './AskStokiPrompt'
 
@@ -110,6 +112,11 @@ export default async function DashboardPage() {
   // Cashier role hides P&L/cost/margin/reports — they record sales only.
   const isCashier = role === 'cashier'
 
+  // SASSA pay-day card surfaces inside the 7-day window before the next
+  // Older Persons / Disability / Children's grant payout. Cashiers benefit
+  // from this signal too — they're the ones who handle the foot-traffic spike.
+  const upcomingPayEvent = imminentPayEvent(nextSassaPayDates(now, 3), 7, now)
+
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
@@ -119,6 +126,9 @@ export default async function DashboardPage() {
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
         <SetupChecklist storeId={store.id} items={checklistItems} />
       ) : null}
+
+      {/* SASSA pay-day signal — only renders inside the 7-day window */}
+      <SassaPayCard event={upcomingPayEvent} now={now} />
 
       {/* Credit hero — outstanding informal trade credit */}
       {totalOutstanding > 0 && (() => {
