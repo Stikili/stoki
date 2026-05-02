@@ -39,3 +39,10 @@ yarn-error.log*
 .claude/
 .git_backup_app/
 *.tsbuildinfo
+
+# Next.js — build cache + auto-generated
+**/.next/
+# These autogen at the repo root if `tsc` / `next` is ever run from there
+# by accident. The real copies live at app/tsconfig.json + app/next-env.d.ts.
+/tsconfig.json
+/next-env.d.ts
