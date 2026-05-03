@@ -4,8 +4,9 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { Bell, Settings, ChevronDown, Check } from 'lucide-react'
+import { Bell, ChevronDown, Check } from 'lucide-react'
 import Logo from '@/components/Logo'
+import UserMenu from '@/components/UserMenu'
 import { useI18n } from '@/lib/i18n'
 
 const MUTED = '#7B8CA1';
@@ -48,9 +49,9 @@ export default function StoreHeader({
               </div>
             )}
           </Link>
-          <Link href="/settings" className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-            <Settings size={18} color={MUTED} strokeWidth={1.75} />
-          </Link>
+          {/* Single source of truth for the gear-icon dropdown — same instance
+              everywhere in the app, no per-page duplicates. */}
+          <UserMenu storeName={store.name} storeCount={allStores.length} />
         </div>
       </header>
 
