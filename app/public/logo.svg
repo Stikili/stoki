@@ -1,6 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" fill="none">
-  <circle cx="22" cy="24" r="20" stroke="#00C896" stroke-width="2.2"/>
-  <path d="M 22 24 L 33 12 A 16 16 0 1 1 18 6 Z" fill="#00C896"/>
-  <text x="52" y="32" font-family="DM Sans, system-ui, sans-serif" font-size="22" font-weight="700" fill="currentColor" letter-spacing="-0.5">stoki</text>
-  <circle cx="116" cy="32" r="2" fill="#EF4444"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 156 48" fill="none">
+  <!-- Mark — three offset stacked blocks in 32x32 footprint, scaled into the
+       left 32px of the wordmark canvas (master 64x64 → 32x32 = 0.5x). -->
+  <g transform="translate(4, 4) scale(0.5)">
+    <rect x="20" y="10" width="32" height="12" rx="3" fill="#00C896"/>
+    <rect x="12" y="26" width="32" height="12" rx="3" fill="#00C896" fill-opacity="0.78"/>
+    <rect x="20" y="42" width="32" height="12" rx="3" fill="#00C896"/>
+  </g>
+  <text x="44" y="32" font-family="DM Sans, system-ui, sans-serif" font-size="22" font-weight="700" fill="currentColor" letter-spacing="-0.5">stoki</text>
+  <circle cx="120" cy="32" r="2" fill="#EF4444"/>
 </svg>
