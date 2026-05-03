@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   ChevronRight,
   HelpCircle,
+  TrendingUp,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -58,6 +59,14 @@ export default async function SettingsPage() {
       label: 'VAT & tax invoices',
       hint: store.vatRegistered ? `On · VAT ${store.vatRate.toFixed(0)}%` : 'Off — turn on if VAT-registered',
       roles: ['owner', 'manager'],
+    },
+    {
+      href: '/settings/market',
+      icon: <TrendingUp />,
+      tone: 'amber',
+      label: 'Market values',
+      hint: 'SARB rates, fuel, CPI — values the bot quotes',
+      roles: ['owner'],
     },
     {
       href: '/settings/account',
