@@ -37,6 +37,14 @@ export default function StoreHeader({
             <Logo size={16} color="white" />
           </div>
           <span className="font-semibold text-sm truncate max-w-[160px]" style={{ color: 'var(--foreground)' }}>{store.name}</span>
+          {store.isDemo && (
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0"
+              style={{ background: 'rgba(96,165,250,0.12)', color: '#7AB7FB', border: '1px solid rgba(96,165,250,0.25)' }}
+            >
+              Demo
+            </span>
+          )}
           {hasMultiple && <ChevronDown size={14} color={MUTED} strokeWidth={1.5} />}
         </button>
 
@@ -76,7 +84,17 @@ export default function StoreHeader({
                       {s.name[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold truncate ${active ? 'text-brand' : ''}`} style={active ? {} : { color: 'var(--foreground)' }}>{s.name}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className={`font-semibold truncate ${active ? 'text-brand' : ''}`} style={active ? {} : { color: 'var(--foreground)' }}>{s.name}</p>
+                        {s.isDemo && (
+                          <span
+                            className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0"
+                            style={{ background: 'rgba(96,165,250,0.12)', color: '#7AB7FB', border: '1px solid rgba(96,165,250,0.25)' }}
+                          >
+                            Demo
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {active && <Check size={18} color="#00C896" strokeWidth={2.5} />}
                   </button>

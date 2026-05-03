@@ -118,6 +118,7 @@ function makeStore(): Store {
     category: null, location: null, whatsappNumber: null,
     onboardingCompleted: true, vatRegistered: false, vatNumber: null, vatRate: 15,
     businessAddress: null,
+    isDemo: false,
     createdAt: '', updatedAt: '',
   }
 }

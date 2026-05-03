@@ -16,6 +16,9 @@ export interface Store {
   vatNumber: string | null
   vatRate: number
   businessAddress: string | null
+  /** True for the auto-seeded showcase store every account gets at signup.
+   *  Lets the UI label the store and avoid mixing demo data with real flows. */
+  isDemo: boolean
   createdAt: string
   updatedAt: string
 }
