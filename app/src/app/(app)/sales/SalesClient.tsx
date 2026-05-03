@@ -189,8 +189,9 @@ export default function SalesClient({
 
   return (
     <>
-      {/* Tabs */}
-      <div className="flex gap-2 mb-5">
+      {/* Tabs + add-item action — kept on one row so the action stays
+          reachable as the cashier toggles between Sell and History. */}
+      <div className="flex items-center gap-2 mb-5">
         {(['sell', 'history'] as const).map(tb => (
           <button key={tb} onClick={() => setTab(tb)}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold"
@@ -198,25 +199,21 @@ export default function SalesClient({
             {tb === 'sell' ? `${t('sales.sell')}${cartCount ? ` (${cartCount})` : ''}` : t('sales.history')}
           </button>
         ))}
+        <button
+          onClick={() => setShowManualEntry(true)}
+          className="ml-auto px-4 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center gap-1.5"
+          style={{ background: '#141B2D', color: 'var(--foreground)', border: '1px solid #1E293B' }}
+        >
+          <span aria-hidden>+</span> Add item
+        </button>
       </div>
 
       {tab === 'sell' && (
         <>
-          {/* Quick sell + manual entry */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-                {topProducts.length > 0 ? 'Quick sell' : ''}
-              </p>
-              <button
-                onClick={() => setShowManualEntry(true)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg min-h-0"
-                style={{ background: 'var(--surface)', border: '1px solid var(--card-border)', color: 'var(--foreground)' }}
-              >
-                + Quick item
-              </button>
-            </div>
-            {topProducts.length > 0 && (
+          {/* Quick sell — top sellers strip. Add Item lives in the tabs row above. */}
+          {topProducts.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Quick sell</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {topProducts.map(p => {
                   const remaining = p.qty - (cartMap[p.id] ?? 0)
@@ -230,8 +227,8 @@ export default function SalesClient({
                   )
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Cart bar */}
           {cart.length > 0 && (

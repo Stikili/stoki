@@ -7,10 +7,18 @@ import VoiceInput from '@/components/VoiceInput'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
-const QUICK_PROMPTS = ["What to reorder?", "Today's profit?", "Who owes me?", "Best seller?"]
+const QUICK_PROMPTS = [
+  "Should I raise prices?",
+  "What does the rate cut mean?",
+  "What to reorder?",
+  "Today's profit?",
+  "Petrol going up — what now?",
+  "Who owes me?",
+]
 const INTRO: Message = {
   role: 'assistant',
-  content: "Hi, I'm stoki — your business insight assistant. Ask me anything about your stock, sales, or customers.",
+  content:
+    "Hi, I'm stoki — your business insight assistant. I know your stock, sales and customers, and I track SA market conditions (SARB rates, fuel prices, CPI, FX) so you can ask me how the wider economy is shaping your bottom line.",
 }
 
 const HISTORY_KEY = (storeId: string) => `stoki_advisor_${storeId}`
