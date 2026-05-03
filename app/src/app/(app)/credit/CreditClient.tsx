@@ -7,7 +7,8 @@ import { createDebtorAction, addCreditAction, clearDebtAction, settlePartialActi
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, BookOpen } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 import { useI18n } from '@/lib/i18n'
 import { isOverdue } from '@/domain/entities/debtor'
 
@@ -106,7 +107,16 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <p className="text-center text-muted py-12">{debtors.length === 0 ? 'No debtors — tap + to add' : 'No matches'}</p>
+        debtors.length === 0 ? (
+          <EmptyState
+            icon={<BookOpen size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            title="No credit customers yet"
+            description="Track who owes you for informal trade credit. Add a customer, log a sale on credit, send WhatsApp reminders when they're due."
+            pointToAction
+          />
+        ) : (
+          <p className="text-center text-muted py-12">No matches</p>
+        )
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map(d => {

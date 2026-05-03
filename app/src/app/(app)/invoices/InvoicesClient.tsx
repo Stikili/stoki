@@ -24,7 +24,8 @@ import {
 import { addCustomerAction } from '../customers/actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Plus, Printer, Trash2, Mail, MessageCircle } from 'lucide-react'
+import { Plus, Printer, Trash2, Mail, MessageCircle, Receipt as ReceiptIcon } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 import { buildMailtoUrl, buildWhatsAppUrl } from '@/lib/invoice-delivery'
 
 type FilterState = 'all' | InvoiceStatus
@@ -185,7 +186,20 @@ export default function InvoicesClient({
 
       {/* Invoice list */}
       {filtered.length === 0 ? (
-        <p className="text-center text-muted py-12">No invoices in this view</p>
+        invoices.length === 0 ? (
+          <EmptyState
+            icon={<ReceiptIcon size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            title="No invoices yet"
+            description={customers.length === 0
+              ? 'Add a customer first, then issue your first invoice with VAT and payment terms.'
+              : 'Issue your first invoice to a customer — the number is auto-claimed and SARS-sequential.'}
+            ctaLabel={customers.length === 0 ? 'Add a customer' : undefined}
+            ctaHref={customers.length === 0 ? '/customers' : undefined}
+            pointToAction={customers.length > 0}
+          />
+        ) : (
+          <p className="text-center text-muted py-12">No invoices in this view</p>
+        )
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map(inv => {
