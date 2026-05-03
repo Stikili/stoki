@@ -7,7 +7,9 @@ import { PaymentMethod } from '@/domain/entities/sale'
 
 export interface OfflineSale {
   id: string
-  items: { productId: string; qty: number; priceAtSale: number }[]
+  /** productId may be null for manual / off-book items; productName carries
+   *  the typed text so it survives the queue and persists with the sale. */
+  items: { productId: string | null; productName?: string; qty: number; priceAtSale: number }[]
   paymentMethod: PaymentMethod
   queuedAt: string
 }

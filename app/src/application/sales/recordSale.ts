@@ -12,7 +12,12 @@ export async function recordSale(
   store: Store,
   data: NewSale,
 ): Promise<Sale> {
-  const product = await productRepo.findById(store.id, data.productId)
+  // Manual / off-book sale: no product to look up, no stock to decrement,
+  // no low/out-of-stock alerts to fire. Cost defaults to 0 unless caller
+  // supplied one. VAT defaults to inclusive (the SA retail standard).
+  const product = data.productId
+    ? await productRepo.findById(store.id, data.productId)
+    : null
   const cost = data.costAtSale ?? product?.cost ?? 0
 
   // VAT calc — only when the store is VAT-registered.
@@ -40,19 +45,22 @@ export async function recordSale(
     invoiceNumber,
   })
 
-  const qtyDelta = data.type === 'return' ? data.qty : -data.qty
-  await productRepo.updateQty(store.id, data.productId, qtyDelta)
+  // Stock decrement + low/out alerts only run when the sale is product-linked.
+  if (data.productId) {
+    const qtyDelta = data.type === 'return' ? data.qty : -data.qty
+    await productRepo.updateQty(store.id, data.productId, qtyDelta)
 
-  const after = await productRepo.findById(store.id, data.productId)
-  if (after) {
-    if (after.qty <= 0) {
-      await alertRepo.create(store.id, 'out_of_stock', `${after.name} is now out of stock.`)
-    } else if (after.qty <= after.reorderPoint) {
-      await alertRepo.create(
-        store.id,
-        'low_stock',
-        `${after.name} is running low — only ${after.qty} left.`,
-      )
+    const after = await productRepo.findById(store.id, data.productId)
+    if (after) {
+      if (after.qty <= 0) {
+        await alertRepo.create(store.id, 'out_of_stock', `${after.name} is now out of stock.`)
+      } else if (after.qty <= after.reorderPoint) {
+        await alertRepo.create(
+          store.id,
+          'low_stock',
+          `${after.name} is running low — only ${after.qty} left.`,
+        )
+      }
     }
   }
 

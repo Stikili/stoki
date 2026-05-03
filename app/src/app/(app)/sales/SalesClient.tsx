@@ -52,6 +52,7 @@ export default function SalesClient({
   const [returning, setReturning] = useState<Sale | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [productSearch, setProductSearch] = useState('')
+  const [showManualEntry, setShowManualEntry] = useState(false)
 
   const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
@@ -77,11 +78,56 @@ export default function SalesClient({
     setCart(prev => { const e = prev.find(i => i.product.id === p.id); return e ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { product: p, qty: 1 }] })
   }
 
+  /**
+   * Push a manual / off-book item into the cart (no inventory link).
+   * The synthetic id uses a `manual:` prefix so confirmCart can spot these
+   * lines and submit them as productId=null with a free-text productName.
+   * Each manual entry is its own cart line — we don't dedup by name because
+   * the cashier might genuinely sell two distinct one-off items at the
+   * same price (e.g. two different "extra service" charges).
+   */
+  function addManualItem({ name, price, qty }: { name: string; price: number; qty: number }) {
+    if (!name.trim() || !(price > 0) || !(qty > 0)) return
+    haptic(30)
+    const synthetic: ProductWithStatus = {
+      id: `manual:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      storeId: '',
+      name: name.trim(),
+      price,
+      cost: 0,
+      qty: Number.MAX_SAFE_INTEGER,
+      reorderPoint: 0,
+      sku: null,
+      photoUrl: null,
+      expiryDate: null,
+      vatInclusive: vatRegistered,
+      isAirtime: false,
+      isBundle: false,
+      isWeighable: false,
+      unitLabel: 'each',
+      createdAt: '',
+      updatedAt: '',
+      status: 'ok',
+      margin: price,
+      marginPct: 100,
+    }
+    setCart(prev => [...prev, { product: synthetic, qty }])
+    setShowManualEntry(false)
+    toast(`Added ${qty}× ${name.trim()}`)
+  }
+
   function confirmCart() {
     if (!cart.length || isPending) return
     haptic([50, 30, 50])
     const items = cart.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price, vatInclusive: i.product.vatInclusive }))
-    const cartItems = cart.map(i => ({ productId: i.product.id, qty: i.qty, priceAtSale: i.product.price }))
+    // Manual / off-book items carry a `manual:` prefix on their synthetic id —
+    // strip the prefix and submit as productId=null with the typed productName.
+    const cartItems = cart.map(i => ({
+      productId: i.product.id.startsWith('manual:') ? null : i.product.id,
+      productName: i.product.id.startsWith('manual:') ? i.product.name : undefined,
+      qty: i.qty,
+      priceAtSale: i.product.price,
+    }))
     const total = cartTotal
 
     if (!isOnline) {
@@ -156,10 +202,21 @@ export default function SalesClient({
 
       {tab === 'sell' && (
         <>
-          {/* Quick sell */}
-          {topProducts.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Quick Sell</p>
+          {/* Quick sell + manual entry */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                {topProducts.length > 0 ? 'Quick sell' : ''}
+              </p>
+              <button
+                onClick={() => setShowManualEntry(true)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg min-h-0"
+                style={{ background: 'var(--surface)', border: '1px solid var(--card-border)', color: 'var(--foreground)' }}
+              >
+                + Quick item
+              </button>
+            </div>
+            {topProducts.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {topProducts.map(p => {
                   const remaining = p.qty - (cartMap[p.id] ?? 0)
@@ -173,8 +230,8 @@ export default function SalesClient({
                   )
                 })}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Cart bar */}
           {cart.length > 0 && (
@@ -475,6 +532,96 @@ export default function SalesClient({
           </div>
         </div>
       )}
+
+      {/* Manual / quick-item entry sheet — for one-off sales that aren't in
+          the inventory catalogue. Adds a synthetic line into the cart that
+          submits with productId=null so no stock decrement happens. */}
+      {showManualEntry && (
+        <ManualEntrySheet
+          onClose={() => setShowManualEntry(false)}
+          onAdd={addManualItem}
+        />
+      )}
     </>
+  )
+}
+
+function ManualEntrySheet({
+  onClose,
+  onAdd,
+}: {
+  onClose: () => void
+  onAdd: (input: { name: string; price: number; qty: number }) => void
+}) {
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const [qty, setQty] = useState('1')
+
+  const priceN = parseFloat(price)
+  const qtyN = parseInt(qty)
+  const valid = name.trim().length > 0 && priceN > 0 && qtyN > 0
+  const lineTotal = valid ? priceN * qtyN : 0
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative rounded-t-3xl p-6 pb-24 sheet">
+        <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+        <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>Quick item</h2>
+        <p className="text-muted text-sm mb-5">
+          Sell something that&apos;s not in your stock list — type the name and price.
+        </p>
+        <div className="flex flex-col gap-3">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Item name (e.g. 'Plastic bag')"
+            autoFocus
+            className="input"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-muted text-[10px] uppercase tracking-widest font-semibold ml-1 mb-1 block">Price</label>
+              <input
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="R 0.00"
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="text-muted text-[10px] uppercase tracking-widest font-semibold ml-1 mb-1 block">Qty</label>
+              <input
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                type="number"
+                min="1"
+                step="1"
+                className="input"
+              />
+            </div>
+          </div>
+          {valid && (
+            <p className="text-muted text-xs ml-1">
+              Subtotal: <span className="text-brand font-semibold">R{lineTotal.toFixed(2)}</span>
+            </p>
+          )}
+          <button
+            onClick={() => valid && onAdd({ name, price: priceN, qty: qtyN })}
+            disabled={!valid}
+            className="btn-primary mt-2"
+            style={{ opacity: valid ? 1 : 0.5 }}
+          >
+            Add to cart
+          </button>
+          <p className="text-muted text-[10px] text-center -mt-1">
+            Manual items don&apos;t affect inventory — they&apos;re recorded as off-book sales.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -55,8 +55,19 @@ export async function recordSaleAction(
   revalidatePath('/cashup')
 }
 
+/** Cart line — either a real product (productId set) or a manual / off-book
+ *  item (productId null, productName provided). The action treats both
+ *  uniformly downstream; only airtime + stock-decrement live in the
+ *  product-linked branch. */
+export interface CartLine {
+  productId: string | null
+  productName?: string
+  qty: number
+  priceAtSale: number
+}
+
 export async function recordCartAction(
-  items: { productId: string; qty: number; priceAtSale: number }[],
+  items: CartLine[],
   paymentMethod: PaymentMethod = 'cash',
 ): Promise<{ invoiceNumber: number | null; dispensedPins: DispensedPin[]; error?: string }> {
   const supabase = await createClient()
@@ -74,8 +85,13 @@ export async function recordCartAction(
   const bundleRepo = new BundleComponentRepository(supabase)
 
   // Pre-flight: refuse the entire cart if airtime stock can't cover it.
+  // Manual lines (productId null) skip this check entirely — they're not
+  // products and have no stock to consume.
   // Better to fail fast than to record a partial sale + half-dispense PINs.
-  const shortages = await checkAirtimeAvailability(productRepo, pinRepo, store.id, items)
+  const productLinkedItems = items
+    .filter((i): i is CartLine & { productId: string } => i.productId !== null)
+    .map((i) => ({ productId: i.productId, qty: i.qty }))
+  const shortages = await checkAirtimeAvailability(productRepo, pinRepo, store.id, productLinkedItems)
   if (shortages.length > 0) {
     const msg = shortages
       .map((s) => `${s.productName}: ${s.requested} requested, ${s.available} in stock`)
@@ -95,12 +111,17 @@ export async function recordCartAction(
     // the cart loop simple.
     const sale = await recordBundleSale(saleRepo, productRepo, bundleRepo, alertRepo, store, {
       productId: item.productId,
+      productName: item.productName,
       qty: item.qty,
       priceAtSale: item.priceAtSale,
       channel: 'app',
       paymentMethod,
       invoiceNumber,
     })
+
+    // Airtime + PIN dispensing only applies to product-linked lines —
+    // manual / off-book sales never have airtime PINs to pop.
+    if (!item.productId) continue
 
     // Airtime products dispense one PIN per qty unit (a "qty 3" cart line
     // hands the customer 3 separate vouchers).

@@ -74,7 +74,9 @@ export function toSale(row: any): Sale {
     id: row.id,
     storeId: row.store_id,
     productId: row.product_id ?? null,
-    productName: row.products?.name ?? null,
+    // Joined products(name) wins when a product_id exists; the sales.product_name
+    // column kicks in for manual / off-book sales (productId is null).
+    productName: row.products?.name ?? row.product_name ?? null,
     qty: Number(row.qty),
     priceAtSale: Number(row.price_at_sale),
     costAtSale: Number(row.cost_at_sale ?? 0),

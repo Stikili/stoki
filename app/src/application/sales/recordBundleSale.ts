@@ -24,6 +24,12 @@ export async function recordBundleSale(
   store: Store,
   data: NewSale,
 ): Promise<Sale> {
+  // Manual / off-book sale (no productId) → delegate straight to recordSale,
+  // which knows how to skip the product-lookup and stock-decrement paths.
+  if (!data.productId) {
+    return recordSale(saleRepo, productRepo, alertRepo, store, data)
+  }
+
   const product = await productRepo.findById(store.id, data.productId)
   if (!product) throw new Error('Product not found')
   if (!product.isBundle) {
