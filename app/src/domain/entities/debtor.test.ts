@@ -10,6 +10,7 @@ const baseDebtor: Debtor = {
   storeId: 's1',
   name: 'Mr Test',
   phone: null,
+  address: null,
   totalOwed: 100,
   lastRemindedAt: null,
   createdAt: TWO_DAYS_AGO,

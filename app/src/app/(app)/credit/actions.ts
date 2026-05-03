@@ -23,14 +23,31 @@ async function getContext() {
 export async function createDebtorAction(formData: FormData) {
   const { supabase, store } = await getContext()
   const debtorRepo = new DebtorRepository(supabase)
+  const creditRepo = new CreditEntryRepository(supabase)
+  const alertRepo = new AlertRepository(supabase)
 
-  await debtorRepo.create(store.id, {
-    name: formData.get('name') as string,
-    phone: (formData.get('phone') as string) || undefined,
+  const debtor = await debtorRepo.create(store.id, {
+    name: (formData.get('name') as string).trim(),
+    phone: ((formData.get('phone') as string) || '').trim() || undefined,
+    address: ((formData.get('address') as string) || '').trim() || undefined,
   })
+
+  // The "add customer" form also collects an opening credit entry —
+  // description + amount. Skip the entry if the user left amount blank
+  // so the debtor still gets created cleanly with a R0 balance.
+  const description = ((formData.get('description') as string) || '').trim()
+  const amount = parseFloat((formData.get('amount') as string) || '0')
+  if (Number.isFinite(amount) && amount > 0) {
+    await recordCredit(creditRepo, debtorRepo, alertRepo, store.id, {
+      debtorId: debtor.id,
+      amount,
+      description: description || undefined,
+    })
+  }
 
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
+  revalidatePath('/dashboard')
 }
 
 export async function addCreditAction(formData: FormData) {
@@ -42,6 +59,7 @@ export async function addCreditAction(formData: FormData) {
   await recordCredit(creditRepo, debtorRepo, alertRepo, store.id, {
     debtorId: formData.get('debtorId') as string,
     amount: parseFloat(formData.get('amount') as string) || 0,
+    description: ((formData.get('description') as string) || '').trim() || undefined,
   })
 
   revalidateTag(TAGS.debtors, 'default')

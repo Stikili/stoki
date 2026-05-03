@@ -174,14 +174,28 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
         </div>
       )}
 
-      {/* Add debtor sheet */}
+      {/* Add debtor sheet — captures the customer record + the opening
+          credit entry in one form, since most "add customer" events happen
+          because they're buying on credit right now. Description + amount
+          are optional; leave blank to add a customer with a R0 balance. */}
       {showAddDebtor && (
         <div className="fixed inset-0 z-[60] flex flex-col justify-end"><div className="absolute inset-0 bg-black/70" onClick={() => setShowAddDebtor(false)} />
-          <div className="relative rounded-t-3xl p-6 pb-24 sheet"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
-            <h2 className="text-lg font-bold text-white mb-5">{t('credit.newCustomer')}</h2>
+          <div className="relative rounded-t-3xl p-6 pb-24 sheet max-h-[88vh] overflow-y-auto"><div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
+            <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--foreground)' }}>{t('credit.newCustomer')}</h2>
+            <p className="text-muted text-sm mb-5">Add the customer&apos;s details — and what they&apos;re taking on credit, if anything.</p>
             <form action={handleAddDebtor} className="flex flex-col gap-3">
               <input name="name" placeholder="Customer name *" required autoFocus className="input" />
+              <textarea name="address" placeholder="Address" rows={2} className="input" />
               <input name="phone" type="tel" placeholder="Phone (for WhatsApp reminders)" className="input" />
+
+              <div className="pt-3 mt-1" style={{ borderTop: '1px solid var(--card-border)' }}>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted mb-2">Opening credit (optional)</p>
+                <div className="flex flex-col gap-3">
+                  <input name="description" placeholder="Description (e.g. 'Bread, milk, sugar')" className="input" />
+                  <input name="amount" type="number" step="0.01" min="0" placeholder="Amount (R)" className="input" />
+                </div>
+              </div>
+
               <button type="submit" disabled={isPending} className="btn-primary mt-2">{isPending ? 'Saving…' : 'Add Customer'}</button>
             </form>
           </div>
@@ -196,6 +210,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
             <p className="text-muted text-sm mb-5">{creditDebtor.name} · owes R{creditDebtor.totalOwed.toFixed(2)}</p>
             <form action={handleAddCredit} className="flex flex-col gap-3">
               <input type="hidden" name="debtorId" value={creditDebtorId} />
+              <input name="description" placeholder="Description (e.g. 'Bread, milk')" className="input" />
               <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount (R) *" required autoFocus className="input" />
               <button type="submit" disabled={isPending} className="btn-primary mt-2" style={{ background: '#F97316' }}>{isPending ? 'Saving…' : 'Record Credit'}</button>
             </form>

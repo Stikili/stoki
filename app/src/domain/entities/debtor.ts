@@ -3,6 +3,7 @@ export interface Debtor {
   storeId: string
   name: string
   phone: string | null
+  address: string | null
   totalOwed: number
   lastRemindedAt: string | null
   createdAt: string
@@ -12,6 +13,7 @@ export interface Debtor {
 export interface NewDebtor {
   name: string
   phone?: string
+  address?: string
 }
 
 export function isOverdue(debtor: Debtor, thresholdDays = 14): boolean {
