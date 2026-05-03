@@ -12,6 +12,9 @@ export class SaleRepository implements ISaleRepository {
       .insert({
         store_id: storeId,
         product_id: data.productId,
+        // Free-text name only persists when there's no product_id to link to —
+        // otherwise leave NULL so the products(name) join stays the source of truth.
+        product_name: data.productId ? null : (data.productName ?? null),
         qty: data.qty,
         price_at_sale: data.priceAtSale,
         cost_at_sale: data.costAtSale ?? 0,

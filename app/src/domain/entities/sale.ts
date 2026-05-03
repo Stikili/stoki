@@ -32,7 +32,12 @@ export interface Sale {
 }
 
 export interface NewSale {
-  productId: string
+  /** null for manual / off-book sales where the cashier types in a one-off
+   *  item that isn't in the inventory catalogue. */
+  productId: string | null
+  /** Free-text name. Only used when productId is null; otherwise the joined
+   *  products.name on read wins. */
+  productName?: string
   qty: number
   priceAtSale: number
   costAtSale?: number
