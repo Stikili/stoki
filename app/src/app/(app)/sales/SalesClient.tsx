@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
+import { Plus } from 'lucide-react'
 import { ProductWithStatus, formatQty } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { recordCartAction, recordReturnAction, getSalesByDateAction, type DispensedPin } from './actions'
@@ -201,10 +202,11 @@ export default function SalesClient({
         ))}
         <button
           onClick={() => setShowManualEntry(true)}
-          className="ml-auto px-4 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center gap-1.5"
-          style={{ background: '#141B2D', color: 'var(--foreground)', border: '1px solid #1E293B' }}
+          aria-label="Add manual item"
+          className="ml-auto w-11 h-11 rounded-xl flex items-center justify-center"
+          style={{ background: '#00C896' }}
         >
-          <span aria-hidden>+</span> Add item
+          <Plus size={20} color="white" strokeWidth={2.5} />
         </button>
       </div>
 

@@ -11,6 +11,10 @@
     {
       "path": "/api/reminders",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-market",
+      "schedule": "30 6 * * *"
     }
   ]
 }

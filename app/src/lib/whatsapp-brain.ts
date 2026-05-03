@@ -231,7 +231,7 @@ export async function askBrain(
         'Pull the current South African market snapshot: SARB repo + prime rates, petrol 95 + diesel prices, CPI year-on-year, USD/ZAR exchange rate. Use this whenever a question touches pricing decisions, customer affordability, supplier cost pressure, or forecasts. Cached for an hour so cheap to call.',
       inputSchema: z.object({}),
       run: async () => {
-        const ctx = await getMarketContext()
+        const ctx = await getMarketContext(supabase)
         return JSON.stringify({
           as_of: ctx.asOf,
           interest_rates: {
@@ -301,7 +301,7 @@ export async function askBrain(
       const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999)
       return saleRepo.summarise(store.id, dayStart, dayEnd)
     })(),
-    getMarketContext().catch(() => null),
+    getMarketContext(supabase).catch(() => null),
   ])
 
   const lowCount = products.filter(p => p.status === 'low' || p.status === 'out').length
