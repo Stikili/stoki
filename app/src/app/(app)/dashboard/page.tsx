@@ -18,7 +18,7 @@ import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
 
 export default async function DashboardPage() {
-  const { supabase, store, role, allStores } = await getServerData()
+  const { supabase, store, role } = await getServerData()
 
   const saleRepo = new SaleRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
-      <DashboardHeader storeName={store.name} hour={hour} storeCount={allStores.length} />
+      <DashboardHeader storeName={store.name} hour={hour} />
 
       {/* Checklist */}
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
