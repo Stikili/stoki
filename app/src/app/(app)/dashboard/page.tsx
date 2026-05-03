@@ -1,17 +1,4 @@
 import Link from 'next/link'
-import {
-  Wallet,
-  Calculator,
-  Users,
-  BarChart3,
-  Truck,
-  Receipt,
-  Tags,
-  ClipboardCheck,
-  Banknote,
-  Smartphone,
-  Megaphone,
-} from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
@@ -27,6 +14,7 @@ import { isOverdue } from '@/domain/entities/debtor'
 import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
 import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
 import DashboardHeader from './DashboardHeader'
+import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
 
 export default async function DashboardPage() {
@@ -318,33 +306,8 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Manage — feature grid. Filtered by role: cashiers see only what
-          they need to record sales (Pricelist + Settings for store switch). */}
-      <div>
-        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2 ml-1">Manage</p>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { href: '/cashup',    label: 'Cash up',   Icon: Calculator,     roles: ['owner', 'manager'] },
-            { href: '/reports',   label: 'Reports',   Icon: BarChart3,      roles: ['owner', 'manager'] },
-            { href: '/invoices',  label: 'Invoices',  Icon: Receipt,        roles: ['owner', 'manager'] },
-            { href: '/customers', label: 'Customers', Icon: Users,          roles: ['owner', 'manager'] },
-            { href: '/expenses',  label: 'Expenses',  Icon: Wallet,         roles: ['owner', 'manager'] },
-            { href: '/suppliers', label: 'Suppliers', Icon: Truck,          roles: ['owner', 'manager'] },
-            { href: '/stocktake', label: 'Stocktake', Icon: ClipboardCheck, roles: ['owner', 'manager'] },
-            { href: '/reconcile', label: 'Reconcile', Icon: Banknote,       roles: ['owner', 'manager'] },
-            { href: '/airtime',   label: 'Airtime',   Icon: Smartphone,     roles: ['owner', 'manager'] },
-            { href: '/broadcasts',label: 'Broadcasts',Icon: Megaphone,      roles: ['owner', 'manager'] },
-            { href: '/pricelist', label: 'Prices',    Icon: Tags,           roles: ['owner', 'manager', 'cashier'] },
-          ]
-            .filter((tile) => tile.roles.includes(role))
-            .map(({ href, label, Icon }) => (
-            <Link key={href} href={href} className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform">
-              <Icon size={20} color="#7B8CA1" strokeWidth={1.75} />
-              <span className="text-[10px] font-semibold mt-1.5" style={{ color: 'var(--muted)' }}>{label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      {/* Manage — feature grid. Long-press any tile to see what it does. */}
+      <DashboardTiles role={role} />
 
     </div>
   )

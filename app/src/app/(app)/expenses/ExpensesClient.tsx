@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
 import { addExpenseAction, deleteExpenseAction } from './actions'
 import { useToast } from '@/components/Toast'
-import { Plus } from 'lucide-react'
+import { Plus, Wallet } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 
 export default function ExpensesClient({ expenses, totalThisMonth }: { expenses: Expense[]; totalThisMonth: number }) {
   const { toast, toastUndo } = useToast()
@@ -36,7 +37,12 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
       </div>
 
       {expenses.length === 0 ? (
-        <p className="text-center text-muted py-12">No expenses this month — tap + to add</p>
+        <EmptyState
+          icon={<Wallet size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          title="No expenses this month"
+          description="Track rent, transport, airtime and other costs so your P&L tells the whole story."
+          pointToAction
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {expenses.map(e => (

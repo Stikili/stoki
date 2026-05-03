@@ -5,7 +5,8 @@ import { Customer } from '@/domain/entities/customer'
 import { addCustomerAction, editCustomerAction, archiveCustomerAction, restoreCustomerAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 
 interface CustomerStats { outstanding: number; lastInvoice: string | null; count: number }
 
@@ -81,7 +82,12 @@ export default function CustomersClient({
       </div>
 
       {customers.length === 0 ? (
-        <p className="text-center text-muted py-12">No customers yet — tap + to add a B2B account.<br/>Use them when issuing formal invoices with payment terms.</p>
+        <EmptyState
+          icon={<Users size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          title="No customers yet"
+          description="Add a B2B account so you can issue formal invoices with payment terms and chase aged receivables."
+          pointToAction
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {customers.map(c => {

@@ -5,7 +5,8 @@ import { Supplier } from '@/domain/entities/supplier'
 import { addSupplierAction, editSupplierAction, archiveSupplierAction, restoreSupplierAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Plus, Phone } from 'lucide-react'
+import { Plus, Phone, Truck } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 
 interface SupplierStats { spend: number; lastDelivery: string | null; count: number }
 
@@ -73,7 +74,12 @@ export default function SuppliersClient({
       </div>
 
       {suppliers.length === 0 ? (
-        <p className="text-center text-muted py-12">No suppliers yet — tap + to add one.<br/>Use them when restocking to track who you buy from.</p>
+        <EmptyState
+          icon={<Truck size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          title="No suppliers yet"
+          description="Add who you buy from. When you restock, link the order to a supplier so you can see 90-day spend per supplier."
+          pointToAction
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {suppliers.map(s => {

@@ -6,7 +6,7 @@ const WALKTHROUGH_KEY = 'stoki_walkthrough_done'
 
 const steps = [
   { title: 'Welcome to stoki!', desc: 'Your all-in-one business app. Let\'s take a quick tour.', emoji: '👋' },
-  { title: 'Dashboard', desc: 'See today\'s revenue, profit, and quick-sell your top products from here.', emoji: '📊' },
+  { title: 'Dashboard', desc: 'See today\'s revenue, profit, and quick-sell your top products. Long-press any tile to find out what it does.', emoji: '📊' },
   { title: 'Sales', desc: 'Tap products to add to cart. One tap = 1 item. Long press for bulk. Charge when ready.', emoji: '💰' },
   { title: 'Stock', desc: 'Track inventory, scan barcodes, get restock suggestions, and set expiry dates.', emoji: '📦' },
   { title: 'Credit Book', desc: 'Track who owes you. Send WhatsApp reminders. Settle partially or fully.', emoji: '📋' },

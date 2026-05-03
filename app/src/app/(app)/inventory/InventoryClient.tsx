@@ -17,7 +17,8 @@ import {
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
-import { ScanBarcode, Plus, Search, Upload } from 'lucide-react'
+import { ScanBarcode, Plus, Search, Upload, Package } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 import { useI18n } from '@/lib/i18n'
 
 const SAMPLE_CSV = `name,price,cost,qty,reorder_point,sku
@@ -173,7 +174,16 @@ export default function InventoryClient({
 
       {/* Products */}
       {filtered.length === 0 ? (
-        <p className="text-center text-muted py-16">{products.length === 0 ? 'No products yet — tap + to add' : search ? 'No matches' : 'None in this category'}</p>
+        products.length === 0 ? (
+          <EmptyState
+            icon={<Package size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            title="No products yet"
+            description="Add what you sell. You can paste a CSV upload or tap + to add one product at a time — name and price is enough to start."
+            pointToAction
+          />
+        ) : (
+          <p className="text-center text-muted py-16">{search ? 'No matches' : 'None in this category'}</p>
+        )
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map(p => {
