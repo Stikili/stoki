@@ -10,6 +10,7 @@ import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRep
 import { recordSale } from '@/application/sales/recordSale'
 import { getProducts } from '@/application/inventory/getProducts'
 import { fuzzyMatch } from '@/lib/whatsapp-parser'
+import { getMarketContext, summariseMarketContext } from '@/lib/market-context'
 
 type Period = 'today' | 'yesterday' | 'this_week' | 'this_month'
 
@@ -38,24 +39,33 @@ function periodRange(p: Period): { from: Date; to: Date; label: string } {
   }
 }
 
-const SYSTEM_PROMPT = `You are Stoki, an AI assistant for South African SMME shop owners — spaza shops, township retailers, food stalls, hair salons. You communicate via WhatsApp.
+const SYSTEM_PROMPT = `You are Stoki, an AI assistant for South African SMME owners — spaza shops, general dealers, food stalls, salons, transport operators, and any small business owner trying to make smart decisions in the South African market. You communicate via WhatsApp and an in-app advisor.
 
-Your job: help the owner run their business. Answer questions about their data, record sales and returns, surface insights grounded in their actual numbers.
+Your job: help the owner run their business AND understand the wider economy that shapes their bottom line. Answer questions about their data, record sales and returns, surface insights grounded in their actual numbers AND in current SA market conditions.
+
+You are NOT just a spaza-shop bot. You understand:
+- SARB monetary policy (repo rate, prime rate) and how rate changes squeeze customer disposable income
+- Fuel price changes (petrol 95, diesel) and how they push supplier delivery costs up
+- CPI / inflation and what it means for stocking decisions and price-list updates
+- USD/ZAR exchange rate and the import-cost pressure it creates
+- Local economic news that materially affects cash flow — strikes, policy shifts, supplier price hikes
+
+When the user asks anything that touches the wider economy ("should I raise prices?", "is now a good time to extend credit?", "why is bread getting expensive?"), use the get_market_context tool BEFORE answering. Tie your advice to specific current numbers — never give generic answers when real data is one tool call away.
 
 Style:
 - Brief. WhatsApp users want quick answers — aim for 1-3 short paragraphs.
 - Currency in rand (R), formatted with two decimals.
-- South African business context — understand local goods (bread, mealie-meal, airtime, vetkoek, magwinya, simba, etc.) and township pricing.
+- South African context — local goods (bread, mealie-meal, airtime, vetkoek, magwinya, simba), township pricing, but also SA-wide business reality (load-shedding, taxi fares, supplier ecosystems).
 - Conversational, match the owner's tone. Don't be formal or corporate.
 
 Rules:
-- Always use tools for factual claims about their data. Never make up numbers.
+- Always use tools for factual claims about their data OR market conditions. Never make up numbers.
 - When recording sales/returns, fuzzy-match product names — don't ask for exact spelling.
 - If a product can't be found, list close suggestions from inventory.
-- For broad questions ("how is business?"), pull today's revenue, low stock, and overdue debtors before answering.
+- For broad questions ("how is business?"), pull today's revenue, low stock, overdue debtors AND market context before answering.
 - If a question genuinely can't be answered with the data available, say so plainly.
 
-You have tools to: record sales, record returns, check inventory and stock, view debtors, get sales summaries (today/yesterday/this week/this month), see top products, view unread alerts.`
+You have tools to: record sales, record returns, check inventory and stock, view debtors, get sales summaries (today/yesterday/this week/this month), see top products, view unread alerts, AND pull the current SA market snapshot (rates, fuel, FX, inflation).`
 
 export async function askBrain(
   supabase: SupabaseClient,
@@ -216,6 +226,42 @@ export async function askBrain(
     }),
 
     betaZodTool({
+      name: 'get_market_context',
+      description:
+        'Pull the current South African market snapshot: SARB repo + prime rates, petrol 95 + diesel prices, CPI year-on-year, USD/ZAR exchange rate. Use this whenever a question touches pricing decisions, customer affordability, supplier cost pressure, or forecasts. Cached for an hour so cheap to call.',
+      inputSchema: z.object({}),
+      run: async () => {
+        const ctx = await getMarketContext()
+        return JSON.stringify({
+          as_of: ctx.asOf,
+          interest_rates: {
+            repo_pct: ctx.rates.repo,
+            prime_pct: ctx.rates.prime,
+            source: ctx.rates.source,
+            as_of: ctx.rates.asOf,
+          },
+          fuel_zar_per_litre: {
+            petrol_95: ctx.fuel.petrol95,
+            diesel: ctx.fuel.diesel,
+            source: ctx.fuel.source,
+            as_of: ctx.fuel.asOf,
+          },
+          inflation: {
+            cpi_yoy_pct: ctx.inflation.cpiYoy,
+            source: ctx.inflation.source,
+            as_of: ctx.inflation.asOf,
+          },
+          fx: {
+            usd_zar: ctx.fx.usdZar,
+            eur_zar: ctx.fx.eurZar,
+            source: ctx.fx.source,
+            as_of: ctx.fx.asOf,
+          },
+        })
+      },
+    }),
+
+    betaZodTool({
       name: 'record_return',
       description: 'Record a return — reverses a sale and adds stock back.',
       inputSchema: z.object({
@@ -244,22 +290,31 @@ export async function askBrain(
     }),
   ]
 
-  // Lightweight snapshot so Claude has immediate context without tool calls
-  const products = await getProducts(productRepo, store.id)
+  // Lightweight snapshot so Claude has immediate context without tool calls.
+  // Pulled in parallel — store data + the market-context cache lookup are
+  // independent and the model uses both when reasoning about business health.
+  const [products, debtors, today, market] = await Promise.all([
+    getProducts(productRepo, store.id),
+    debtorRepo.findAll(store.id),
+    (async () => {
+      const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999)
+      return saleRepo.summarise(store.id, dayStart, dayEnd)
+    })(),
+    getMarketContext().catch(() => null),
+  ])
+
   const lowCount = products.filter(p => p.status === 'low' || p.status === 'out').length
-  const debtors = await debtorRepo.findAll(store.id)
   const owingDebtors = debtors.filter(d => d.totalOwed > 0)
   const totalOwed = owingDebtors.reduce((s, d) => s + d.totalOwed, 0)
-  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999)
-  const today = await saleRepo.summarise(store.id, dayStart, dayEnd)
 
   const snapshot = [
     `[Store: ${store.name}]`,
     `Today so far: R${today.totalRevenue.toFixed(2)} (${today.transactionCount} sales)`,
     `Low/out of stock: ${lowCount} items`,
     `Debtors owing: ${owingDebtors.length} customers (R${totalOwed.toFixed(2)} total)`,
-  ].join('\n')
+    market ? summariseMarketContext(market) : '',
+  ].filter(Boolean).join('\n')
 
   const client = new Anthropic()
 
