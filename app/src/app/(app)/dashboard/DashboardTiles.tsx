@@ -73,7 +73,7 @@ export default function DashboardTiles({ role }: { role: StoreRole }) {
               onPointerLeave={endHold}
               onPointerCancel={endHold}
               onContextMenu={(e) => e.preventDefault()}
-              className="card flex flex-col items-center justify-center py-3.5 px-2 active:scale-[0.97] transition-transform select-none"
+              className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none"
             >
               <IconBadge icon={<Icon />} tone={tone} size="md" />
               <span className="text-[10px] font-semibold mt-2" style={{ color: 'var(--muted)' }}>{label}</span>

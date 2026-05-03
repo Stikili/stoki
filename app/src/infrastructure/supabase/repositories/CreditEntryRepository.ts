@@ -25,6 +25,7 @@ export class CreditEntryRepository implements ICreditEntryRepository {
         store_id: storeId,
         debtor_id: data.debtorId,
         amount: data.amount,
+        description: data.description ?? null,
         items_json: data.items ?? null,
       })
       .select()

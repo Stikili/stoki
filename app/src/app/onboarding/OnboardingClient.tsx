@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { saveStoreAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
-import LogoMark from '@/components/Logo'
+import OnboardingHero from '@/components/OnboardingHero'
+import Wordmark from '@/components/Wordmark'
 
 type Step = 'type' | 'name' | 'pack'
 
@@ -14,11 +15,12 @@ const CATEGORIES: { value: StoreCategory; label: string; emoji: string; desc: st
   { value: 'other',          label: 'Other',            emoji: '📦', desc: 'Something else entirely' },
 ]
 
-const Logo = () => (
-  <div className="mb-4 flex justify-center">
-    <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#00C896' }}>
-      <LogoMark size={32} color="white" />
-    </div>
+// Hero shown on the very-first-launch step. Big, warm, brand-anchored —
+// the first impression a new user has of stoki.
+const Hero = () => (
+  <div className="mb-6 flex flex-col items-center">
+    <OnboardingHero className="w-full max-w-[320px] h-auto" />
+    <Wordmark height={32} textColor="var(--foreground)" className="mt-2" />
   </div>
 )
 
@@ -51,11 +53,14 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
   return (
     <div className="flex flex-col flex-1 items-center justify-center px-6 py-12 min-h-screen">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center flex flex-col items-center">
-          <Logo />
-          <h1 className="text-3xl font-black tracking-tight lowercase" style={{ color: 'var(--foreground)' }}>
-            {isNew ? 'New store' : 'Welcome to stoki'}
+        <div className="mb-6 text-center flex flex-col items-center">
+          <Hero />
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+            {isNew ? 'New store' : 'Welcome'}
           </h1>
+          <p className="text-muted text-sm mt-1.5 max-w-xs">
+            {isNew ? 'Set up another shop on your account.' : 'Let\'s get your shop on stoki — three quick steps.'}
+          </p>
         </div>
 
         <div className="card rounded-3xl p-6">

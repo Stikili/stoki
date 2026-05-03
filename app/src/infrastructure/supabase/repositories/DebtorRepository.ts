@@ -34,7 +34,12 @@ export class DebtorRepository implements IDebtorRepository {
   async create(storeId: string, data: NewDebtor): Promise<Debtor> {
     const { data: row, error } = await this.db
       .from('debtors')
-      .insert({ store_id: storeId, name: data.name, phone: data.phone ?? null })
+      .insert({
+        store_id: storeId,
+        name: data.name,
+        phone: data.phone ?? null,
+        address: data.address ?? null,
+      })
       .select()
       .single()
 

@@ -82,6 +82,27 @@ button, a, [role="button"] { min-height: 48px; }
   border-radius: 16px;
 }
 
+/* Tactile press feedback for action tiles. The press both scales down and
+ * lifts the surface tint so the touch lands as a "soft thump" rather than a
+ * dry CSS scale. Use on Links / buttons that already have `.card`.
+ */
+.tile-press {
+  transition: transform 120ms ease-out, background 120ms ease-out, border-color 120ms ease-out;
+}
+.tile-press:hover {
+  background: color-mix(in srgb, var(--card-bg) 88%, white 12%);
+  border-color: color-mix(in srgb, var(--card-border) 70%, white 30%);
+}
+.tile-press:active {
+  transform: scale(0.96);
+  background: color-mix(in srgb, var(--card-bg) 80%, white 20%);
+}
+@media (hover: none) {
+  /* Drop the hover state on touch devices — they don't have hover, and the
+   * sticky-hover-after-tap effect on iOS makes tiles look glued-on. */
+  .tile-press:hover { background: var(--card-bg); border-color: var(--card-border); }
+}
+
 .btn-primary {
   background: #00C896;
   color: var(--btn-primary-text);
