@@ -83,7 +83,8 @@ export default function CustomersClient({
 
       {customers.length === 0 ? (
         <EmptyState
-          icon={<Users size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          icon={<Users />}
+          tone="violet"
           title="No customers yet"
           description="Add a B2B account so you can issue formal invoices with payment terms and chase aged receivables."
           pointToAction

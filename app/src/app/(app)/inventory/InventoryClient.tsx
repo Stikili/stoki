@@ -176,7 +176,8 @@ export default function InventoryClient({
       {filtered.length === 0 ? (
         products.length === 0 ? (
           <EmptyState
-            icon={<Package size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            icon={<Package />}
+            tone="cyan"
             title="No products yet"
             description="Add what you sell. You can paste a CSV upload or tap + to add one product at a time — name and price is enough to start."
             pointToAction

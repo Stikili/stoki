@@ -75,7 +75,8 @@ export default function SuppliersClient({
 
       {suppliers.length === 0 ? (
         <EmptyState
-          icon={<Truck size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          icon={<Truck />}
+          tone="cyan"
           title="No suppliers yet"
           description="Add who you buy from. When you restock, link the order to a supplier so you can see 90-day spend per supplier."
           pointToAction

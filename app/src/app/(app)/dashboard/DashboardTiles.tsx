@@ -3,36 +3,40 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import {
-  Wallet,
-  Calculator,
-  Users,
-  BarChart3,
+  Coins,
+  LineChart,
+  FileText,
+  UsersRound,
+  ReceiptText,
   Truck,
-  Receipt,
-  Tags,
-  ClipboardCheck,
-  Banknote,
-  Smartphone,
+  ClipboardList,
+  Landmark,
+  Signal,
   Megaphone,
+  Tag,
 } from 'lucide-react'
 import { haptic } from '@/lib/haptic'
+import IconBadge, { type IconTone } from '@/components/IconBadge'
 import type { StoreRole } from '@/domain/entities/store-user'
 
-// Tile catalogue. `hint` is shown on long-press so users learn the surface
-// without trial-and-error tapping. Roles control visibility — the dashboard
-// will never render a tile the role isn't permitted to use.
+// Tile catalogue. Each tile has:
+//   - icon  : lucide glyph (selected for elegance + low ambiguity at a glance)
+//   - tone  : IconBadge category colour, so the grid reads as a curated set
+//             rather than a wall of monotone gray
+//   - hint  : long-press copy (450ms hold reveals)
+//   - roles : visibility filter — cashiers only see what they can act on
 const ALL_TILES = [
-  { href: '/cashup',     label: 'Cash up',   Icon: Calculator,     hint: 'End-of-day cash count, by payment method.',                                  roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/reports',    label: 'Reports',   Icon: BarChart3,      hint: 'P&L, sales detail, VAT — exportable as PDF or CSV.',                          roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/invoices',   label: 'Invoices',  Icon: Receipt,        hint: 'B2B invoices with VAT and payment tracking.',                                 roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/customers',  label: 'Customers', Icon: Users,          hint: 'B2B customer book — payment terms, addresses, VAT numbers.',                  roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/expenses',   label: 'Expenses',  Icon: Wallet,         hint: 'Record business expenses (rent, transport, airtime).',                        roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/suppliers',  label: 'Suppliers', Icon: Truck,          hint: 'Suppliers and 90-day purchasing history.',                                    roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/stocktake',  label: 'Stocktake', Icon: ClipboardCheck, hint: 'Count physical stock vs system, audit shrinkage.',                            roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/reconcile',  label: 'Reconcile', Icon: Banknote,       hint: 'Match a bank-statement CSV to invoices and expenses.',                        roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/airtime',    label: 'Airtime',   Icon: Smartphone,     hint: 'Load pre-bought voucher PINs — sales auto-dispense.',                         roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/broadcasts', label: 'Broadcasts',Icon: Megaphone,      hint: 'Send Meta-template WhatsApp messages to opted-in customers.',                 roles: ['owner', 'manager'] as StoreRole[] },
-  { href: '/pricelist',  label: 'Prices',    Icon: Tags,           hint: 'Quick price lookup with photos — cashier-friendly.',                          roles: ['owner', 'manager', 'cashier'] as StoreRole[] },
+  { href: '/cashup',     label: 'Cash up',    Icon: Coins,         tone: 'brand'  as IconTone, hint: 'End-of-day cash count, by payment method.',                                  roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/reports',    label: 'Reports',    Icon: LineChart,     tone: 'blue'   as IconTone, hint: 'P&L, sales detail, VAT — exportable as PDF or CSV.',                          roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/invoices',   label: 'Invoices',   Icon: ReceiptText,   tone: 'blue'   as IconTone, hint: 'B2B invoices with VAT and payment tracking.',                                 roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/customers',  label: 'Customers',  Icon: UsersRound,    tone: 'violet' as IconTone, hint: 'B2B customer book — payment terms, addresses, VAT numbers.',                  roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/expenses',   label: 'Expenses',   Icon: FileText,      tone: 'amber'  as IconTone, hint: 'Record business expenses (rent, transport, airtime).',                        roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/suppliers',  label: 'Suppliers',  Icon: Truck,         tone: 'cyan'   as IconTone, hint: 'Suppliers and 90-day purchasing history.',                                    roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/stocktake',  label: 'Stocktake',  Icon: ClipboardList, tone: 'cyan'   as IconTone, hint: 'Count physical stock vs system, audit shrinkage.',                            roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/reconcile',  label: 'Reconcile',  Icon: Landmark,      tone: 'blue'   as IconTone, hint: 'Match a bank-statement CSV to invoices and expenses.',                        roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/airtime',    label: 'Airtime',    Icon: Signal,        tone: 'violet' as IconTone, hint: 'Load pre-bought voucher PINs — sales auto-dispense.',                         roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/broadcasts', label: 'Broadcasts', Icon: Megaphone,     tone: 'rose'   as IconTone, hint: 'Send Meta-template WhatsApp messages to opted-in customers.',                 roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/pricelist',  label: 'Prices',     Icon: Tag,           tone: 'brand'  as IconTone, hint: 'Quick price lookup with photos — cashier-friendly.',                          roles: ['owner', 'manager', 'cashier'] as StoreRole[] },
 ] as const
 
 const LONG_PRESS_MS = 450
@@ -60,7 +64,7 @@ export default function DashboardTiles({ role }: { role: StoreRole }) {
       <div>
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2 ml-1">Manage</p>
         <div className="grid grid-cols-4 gap-2">
-          {tiles.map(({ href, label, Icon }) => (
+          {tiles.map(({ href, label, Icon, tone }) => (
             <Link
               key={href}
               href={href}
@@ -69,10 +73,10 @@ export default function DashboardTiles({ role }: { role: StoreRole }) {
               onPointerLeave={endHold}
               onPointerCancel={endHold}
               onContextMenu={(e) => e.preventDefault()}
-              className="card flex flex-col items-center justify-center py-3 px-2 active:scale-[0.97] transition-transform select-none"
+              className="card flex flex-col items-center justify-center py-3.5 px-2 active:scale-[0.97] transition-transform select-none"
             >
-              <Icon size={20} color="#7B8CA1" strokeWidth={1.75} />
-              <span className="text-[10px] font-semibold mt-1.5" style={{ color: 'var(--muted)' }}>{label}</span>
+              <IconBadge icon={<Icon />} tone={tone} size="md" />
+              <span className="text-[10px] font-semibold mt-2" style={{ color: 'var(--muted)' }}>{label}</span>
             </Link>
           ))}
         </div>
@@ -98,6 +102,9 @@ export default function DashboardTiles({ role }: { role: StoreRole }) {
               }}
               onClick={() => setHintFor(null)}
             >
+              <div className="flex justify-center mb-2">
+                <IconBadge icon={<active.Icon />} tone={active.tone} size="lg" />
+              </div>
               <p className="text-xs font-bold uppercase tracking-widest text-brand mb-1">{active.label}</p>
               <p className="text-sm" style={{ color: 'var(--foreground)' }}>{active.hint}</p>
               <p className="text-muted text-[10px] mt-2">Tap anywhere to dismiss</p>

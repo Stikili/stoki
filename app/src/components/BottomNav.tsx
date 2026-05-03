@@ -77,7 +77,7 @@ export default function BottomNav({ unreadInsights = 0 }: { unreadInsights?: num
               href={href}
               className="flex flex-1 flex-col items-center justify-center gap-1 py-3"
             >
-              <Icon size={24} strokeWidth={active ? 2.25 : 1.75} color={c} />
+              <Icon size={24} strokeWidth={active ? 2 : 1.5} color={c} />
               <span className="text-[11px] font-semibold" style={{ color: c }}>
                 {t(key)}
               </span>

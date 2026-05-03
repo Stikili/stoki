@@ -1,5 +1,6 @@
-import { Wallet } from 'lucide-react'
+import { CalendarHeart } from 'lucide-react'
 import { SassaPayEvent, daysUntil, formatGrantList } from '@/lib/sassa'
+import IconBadge from '@/components/IconBadge'
 
 /**
  * Compact dashboard card surfacing the next SASSA pay date when it's
@@ -34,9 +35,7 @@ export default function SassaPayCard({
       className="card p-4 flex items-start gap-3"
       style={{ borderColor: 'rgba(0,200,150,0.25)' }}
     >
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0,200,150,0.12)' }}>
-        <Wallet size={18} color="#00C896" strokeWidth={1.75} />
-      </div>
+      <IconBadge icon={<CalendarHeart />} tone="brand" size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{heading}</p>
         <p className="text-muted text-xs mt-0.5">
