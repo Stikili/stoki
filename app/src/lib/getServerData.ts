@@ -3,6 +3,7 @@ import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import { getCachedStores } from './cached-queries'
 import { getSelectedStoreId } from './selectedStore'
+import { ensureDemoStore } from './ensureDemoStore'
 import { Store } from '@/domain/entities/store'
 import { StoreRole } from '@/domain/entities/store-user'
 
@@ -24,6 +25,10 @@ export const getServerData = cache(async (): Promise<ServerData> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  // Every account gets a "Stoki Demo Shop" with showcase data on first load
+  // — runs once per user, idempotent via user_metadata.demo_seeded.
+  await ensureDemoStore(supabase, user)
 
   const allStores = await getCachedStores(user.id)
 
