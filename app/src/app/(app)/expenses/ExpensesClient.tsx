@@ -38,7 +38,8 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
 
       {expenses.length === 0 ? (
         <EmptyState
-          icon={<Wallet size={28} color="#7B8CA1" strokeWidth={1.5} />}
+          icon={<Wallet />}
+          tone="amber"
           title="No expenses this month"
           description="Track rent, transport, airtime and other costs so your P&L tells the whole story."
           pointToAction

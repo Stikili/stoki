@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Settings as SettingsIcon, Store as StoreIcon, LogOut, ShieldCheck } from 'lucide-react'
+import IconBadge, { type IconTone } from '@/components/IconBadge'
 import { createClient } from '@/infrastructure/supabase/client'
 
 /**
@@ -68,7 +69,7 @@ export default function UserMenu({
           border: '1px solid var(--card-border)',
         }}
       >
-        <SettingsIcon size={18} color="#7B8CA1" strokeWidth={1.75} />
+        <SettingsIcon size={18} color="#9DB0C5" strokeWidth={1.5} />
       </button>
 
       {open && (
@@ -92,21 +93,24 @@ export default function UserMenu({
           <MenuItem
             href="/settings"
             onNavigate={close}
-            icon={<SettingsIcon size={16} color="#7B8CA1" strokeWidth={1.75} />}
+            icon={<SettingsIcon />}
+            tone="brand"
             label="Store settings"
             hint="VAT, team, business details"
           />
           <MenuItem
             href="/stores"
             onNavigate={close}
-            icon={<StoreIcon size={16} color="#7B8CA1" strokeWidth={1.75} />}
+            icon={<StoreIcon />}
+            tone="cyan"
             label={storeCount > 1 ? 'Switch store' : 'Add another store'}
             hint={storeCount > 1 ? `${storeCount} stores` : 'Create a second store'}
           />
           <MenuItem
             href="/privacy"
             onNavigate={close}
-            icon={<ShieldCheck size={16} color="#7B8CA1" strokeWidth={1.75} />}
+            icon={<ShieldCheck />}
+            tone="slate"
             label="Privacy policy"
           />
 
@@ -132,12 +136,14 @@ function MenuItem({
   href,
   onNavigate,
   icon,
+  tone,
   label,
   hint,
 }: {
   href: string
   onNavigate: () => void
-  icon: React.ReactNode
+  icon: React.ReactElement
+  tone: IconTone
   label: string
   hint?: string
 }) {
@@ -149,9 +155,7 @@ function MenuItem({
       className="flex items-center gap-3 px-4 py-2.5 active:bg-white/[0.04] hover:bg-white/[0.02]"
       style={{ borderTop: '1px solid var(--card-border)' }}
     >
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--surface)' }}>
-        {icon}
-      </div>
+      <IconBadge icon={icon} tone={tone} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{label}</p>
         {hint && <p className="text-muted text-[11px] mt-0.5 truncate">{hint}</p>}

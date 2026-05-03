@@ -1,14 +1,15 @@
 import Link from 'next/link'
 import {
   Building2,
-  Users,
+  UsersRound,
   FileSpreadsheet,
-  UserCircle2,
-  Shield,
+  UserRound,
+  ShieldCheck,
   ChevronRight,
   HelpCircle,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
+import IconBadge, { type IconTone } from '@/components/IconBadge'
 
 /**
  * Settings root — iOS-Settings-style navigation index. Each row drills into
@@ -26,44 +27,56 @@ import { getServerData } from '@/lib/getServerData'
 export default async function SettingsPage() {
   const { store, role } = await getServerData()
 
-  const sections = [
+  const sections: {
+    href: string
+    icon: React.ReactElement
+    tone: IconTone
+    label: string
+    hint?: string
+    roles: readonly string[]
+  }[] = [
     {
       href: '/settings/store',
-      icon: <Building2 size={18} color="#7B8CA1" strokeWidth={1.75} />,
+      icon: <Building2 />,
+      tone: 'cyan',
       label: 'Store details',
       hint: 'Name, phone, address, WhatsApp linking',
-      roles: ['owner', 'manager'] as const,
+      roles: ['owner', 'manager'],
     },
     {
       href: '/settings/team',
-      icon: <Users size={18} color="#7B8CA1" strokeWidth={1.75} />,
+      icon: <UsersRound />,
+      tone: 'violet',
       label: 'Team',
       hint: 'Invite members and change roles',
-      roles: ['owner'] as const,
+      roles: ['owner'],
     },
     {
       href: '/settings/vat',
-      icon: <FileSpreadsheet size={18} color="#7B8CA1" strokeWidth={1.75} />,
+      icon: <FileSpreadsheet />,
+      tone: 'blue',
       label: 'VAT & tax invoices',
       hint: store.vatRegistered ? `On · VAT ${store.vatRate.toFixed(0)}%` : 'Off — turn on if VAT-registered',
-      roles: ['owner', 'manager'] as const,
+      roles: ['owner', 'manager'],
     },
     {
       href: '/settings/account',
-      icon: <UserCircle2 size={18} color="#7B8CA1" strokeWidth={1.75} />,
+      icon: <UserRound />,
+      tone: 'brand',
       label: 'Account & preferences',
       hint: 'Email, theme, language, notifications',
-      roles: ['owner', 'manager', 'cashier'] as const,
+      roles: ['owner', 'manager', 'cashier'],
     },
     {
       href: '/privacy',
-      icon: <Shield size={18} color="#7B8CA1" strokeWidth={1.75} />,
+      icon: <ShieldCheck />,
+      tone: 'slate',
       label: 'Privacy policy',
-      roles: ['owner', 'manager', 'cashier'] as const,
+      roles: ['owner', 'manager', 'cashier'],
     },
   ]
 
-  const visible = sections.filter((s) => (s.roles as readonly string[]).includes(role))
+  const visible = sections.filter((s) => s.roles.includes(role))
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
@@ -78,14 +91,12 @@ export default async function SettingsPage() {
             className="flex items-center gap-3 px-4 py-3.5 active:bg-white/[0.04]"
             style={i === 0 ? {} : { borderTop: '1px solid var(--card-border)' }}
           >
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--surface)' }}>
-              {s.icon}
-            </div>
+            <IconBadge icon={s.icon} tone={s.tone} size="md" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{s.label}</p>
               {s.hint && <p className="text-muted text-[11px] mt-0.5 truncate">{s.hint}</p>}
             </div>
-            <ChevronRight size={16} color="#7B8CA1" />
+            <ChevronRight size={16} strokeWidth={1.5} color="#7B8CA1" />
           </Link>
         ))}
       </div>

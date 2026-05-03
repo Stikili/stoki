@@ -109,7 +109,8 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
       {filtered.length === 0 ? (
         debtors.length === 0 ? (
           <EmptyState
-            icon={<BookOpen size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            icon={<BookOpen />}
+            tone="rose"
             title="No credit customers yet"
             description="Track who owes you for informal trade credit. Add a customer, log a sale on credit, send WhatsApp reminders when they're due."
             pointToAction

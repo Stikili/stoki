@@ -37,12 +37,12 @@ export default function StoreHeader({
             <Logo size={16} color="white" />
           </div>
           <span className="font-semibold text-sm truncate max-w-[160px]" style={{ color: 'var(--foreground)' }}>{store.name}</span>
-          {hasMultiple && <ChevronDown size={14} color={MUTED} />}
+          {hasMultiple && <ChevronDown size={14} color={MUTED} strokeWidth={1.5} />}
         </button>
 
         <div className="flex items-center gap-2">
           <Link href="/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-            <Bell size={18} color={MUTED} strokeWidth={1.75} />
+            <Bell size={18} color="#9DB0C5" strokeWidth={1.5} />
             {unreadAlerts > 0 && (
               <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold px-1" style={{ background: '#EF4444', color: 'white' }}>
                 {unreadAlerts > 9 ? '9+' : unreadAlerts}

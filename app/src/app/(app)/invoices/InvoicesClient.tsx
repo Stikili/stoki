@@ -188,7 +188,8 @@ export default function InvoicesClient({
       {filtered.length === 0 ? (
         invoices.length === 0 ? (
           <EmptyState
-            icon={<ReceiptIcon size={28} color="#7B8CA1" strokeWidth={1.5} />}
+            icon={<ReceiptIcon />}
+            tone="blue"
             title="No invoices yet"
             description={customers.length === 0
               ? 'Add a customer first, then issue your first invoice with VAT and payment terms.'
