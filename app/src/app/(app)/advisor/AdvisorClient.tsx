@@ -9,16 +9,16 @@ interface Message { role: 'user' | 'assistant'; content: string }
 
 const QUICK_PROMPTS = [
   "Should I raise prices?",
-  "What does the rate cut mean?",
+  "Latest SARB news?",
+  "Petrol going up — when?",
   "What to reorder?",
   "Today's profit?",
-  "Petrol going up — what now?",
   "Who owes me?",
 ]
 const INTRO: Message = {
   role: 'assistant',
   content:
-    "Hi, I'm stoki — your business insight assistant. I know your stock, sales and customers, and I track SA market conditions (SARB rates, fuel prices, CPI, FX) so you can ask me how the wider economy is shaping your bottom line.",
+    "Hi, I'm stoki — your business insight assistant. I know your stock, sales and customers, I track SA market conditions (SARB rates, fuel, CPI, FX), and I can search the live web (BusinessTech, Daily Maverick, SARB, Stats SA, etc.) for fresh news that affects your business. Ask me anything.",
 }
 
 const HISTORY_KEY = (storeId: string) => `stoki_advisor_${storeId}`

@@ -14,6 +14,40 @@ import { getMarketContext, summariseMarketContext } from '@/lib/market-context'
 
 type Period = 'today' | 'yesterday' | 'this_week' | 'this_month'
 
+/**
+ * Authoritative SA sources the bot is allowed to search + fetch from.
+ * Curated to keep the model anchored on government data, the central bank,
+ * and respected business journalism — no forums, no marketing-blog SEO
+ * spam. Add new domains here when a use case justifies it; removing one
+ * silently strips it from search results without breaking anything else.
+ */
+const WEB_SOURCE_ALLOWLIST = [
+  // Government / official statistics
+  'resbank.co.za',
+  'statssa.gov.za',
+  'energy.gov.za',
+  'treasury.gov.za',
+  'sars.gov.za',
+  'gov.za',
+  // Industry / sector
+  'aa.co.za',
+  'eskom.co.za',
+  'agbiz.co.za',
+  // SA business journalism (paywall-light, factual)
+  'businesstech.co.za',
+  'dailymaverick.co.za',
+  'moneyweb.co.za',
+  'fin24.com',
+  'news24.com',
+  'bizcommunity.com',
+  'mybroadband.co.za',
+  'ewn.co.za',
+  'iol.co.za',
+  // International coverage of SA macro
+  'reuters.com',
+  'bloomberg.com',
+]
+
 function periodRange(p: Period): { from: Date; to: Date; label: string } {
   const now = new Date()
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
@@ -59,13 +93,16 @@ Style:
 - Conversational, match the owner's tone. Don't be formal or corporate.
 
 Rules:
-- Always use tools for factual claims about their data OR market conditions. Never make up numbers.
+- Always use tools for factual claims about their data, market conditions, or current events. Never make up numbers or news.
 - When recording sales/returns, fuzzy-match product names — don't ask for exact spelling.
 - If a product can't be found, list close suggestions from inventory.
 - For broad questions ("how is business?"), pull today's revenue, low stock, overdue debtors AND market context before answering.
+- For questions about current news / recent rate changes / fuel announcements / supplier issues / labour actions / load-shedding stages / anything time-sensitive that the structured snapshot can't answer, use the web_search tool. When a search result is worth reading in full, follow up with web_fetch to read the page.
+- ALWAYS cite the source URL in your answer when you use web_search or web_fetch — owners need to verify time-sensitive claims.
+- Prefer the structured market snapshot (get_market_context) over a web search for stable indicators we already cache. Only search the web for news / fresh data we don't have stored.
 - If a question genuinely can't be answered with the data available, say so plainly.
 
-You have tools to: record sales, record returns, check inventory and stock, view debtors, get sales summaries (today/yesterday/this week/this month), see top products, view unread alerts, AND pull the current SA market snapshot (rates, fuel, FX, inflation).`
+You have tools to: record sales, record returns, check inventory and stock, view debtors, get sales summaries (today/yesterday/this week/this month), see top products, view unread alerts, pull the current SA market snapshot (rates, fuel, FX, inflation), search the live web (limited to authoritative SA sources), and fetch full pages when a search result needs to be read end-to-end.`
 
 export async function askBrain(
   supabase: SupabaseClient,
@@ -288,6 +325,24 @@ export async function askBrain(
         })
       },
     }),
+
+    // Server-side tools — Claude executes these itself, no callback needed.
+    // We restrict the search/fetch surface to authoritative SA sources so
+    // the bot doesn't pull from random forums or marketing fluff. Caps at
+    // 3 search uses per turn to keep costs predictable (~$0.03 worst case
+    // per heavy market-related conversation).
+    {
+      type: 'web_search_20260209' as const,
+      name: 'web_search' as const,
+      max_uses: 3,
+      allowed_domains: WEB_SOURCE_ALLOWLIST,
+    },
+    {
+      type: 'web_fetch_20260309' as const,
+      name: 'web_fetch' as const,
+      max_uses: 3,
+      allowed_domains: WEB_SOURCE_ALLOWLIST,
+    },
   ]
 
   // Lightweight snapshot so Claude has immediate context without tool calls.
