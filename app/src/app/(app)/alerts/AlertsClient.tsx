@@ -1,8 +1,23 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Alert } from '@/domain/entities/alert'
+import { useRouter } from 'next/navigation'
+import { Alert, AlertType } from '@/domain/entities/alert'
 import { markAlertReadAction, markAllReadAction, createAlertAction } from './actions'
+
+/**
+ * Tapping an alert routes the user to the page that lets them act on it,
+ * not just dismiss the alert in place. Stock alerts → inventory pre-filtered
+ * to the relevant slice. Debtor alerts → credit book. Insights & reports
+ * land somewhere informational rather than going nowhere.
+ */
+const DEEP_LINK: Record<AlertType, string> = {
+  out_of_stock:  '/inventory?filter=out',
+  low_stock:     '/inventory?filter=low',
+  debtor:        '/credit',
+  weekly_report: '/reports',
+  ai_insight:    '/dashboard',
+}
 
 const typeConfig: Record<Alert['type'], { icon: string; color: string; glow: string }> = {
   out_of_stock: { icon: '🔴', color: '#ef4444', glow: 'rgba(239,68,68,0.15)' },
@@ -29,12 +44,20 @@ function timeAgo(iso: string) {
 }
 
 export default function AlertsClient({ alerts }: { alerts: Alert[] }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
   const [selectedType, setSelectedType] = useState<Alert['type']>('debtor')
 
   function markRead(alertId: string) {
     startTransition(() => markAlertReadAction(alertId))
+  }
+
+  function open(a: Alert) {
+    // Mark read in the background; navigate immediately so the tap feels
+    // instant. The destination is type-specific (see DEEP_LINK above).
+    if (!a.readAt) startTransition(() => markAlertReadAction(a.id))
+    router.push(DEEP_LINK[a.type])
   }
 
   function markAllRead() {
@@ -80,31 +103,41 @@ export default function AlertsClient({ alerts }: { alerts: Alert[] }) {
               {unread.map((a) => {
                 const cfg = typeConfig[a.type]
                 return (
-                  <button
-                    key={a.id}
-                    onClick={() => markRead(a.id)}
-                    disabled={isPending}
-                    className="w-full text-left rounded-2xl p-4 active:scale-[0.98] transition-transform"
-                    style={{
-                      background: 'var(--card-bg)',
-                      border: '1px solid var(--card-border)',
-                      borderLeft: `3px solid ${cfg.color}`,
-                      opacity: isPending ? 0.6 : 1,
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-xl mt-0.5">{cfg.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-semibold" style={{ color: cfg.color }}>{typeLabel[a.type]}</span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
-                          <span className="text-muted text-xs ml-auto">{timeAgo(a.createdAt)}</span>
+                  <div key={a.id} className="flex items-stretch gap-2">
+                    <button
+                      onClick={() => open(a)}
+                      disabled={isPending}
+                      className="flex-1 text-left rounded-2xl p-4 active:scale-[0.98] transition-transform"
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderLeft: `3px solid ${cfg.color}`,
+                        opacity: isPending ? 0.6 : 1,
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl mt-0.5">{cfg.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold" style={{ color: cfg.color }}>{typeLabel[a.type]}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
+                            <span className="text-muted text-xs ml-auto">{timeAgo(a.createdAt)}</span>
+                          </div>
+                          <p className="text-sm" style={{ color: 'var(--foreground)' }}>{a.message}</p>
+                          <p className="text-muted text-xs mt-1">Tap to open · or dismiss →</p>
                         </div>
-                        <p className="text-sm" style={{ color: 'var(--foreground)' }}>{a.message}</p>
-                        <p className="text-muted text-xs mt-1">Tap to dismiss</p>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    <button
+                      onClick={() => markRead(a.id)}
+                      disabled={isPending}
+                      aria-label="Dismiss"
+                      className="px-3 rounded-2xl text-muted text-lg active:scale-[0.95]"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 )
               })}
             </>

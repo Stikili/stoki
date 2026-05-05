@@ -93,10 +93,18 @@ export async function POST(req: Request) {
     if (topSeller) parts.push(`top: ${topSeller}`)
     if (lowStock > 0) parts.push(`${lowStock} low stock`)
 
+    const summaryBody = parts.join(' · ')
     const payload = JSON.stringify({
       title: `Good morning — ${storeName}`,
-      body: parts.join(' · '),
+      body: summaryBody,
       url: '/dashboard',
+    })
+
+    // Persist as in-app alert so the morning briefing survives a missed push.
+    await supabase.from('alerts').insert({
+      store_id: storeId,
+      type: 'ai_insight',
+      message: `Good morning — ${summaryBody}`,
     })
 
     const storeSubs = subs.filter((s: { store_id: string }) => s.store_id === storeId)

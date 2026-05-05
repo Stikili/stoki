@@ -7,8 +7,9 @@ import { createDebtorAction, addCreditAction, clearDebtAction, settlePartialActi
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
-import { Plus, Search, BookOpen } from 'lucide-react'
+import { Plus, Search, BookOpen, Wallet, MessageCircle } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
+import Swipeable from '@/components/Swipeable'
 import { useI18n } from '@/lib/i18n'
 import { isOverdue } from '@/domain/entities/debtor'
 
@@ -122,8 +123,25 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
         <div className="flex flex-col gap-2">
           {filtered.map(d => {
             const isExp = expandedId === d.id, unsettled = d.entries.filter(e => !e.settledAt), photo = getPhoto(d.id)
+            const canSettle = d.totalOwed > 0
             return (
-              <div key={d.id} className="card overflow-hidden">
+              <Swipeable
+                key={d.id}
+                leftAction={d.phone ? {
+                  icon: <MessageCircle size={18} strokeWidth={2} />,
+                  label: 'WhatsApp',
+                  color: '#25D366',
+                  onTrigger: () => sendWhatsApp(d),
+                } : undefined}
+                rightAction={canSettle ? {
+                  icon: <Wallet size={18} strokeWidth={2} />,
+                  label: 'Settle',
+                  color: '#00C896',
+                  fgColor: '#0A0E17',
+                  onTrigger: () => { setSettleDebtorId(d.id); setSettleAmount('') },
+                } : undefined}
+              >
+              <div className="card overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start gap-3 mb-3">
                     <button onClick={() => { setPhotoDebtorId(d.id); fileRef.current?.click() }}
@@ -169,6 +187,7 @@ export default function CreditClient({ debtors, totalOutstanding, storeName }: {
                   </div>
                 )}
               </div>
+              </Swipeable>
             )
           })}
         </div>

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
-import { Bell, ChevronDown, Check } from 'lucide-react'
+import { Bell, ChevronDown, Check, Search } from 'lucide-react'
 import Logo from '@/components/Logo'
 import UserMenu from '@/components/UserMenu'
 import { useI18n } from '@/lib/i18n'
@@ -49,6 +49,17 @@ export default function StoreHeader({
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Search trigger — touch users have no Cmd+K. Dispatches a window
+              event the globally-mounted CommandPalette listens for. */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('stoki:open-palette'))}
+            aria-label="Search"
+            className="flex items-center justify-center w-10 h-10 rounded-xl min-h-0"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+          >
+            <Search size={18} color="#9DB0C5" strokeWidth={1.5} />
+          </button>
           <Link href="/alerts" className="relative flex items-center justify-center w-10 h-10 rounded-xl min-h-0" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
             <Bell size={18} color="#9DB0C5" strokeWidth={1.5} />
             {unreadAlerts > 0 && (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { ProductWithStatus, formatQty } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
@@ -43,8 +44,12 @@ export default function SalesClient({
   const { t } = useI18n()
   const { isOnline } = useOnlineStatus()
   const { queueSale } = useOfflineStore()
+  const sp = useSearchParams()
+  // Honour `/sales?tab=history` from the command palette so the deep-link
+  // lands the user on the history view rather than the cart.
+  const initialTab: 'sell' | 'history' = sp.get('tab') === 'history' ? 'history' : 'sell'
   const [isPending, startTransition] = useTransition()
-  const [tab, setTab] = useState<'sell' | 'history'>('sell')
+  const [tab, setTab] = useState<'sell' | 'history'>(initialTab)
   const [cart, setCart] = useState<CartItem[]>([])
   const [selling, setSelling] = useState<ProductWithStatus | null>(null)
   const [qtyForSelling, setQtyForSelling] = useState(1)

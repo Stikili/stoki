@@ -49,10 +49,20 @@ export async function POST(req: Request) {
     const { data: store } = await supabase.from('stores').select('name').eq('id', storeId).single()
     const storeName = store?.name ?? 'Your store'
 
+    const summaryBody = `R${revenue.toFixed(2)} revenue · ${txCount} sales · ${items} items sold`
     const payload = JSON.stringify({
       title: `${storeName} — End of Day`,
-      body: `R${revenue.toFixed(2)} revenue · ${txCount} sales · ${items} items sold`,
+      body: summaryBody,
       url: '/dashboard',
+    })
+
+    // Persist as an in-app alert too so users who miss/dismiss the push still
+    // see the summary in their inbox. Using `ai_insight` since the schema
+    // check-constraint pre-dates a dedicated 'daily_summary' type.
+    await supabase.from('alerts').insert({
+      store_id: storeId,
+      type: 'ai_insight',
+      message: `End of day — ${summaryBody}`,
     })
 
     const storeSubs = subs.filter((s: { store_id: string }) => s.store_id === storeId)

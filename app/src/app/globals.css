@@ -103,6 +103,512 @@ button, a, [role="button"] { min-height: 48px; }
   .tile-press:hover { background: var(--card-bg); border-color: var(--card-border); }
 }
 
+/* ── Login / auth visual primitives ──────────────────────────────────────
+ * Modern glass + shine vocabulary. Used on the login screen but reusable on
+ * any premium-feel surface (onboarding hero card, paywall modal, etc.).
+ */
+
+/* Glossy primary CTA — gradient base + moving sheen + emerald glow.
+ * The sheen is a 30%-opaque white diagonal stripe that traverses the
+ * button every 6s, mimicking light hitting glass. Disabled / loading
+ * states drop the sheen so it doesn't read as "ready to tap" when it
+ * isn't. */
+.btn-gloss {
+  position: relative;
+  background: linear-gradient(180deg, #0DD9A8 0%, #00C896 100%);
+  color: #0A0E17;
+  box-shadow:
+    0 6px 18px -8px rgba(0, 200, 150, 0.40),
+    0 1px 0 rgba(255, 255, 255, 0.30) inset;
+  overflow: hidden;
+}
+.btn-gloss::before {
+  /* Top-edge specular highlight — a thin bright bar that fades down. */
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 40%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+.btn-gloss::after {
+  display: none;
+}
+.btn-gloss:disabled,
+.btn-gloss[aria-disabled="true"] {
+  background: rgba(0, 200, 150, 0.20);
+  color: rgba(10, 14, 23, 0.55);
+  box-shadow: none;
+}
+.btn-gloss:disabled::before,
+.btn-gloss:disabled::after,
+.btn-gloss[aria-disabled="true"]::before,
+.btn-gloss[aria-disabled="true"]::after {
+  display: none;
+}
+@keyframes gloss-sweep {
+  0%   { transform: translateX(-150%); }
+  60%  { transform: translateX(150%);  }
+  100% { transform: translateX(150%);  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-gloss::after { animation: none; }
+}
+
+/* Glassy card — frosted backdrop, top-edge specular line, soft drop. */
+.card-glass {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 30%),
+    var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow:
+    0 16px 48px -20px rgba(0, 0, 0, 0.50),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+.card-glass::before {
+  /* Top specular line — 1px crisp highlight that sells the "glass" read. */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.10) 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.10) 70%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* Glossy field — top-edge highlight + inner shadow at top for depth. */
+.field-gloss {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 30%),
+    var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.field-gloss::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.10) 50%,
+    transparent 100%);
+  pointer-events: none;
+}
+.field-gloss-focus {
+  border-color: rgba(0, 200, 150, 0.50);
+  box-shadow: 0 0 0 3px rgba(0, 200, 150, 0.08);
+}
+.field-gloss-error {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+}
+
+/* ── Login palette ─────────────────────────────────────────────────────────
+ * Login uses a darker, slightly cooler palette than the rest of the app.
+ * Scoped via the `.stoki-login` wrapper on the page root so it doesn't leak.
+ *
+ * Tokens:
+ *   teal   #00c98d  primary       #00e0a0  hover    #00a070  dark
+ *   bg     #070c14  deep          #0c1422  mid      rgba(12,20,36,0.85) glazed-card
+ *   text   #eef2ff  primary       #7a8aaa  muted    #4a5878  tertiary (labels/hints)
+ *   border rgba(255,255,255,0.06) default   rgba(255,255,255,0.12) highlighted
+ *   input  rgba(255,255,255,0.04) bg        rgba(255,255,255,0.08) border
+ *          rgba(0,201,141,0.30) focus ring
+ *
+ * The strategy is to override the brand-level CSS vars within the scope so
+ * existing inline `style={{ color: 'var(--foreground)' }}` etc. cascade for
+ * free; then a handful of explicit class overrides cover the gloss classes
+ * that have hardcoded teal values not bound to vars.
+ */
+.stoki-login {
+  --background:        #070c14;
+  --foreground:        #eef2ff;
+  --card-bg:           rgba(12, 20, 36, 0.85);
+  --card-border:       rgba(255, 255, 255, 0.06);
+  --surface:           rgba(255, 255, 255, 0.04);
+  --muted:             #7a8aaa;
+  --muted-dim:         #4a5878;
+  --btn-primary-text:  #03261a;
+  --color-brand:       #00c98d;
+
+  background: #070c14;
+  color: #eef2ff;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+.stoki-login .stoki-display {
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  letter-spacing: -0.5px;
+}
+
+/* Card — solid teal accent line at top + a subtle gradient ring around the
+ * whole card via mask-compositing. Both replace the muted-white specular
+ * line from the default app theme. */
+.stoki-login .card-glass {
+  padding: 48px 40px;
+  backdrop-filter: blur(32px) saturate(140%);
+  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  box-shadow:
+    0 24px 60px -28px rgba(0, 0, 0, 0.70),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  animation: stokiCardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (max-width: 480px) {
+  .stoki-login .card-glass { padding: 36px 26px; }
+}
+.stoki-login .card-glass::before {
+  /* Centred 70%-wide teal line at the very top of the card. */
+  inset: 0 15% auto 15%;
+  background: linear-gradient(90deg, transparent, #00c98d, transparent);
+}
+.stoki-login .card-glass::after {
+  /* Subtle gradient border ring — diagonal teal tint that catches the eye
+   * without competing with the focus state of an input. */
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0, 201, 141, 0.20), transparent 40%, transparent 60%, rgba(0, 201, 141, 0.08));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Inputs */
+.stoki-login .field-gloss { border-color: rgba(255, 255, 255, 0.08); }
+.stoki-login .field-gloss::before { display: none; }
+.stoki-login .field-gloss-focus {
+  border-color: rgba(0, 201, 141, 0.55);
+  background:
+    rgba(0, 201, 141, 0.04),
+    var(--surface);
+  box-shadow: 0 0 0 3px rgba(0, 201, 141, 0.30);
+}
+
+/* Primary CTA — solid teal with a glow halo on hover (matches the spec). */
+.stoki-login .btn-gloss {
+  background: #00c98d;
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset;
+  transition: background 0.2s, transform 0.12s, box-shadow 0.25s;
+}
+.stoki-login .btn-gloss::before {
+  /* Soft top sheen — replaces the default specular bar. */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 55%);
+  inset: 0;
+  height: 100%;
+}
+.stoki-login .btn-gloss:hover:not(:disabled) {
+  background: #00e0a0;
+  box-shadow:
+    0 0 32px rgba(0, 201, 141, 0.40),
+    0 4px 20px rgba(0, 201, 141, 0.20),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset;
+  transform: translateY(-1px);
+}
+.stoki-login .btn-gloss:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset;
+}
+.stoki-login .btn-gloss:disabled,
+.stoki-login .btn-gloss[aria-disabled="true"] {
+  background: rgba(0, 201, 141, 0.18);
+  color: rgba(238, 242, 255, 0.55);
+  box-shadow: none;
+}
+
+/* Outlined secondary button (the OTP / mode-switcher under the divider).
+ * Hover lifts the border + text to teal so the alt-path is discoverable. */
+.stoki-login .btn-outline {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #7a8aaa;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.stoki-login .btn-outline:hover {
+  border-color: #00c98d;
+  color: #00c98d;
+  background: rgba(0, 201, 141, 0.04);
+}
+
+/* ── Animated background ─────────────────────────────────────────────────
+ * Three drifting orbs + a static scanline overlay. Orb positions are
+ * approximate to the spec; the drift animations are slow (12-18s) and run
+ * indefinitely, alternating direction so the motion never feels mechanical.
+ */
+.stoki-login .scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.stoki-login .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+.stoki-login .orb-1 {
+  width: 480px; height: 480px;
+  background: radial-gradient(circle, rgba(0, 201, 141, 0.15), transparent 70%);
+  top: -100px; right: 10%;
+  animation: stokiDrift1 12s ease-in-out infinite alternate;
+}
+.stoki-login .orb-2 {
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(56, 100, 220, 0.10), transparent 70%);
+  bottom: -80px; left: 5%;
+  animation: stokiDrift2 15s ease-in-out infinite alternate;
+}
+.stoki-login .orb-3 {
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, rgba(244, 168, 67, 0.07), transparent 70%);
+  top: 40%; left: 40%;
+  animation: stokiDrift1 18s ease-in-out infinite alternate-reverse;
+}
+.stoki-login .scanlines {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* Stagger fades for the card's direct children — body sections fade up in
+ * sequence so the card "draws itself" rather than appearing all at once. */
+.stoki-login .stagger > * { opacity: 0; animation: stokiFadeUp 0.5s ease both; }
+.stoki-login .stagger > *:nth-child(1) { animation-delay: 0.20s; }
+.stoki-login .stagger > *:nth-child(2) { animation-delay: 0.30s; }
+.stoki-login .stagger > *:nth-child(3) { animation-delay: 0.35s; }
+.stoki-login .stagger > *:nth-child(4) { animation-delay: 0.40s; }
+.stoki-login .stagger > *:nth-child(5) { animation-delay: 0.45s; }
+.stoki-login .stagger > *:nth-child(6) { animation-delay: 0.50s; }
+.stoki-login .stagger > *:nth-child(7) { animation-delay: 0.55s; }
+.stoki-login .stagger > *:nth-child(8) { animation-delay: 0.60s; }
+
+/* Trust badges — reuse existing tone vocabulary, scoped to login. */
+.stoki-login .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.stoki-login .badge-teal {
+  background: rgba(0, 201, 141, 0.10);
+  border: 1px solid rgba(0, 201, 141, 0.20);
+  color: #00c98d;
+}
+.stoki-login .badge-amber {
+  background: rgba(244, 168, 67, 0.10);
+  border: 1px solid rgba(244, 168, 67, 0.20);
+  color: #f4a843;
+}
+
+@keyframes stokiCardIn {
+  from { opacity: 0; transform: scale(0.96) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes stokiFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stokiDrift1 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.10); }
+}
+@keyframes stokiDrift2 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-20px, -30px) scale(1.08); }
+}
+
+/* Respect users who've asked the OS to limit motion. */
+@media (prefers-reduced-motion: reduce) {
+  .stoki-login .card-glass,
+  .stoki-login .stagger > *,
+  .stoki-login .orb {
+    animation: none !important;
+    opacity: 1;
+  }
+}
+
+/* ── Landing deck — mobile horizontal swipe, desktop vertical stack ───────
+ * On phones we want a slide-by-slide swipe vocabulary (each slide takes
+ * the full viewport, scroll-snap locks to slide boundaries). On tablets+
+ * we revert to normal block flow so the same markup reads as a classic
+ * stacked landing page.
+ *
+ * Why CSS rather than a JS carousel: native scroll inertia + snap is
+ * indistinguishable from a "real" carousel on mobile, costs zero JS, and
+ * doesn't fight the browser's accessibility / find-in-page behaviour.
+ */
+.landing-deck { display: block; }
+
+@media (max-width: 767px) {
+  .landing-deck {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Use 100dvh so the slide fills the viewport even when mobile browser
+     * chrome is showing/hiding (avoids the address-bar-jump cropping). */
+    height: 100dvh;
+  }
+  .landing-deck::-webkit-scrollbar { display: none; }
+  .landing-deck > section {
+    flex: 0 0 100vw;
+    width: 100vw;
+    height: 100dvh;
+    scroll-snap-align: start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Pagination dots — small fixed indicator at the bottom of the deck on
+ * mobile only. Active dot widens + brightens; inactive stays muted. */
+.landing-dots {
+  position: fixed;
+  bottom: 22px;
+  left: 0; right: 0;
+  display: none; /* hidden on desktop */
+  justify-content: center;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .landing-dots { display: flex; }
+}
+.landing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: width 200ms ease, background 200ms ease;
+}
+.landing-dot.is-active {
+  width: 22px;
+  background: #00c98d;
+}
+:root[data-theme="light"] .landing-dot {
+  background: rgba(12, 20, 36, 0.22);
+}
+:root[data-theme="light"] .landing-dot.is-active {
+  background: #00c98d;
+}
+
+/* ── Light-mode overrides for the .stoki-login scope ──────────────────────
+ * Mirrors the dark palette token-for-token so a user toggling theme on
+ * /settings (or the landing-page toggle) gets a consistent look on the
+ * pre-auth surface as well as inside the app.
+ *
+ * Token mapping:
+ *   bg-deep    #f6f8fc (cool off-white)       (was #070c14)
+ *   card-bg    rgba(255,255,255,0.85)         (was rgba(12,20,36,0.85))
+ *   text       #0c1422                         (was #eef2ff)
+ *   muted      #4a5878                         (was #7a8aaa) — promoted from tertiary
+ *   muted-dim  #7a8aaa                         (was #4a5878) — demoted from secondary
+ *   border     rgba(12,20,36,0.08)             (was rgba(255,255,255,0.06))
+ *   border-hl  rgba(12,20,36,0.16)             (was rgba(255,255,255,0.12))
+ *   surface    rgba(12,20,36,0.03)             (was rgba(255,255,255,0.04))
+ *   brand stays the same teal so brand recognition holds across themes.
+ */
+:root[data-theme="light"] .stoki-login {
+  --background:        #f6f8fc;
+  --foreground:        #0c1422;
+  --card-bg:           rgba(255, 255, 255, 0.85);
+  --card-border:       rgba(12, 20, 36, 0.08);
+  --surface:           rgba(12, 20, 36, 0.03);
+  --muted:             #4a5878;
+  --muted-dim:         #7a8aaa;
+  --btn-primary-text:  #03261a;
+  --color-brand:       #00c98d;
+
+  background: #f6f8fc;
+  color: #0c1422;
+}
+
+/* Card — drop the dark-mode shadow opacity in favour of a softer one that
+ * reads on a light bg without going chalky. */
+:root[data-theme="light"] .stoki-login .card-glass {
+  box-shadow:
+    0 24px 60px -28px rgba(12, 20, 36, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.50) inset;
+}
+:root[data-theme="light"] .stoki-login .card-glass::after {
+  background: linear-gradient(135deg, rgba(0, 201, 141, 0.22), transparent 40%, transparent 60%, rgba(0, 201, 141, 0.08));
+}
+
+/* Inputs — dark hairline border + subtle focus tint */
+:root[data-theme="light"] .stoki-login .field-gloss {
+  border-color: rgba(12, 20, 36, 0.10);
+}
+:root[data-theme="light"] .stoki-login .field-gloss-focus {
+  border-color: rgba(0, 201, 141, 0.60);
+  box-shadow: 0 0 0 3px rgba(0, 201, 141, 0.18);
+}
+
+/* Outline button — dark text, hover stays the teal vocabulary */
+:root[data-theme="light"] .stoki-login .btn-outline {
+  border: 1px solid rgba(12, 20, 36, 0.16);
+  color: #4a5878;
+}
+:root[data-theme="light"] .stoki-login .btn-outline:hover {
+  border-color: #00c98d;
+  color: #00c98d;
+  background: rgba(0, 201, 141, 0.06);
+}
+
+/* Scanlines — disable in light mode (the dark stripe vocabulary doesn't
+ * carry the same retro feel on white; better to drop it cleanly). */
+:root[data-theme="light"] .stoki-login .scanlines { display: none; }
+
+/* Orbs — drop opacity ~30% so the radial glows don't over-saturate the
+ * light bg (the same alpha that read as "subtle" on #070c14 reads as
+ * "fluorescent highlighter" on #f6f8fc). */
+:root[data-theme="light"] .stoki-login .orb-1 {
+  background: radial-gradient(circle, rgba(0, 201, 141, 0.10), transparent 70%);
+}
+:root[data-theme="light"] .stoki-login .orb-2 {
+  background: radial-gradient(circle, rgba(56, 100, 220, 0.06), transparent 70%);
+}
+:root[data-theme="light"] .stoki-login .orb-3 {
+  background: radial-gradient(circle, rgba(244, 168, 67, 0.05), transparent 70%);
+}
+
 .btn-primary {
   background: #00C896;
   color: var(--btn-primary-text);
