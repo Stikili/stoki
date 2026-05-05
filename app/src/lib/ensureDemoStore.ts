@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { revalidateTag } from 'next/cache'
 import { seedDemoStores } from '@/application/demo/seedDemoStore'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { TAGS } from '@/lib/cache-tags'
 
 /**
@@ -42,6 +43,16 @@ export async function ensureDemoStore(
   if (v3Done) return
 
   try {
+    // Use the service-role (admin) client for the seed. Reason: when a brand-
+    // new store is created, the caller has no `store_users` membership row
+    // for it yet, but the multi-user RLS policies (since migration 008) check
+    // membership for every store-scoped table. The user-scoped client can
+    // create the store row (owner_id check), but every subsequent insert
+    // (products, suppliers, sales, etc.) gets blocked by RLS. The admin
+    // client bypasses RLS during bootstrap; we still scope every insert
+    // explicitly to `store_id`/`owner_id = user.id` so there's no leakage.
+    const admin = createAdminClient()
+
     // Unconditional cleanup: soft-delete every is_demo store the caller
     // owns, regardless of which prior seed version it came from. This
     // collapses any duplicates / leftover-from-partial-failure rows so the
@@ -50,14 +61,14 @@ export async function ensureDemoStore(
     // Soft-delete is safe: stores carry a `deleted_at` column and all
     // RLS-aware queries filter it. We don't hard-delete because cascading
     // deletes across sales/products/etc. would be slow and non-atomic.
-    await supabase
+    await admin
       .from('stores')
       .update({ deleted_at: new Date().toISOString() })
       .eq('owner_id', user.id)
       .eq('is_demo', true)
       .is('deleted_at', null)
 
-    await seedDemoStores(supabase, user.id)
+    await seedDemoStores(admin, user.id)
 
     // Stamp every prior flag too so any intermediate code path that still
     // reads them stays consistent.
