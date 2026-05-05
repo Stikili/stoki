@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Space_Grotesk, Outfit } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 import { I18nProvider } from "@/lib/i18n";
@@ -10,6 +10,22 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+// Used inside the .stoki-login scope (landing + login). Loaded via next/font
+// rather than CSS @import so fonts are self-hosted, preconnected, and
+// Tailwind v4's import-hoisting can't trip on order-of-rules.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+});
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -38,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`${dmSans.variable} ${spaceGrotesk.variable} ${outfit.variable} h-full`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('stoki_theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}` }} />
       </head>

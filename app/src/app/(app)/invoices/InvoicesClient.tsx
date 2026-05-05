@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Customer } from '@/domain/entities/customer'
 import {
   Invoice,
@@ -26,6 +27,7 @@ import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import { Plus, Printer, Trash2, Mail, MessageCircle, Receipt as ReceiptIcon } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
+import Swipeable from '@/components/Swipeable'
 import { buildMailtoUrl, buildWhatsAppUrl } from '@/lib/invoice-delivery'
 
 type FilterState = 'all' | InvoiceStatus
@@ -57,8 +59,12 @@ export default function InvoicesClient({
   products: ProductWithStatus[]
 }) {
   const { toast } = useToast()
+  const sp = useSearchParams()
+  // Deep-link from the command palette: `/invoices?new=1` opens the create
+  // sheet immediately. Computed during render (not via effect) so the sheet
+  // mounts on first paint instead of after a re-render.
   const [filter, setFilter] = useState<FilterState>('all')
-  const [showCreate, setShowCreate] = useState(false)
+  const [showCreate, setShowCreate] = useState(() => sp.get('new') === '1')
   const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -206,8 +212,19 @@ export default function InvoicesClient({
           {filtered.map(inv => {
             const overdue = isOverdue(inv)
             const balance = balanceOf(inv)
+            const customer = customers.find(c => c.id === inv.customerId) ?? null
+            const waUrl = balance > 0 ? buildWhatsAppUrl(store, inv, customer) : ''
             return (
-              <button key={inv.id} onClick={() => setOpenInvoiceId(inv.id)} className="card p-4 text-left">
+              <Swipeable
+                key={inv.id}
+                rightAction={waUrl ? {
+                  icon: <MessageCircle size={18} strokeWidth={2} />,
+                  label: 'Chase via WhatsApp',
+                  color: '#25D366',
+                  href: waUrl,
+                } : undefined}
+              >
+              <button onClick={() => setOpenInvoiceId(inv.id)} className="card p-4 text-left w-full">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -229,6 +246,7 @@ export default function InvoicesClient({
                   </div>
                 </div>
               </button>
+              </Swipeable>
             )
           })}
         </div>

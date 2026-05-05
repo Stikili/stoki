@@ -7,6 +7,7 @@ import BottomNav from '@/components/BottomNav'
 import StoreHeader from '@/components/StoreHeader'
 import Walkthrough from '@/components/Walkthrough'
 import OfflineBanner from '@/components/OfflineBanner'
+import CommandPalette from '@/components/CommandPalette'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -36,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <BottomNav unreadInsights={unreadInsights} />
       <Walkthrough />
+      <CommandPalette />
     </div>
   )
 }

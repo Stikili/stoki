@@ -16,6 +16,7 @@ import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
 import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
+import SaleFAB from '@/components/SaleFAB'
 
 export default async function DashboardPage() {
   const { supabase, store, role } = await getServerData()
@@ -309,6 +310,7 @@ export default async function DashboardPage() {
       {/* Manage — feature grid. Long-press any tile to see what it does. */}
       <DashboardTiles role={role} />
 
+      <SaleFAB />
     </div>
   )
 }
