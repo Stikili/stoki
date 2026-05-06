@@ -276,7 +276,10 @@ const MARKET_PROFILE: DemoProfile = {
     name: 'Stoki Demo Mini-Market',
     phone: '+27214561234',
     location: 'Cape Town',
-    category: 'mini-market',
+    // Schema's stores_category_check only allows
+    // 'spaza' | 'general_dealer' | 'food_stall' | 'other' — a mini-market
+    // most closely fits general_dealer.
+    category: 'general_dealer',
     vat_registered: true,
     vat_number: '4123456789',
     business_address: '15 Long Street, Cape Town, 8001',

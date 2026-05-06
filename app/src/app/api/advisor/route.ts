@@ -6,9 +6,10 @@ import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
+import { LLM_API_KEY, LLM_MODEL } from '@/lib/llm-config'
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = LLM_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'Advisor not configured' }, { status: 503 })
 
   const supabase = await createClient()
@@ -76,7 +77,7 @@ Give actionable advice. Keep answers under 3 sentences unless the question genui
 
   const ai = new LLMClient({ apiKey })
   const response = await ai.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: LLM_MODEL,
     max_tokens: 1024,
     system: systemPrompt,
     messages: validMessages,
