@@ -148,6 +148,12 @@ interface DemoProfile {
     vat_registered: boolean
     vat_number?: string
     business_address?: string
+    /** Optional GPS — feeds F-P-06 (weather) + F-P-08 (competitor proximity).
+     *  Migration 020 adds the lat/lng columns; older schemas ignore them. */
+    lat?: number
+    lng?: number
+    /** Logged cash float — feeds F-P-07 working-capital-gap. */
+    cash_balance?: number
   }
   /** Approx sales count per day; used to scale the 7-day chart. */
   sales_per_day: [min: number, max: number]
@@ -175,6 +181,10 @@ const SPAZA_PROFILE: DemoProfile = {
     location: 'Soweto',
     category: 'spaza',
     vat_registered: false,
+    // Orlando West, Soweto — central enough to find Shoprite Usave / PnP nearby.
+    lat: -26.2378,
+    lng: 27.9087,
+    cash_balance: 1800,
   },
   sales_per_day: [3, 5],
   payment_methods: ['cash', 'cash', 'cash', 'cash', 'card', 'snapscan', 'ewallet'],
@@ -283,6 +293,10 @@ const MARKET_PROFILE: DemoProfile = {
     vat_registered: true,
     vat_number: '4123456789',
     business_address: '15 Long Street, Cape Town, 8001',
+    // Long Street, Cape Town CBD — dense formal-retail neighbourhood.
+    lat: -33.9249,
+    lng: 18.4241,
+    cash_balance: 22500,
   },
   sales_per_day: [6, 9],
   payment_methods: ['card', 'card', 'snapscan', 'yoco', 'cash', 'cash', 'eft'],
@@ -451,6 +465,10 @@ async function seedOne(
       vat_registered: profile.store.vat_registered,
       vat_number: profile.store.vat_number ?? null,
       business_address: profile.store.business_address ?? null,
+      lat: profile.store.lat ?? null,
+      lng: profile.store.lng ?? null,
+      cash_balance: profile.store.cash_balance ?? null,
+      cash_balance_updated_at: profile.store.cash_balance ? new Date().toISOString() : null,
     })
     .select()
     .single()
