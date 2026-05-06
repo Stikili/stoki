@@ -1,4 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
+// Default export aliased — keeps the rest of this file provider-agnostic.
+// Swap the package + these two import lines if/when we change LLM vendors.
+import LLMClient from '@anthropic-ai/sdk'
 import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { z } from 'zod'
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -323,7 +325,7 @@ export async function askBrain(
       },
     }),
 
-    // Server-side tools — Claude executes these itself, no callback needed.
+    // Server-side tools — the model executes these itself, no callback needed.
     // We restrict the search/fetch surface to authoritative SA sources so
     // the bot doesn't pull from random forums or marketing fluff. Caps at
     // 3 search uses per turn to keep costs predictable (~$0.03 worst case
@@ -342,9 +344,9 @@ export async function askBrain(
     },
   ]
 
-  // Lightweight snapshot so Claude has immediate context without tool calls.
-  // Pulled in parallel — store data + the market-context cache lookup are
-  // independent and the model uses both when reasoning about business health.
+  // Lightweight snapshot so the model has immediate context without tool
+  // calls. Pulled in parallel — store data + the market-context cache lookup
+  // are independent and the model uses both when reasoning about business health.
   const [products, debtors, today, market] = await Promise.all([
     getProducts(productRepo, store.id),
     debtorRepo.findAll(store.id),
@@ -368,7 +370,7 @@ export async function askBrain(
     market ? summariseMarketContext(market) : '',
   ].filter(Boolean).join('\n')
 
-  const client = new Anthropic()
+  const client = new LLMClient()
 
   const finalMessage = await client.beta.messages.toolRunner({
     model: 'claude-sonnet-4-6',

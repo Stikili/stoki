@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+// Default export aliased — keeps the rest of this file provider-agnostic.
+// Swap the package + this single import line if/when we change LLM vendors.
+import LLMClient from '@anthropic-ai/sdk'
 import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
@@ -66,13 +68,14 @@ Current store data:
 
 Give actionable advice. Keep answers under 3 sentences unless the question genuinely needs more.`
 
-  // Validate message alternation (Claude requires user/assistant turns to alternate)
+  // Validate message alternation — the LLM API requires user/assistant
+  // turns to alternate, so any system / tool messages get filtered out.
   const validMessages = messages.filter(
     (m: { role: string; content: string }) => m.role === 'user' || m.role === 'assistant'
   )
 
-  const anthropic = new Anthropic({ apiKey })
-  const response = await anthropic.messages.create({
+  const ai = new LLMClient({ apiKey })
+  const response = await ai.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: systemPrompt,
