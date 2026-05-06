@@ -2,6 +2,7 @@
 // Swap the package + these two import lines if/when we change LLM vendors.
 import LLMClient from '@anthropic-ai/sdk'
 import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod'
+import { LLM_MODEL } from '@/lib/llm-config'
 import { z } from 'zod'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Store } from '@/domain/entities/store'
@@ -373,7 +374,7 @@ export async function askBrain(
   const client = new LLMClient()
 
   const finalMessage = await client.beta.messages.toolRunner({
-    model: 'claude-sonnet-4-6',
+    model: LLM_MODEL,
     max_tokens: 4096,
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
