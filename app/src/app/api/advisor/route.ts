@@ -7,6 +7,8 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { LLM_API_KEY, LLM_MODEL } from '@/lib/llm-config'
+import { checkAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
+import { relevantAdvisorContext } from '@/application/advisor/features'
 
 export async function POST(req: NextRequest) {
   const apiKey = LLM_API_KEY
@@ -15,6 +17,13 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Per-user daily message cap. Surfaces a friendly throttle message on
+  // free-tier accounts that would otherwise burn LLM budget.
+  const budget = await checkAdvisorBudget(supabase, user.id)
+  if (!budget.ok) {
+    return NextResponse.json({ message: budget.message, throttled: true })
+  }
 
   const body = await req.json()
   const { messages, storeId } = body
@@ -52,6 +61,17 @@ export async function POST(req: NextRequest) {
     ? `Location: ${store.location}, South Africa.`
     : 'Location: South Africa (area not specified).'
 
+  // Pull only the AI-economic-intelligence feature blocks relevant to the
+  // current user message — keyword-gated so we don't pay LLM tokens for the
+  // full pack on every question.
+  const lastUserMessage = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'user') return String(messages[i].content ?? '')
+    }
+    return ''
+  })()
+  const featureContext = await relevantAdvisorContext(supabase, store, lastUserMessage)
+
   const systemPrompt = `You are stoki insight, the business insight assistant built into the stoki app. You are advising the owner of ${store.name}, a ${storeType} in South Africa. ${locationContext}
 
 Be concise, practical, and speak plainly in the South African township/SMME context. Use Rands (R) for currency. Keep answers conversational — no bullet points, no markdown headers. Tailor advice to the local market: reference relevant suppliers, pricing norms, seasonal patterns, and community dynamics for the owner's area where possible.
@@ -67,6 +87,7 @@ Current store data:
 - Biggest debtors: ${debtors.slice(0, 3).map((d) => `${d.name} owes R${d.totalOwed.toFixed(2)}`).join('; ') || 'none'}
 - Top products by margin: ${productsWithStatus.sort((a, b) => b.margin - a.margin).slice(0, 3).map((p) => `${p.name} (R${p.margin.toFixed(2)} margin)`).join(', ') || 'none'}
 
+${featureContext ? `\n## Feature-specific context relevant to the question\n\n${featureContext}\n` : ''}
 Give actionable advice. Keep answers under 3 sentences unless the question genuinely needs more.`
 
   // Validate message alternation — the LLM API requires user/assistant
@@ -84,5 +105,10 @@ Give actionable advice. Keep answers under 3 sentences unless the question genui
   })
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
+
+  // Increment the per-user daily counter only on a successful LLM response.
+  // We don't await — the response is what the user is waiting for.
+  void recordAdvisorUse(supabase, user.id)
+
   return NextResponse.json({ message: text })
 }
