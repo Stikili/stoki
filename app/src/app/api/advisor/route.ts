@@ -6,7 +6,7 @@ import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
-import { LLM_API_KEY, LLM_MODEL } from '@/lib/llm-config'
+import { LLM_API_KEY, LLM_MODEL, LLM_MODEL_FAST } from '@/lib/llm-config'
 import { checkAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
 import { relevantAdvisorContext } from '@/application/advisor/features'
 
@@ -96,9 +96,22 @@ Give actionable advice. Keep answers under 3 sentences unless the question genui
     (m: { role: string; content: string }) => m.role === 'user' || m.role === 'assistant'
   )
 
+  // Model routing: cheap-first.
+  //
+  // Default to the fast/cheap model (Haiku-class). Escalate to the full
+  // Sonnet-class model only when the question genuinely needs more reasoning:
+  //   - feature blocks fired (the question is domain-specific and needs
+  //     the LLM to integrate multiple data points)
+  //   - the user message is long (>= 300 chars), implying a layered ask
+  //
+  // Roughly 80% cost reduction on routine "what's my revenue / who owes me"
+  // type questions, with no hit on the high-value advisory ones.
+  const escalate = featureContext.length > 0 || lastUserMessage.length >= 300
+  const model = escalate ? LLM_MODEL : LLM_MODEL_FAST
+
   const ai = new LLMClient({ apiKey })
   const response = await ai.messages.create({
-    model: LLM_MODEL,
+    model,
     max_tokens: 1024,
     system: systemPrompt,
     messages: validMessages,

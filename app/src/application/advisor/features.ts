@@ -3,6 +3,50 @@ import type { Store } from '@/domain/entities/store'
 import { upcomingEvents } from '@/lib/sa-calendar'
 import { MIN_COHORT_SIZE, insufficientCohortMessage } from '@/lib/k-anonymity'
 
+// ── Daily in-process cache ──────────────────────────────────────────────────
+//
+// Each dynamic feature block hits the database to compute its result. The
+// data underlying most of these blocks (sales totals, debtor balances,
+// supplier scorecards) doesn't change meaningfully within a single day, so
+// computing them once per (store, day, blockId) and serving the cached
+// string for every subsequent advisor call in that window is a clean cost
+// win — saves both LLM context-build time and DB load.
+//
+// In-process Map with insertion-order eviction. Per-process not per-cluster,
+// which is fine: cache misses just cost what they cost today.
+
+interface CacheEntry { value: string | null; expiresAt: number }
+const dailyCache = new Map<string, CacheEntry>()
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+const MAX_CACHE_ENTRIES = 5_000
+
+function todayString(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function withDailyCache(
+  blockId: string,
+  storeId: string,
+  compute: () => Promise<string | null>,
+): Promise<string | null> {
+  const key = `${blockId}:${storeId}:${todayString()}`
+  const hit = dailyCache.get(key)
+  if (hit && hit.expiresAt > Date.now()) return hit.value
+  const value = await compute()
+  // Evict ~10% of oldest entries when at capacity. Map preserves insertion
+  // order so iterating drops oldest first — good enough as an LRU light.
+  if (dailyCache.size >= MAX_CACHE_ENTRIES) {
+    let dropped = 0
+    const toDrop = Math.floor(MAX_CACHE_ENTRIES * 0.1)
+    for (const k of dailyCache.keys()) {
+      if (dropped >= toDrop) break
+      dailyCache.delete(k); dropped++
+    }
+  }
+  dailyCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  return value
+}
+
 /**
  * AI Advisor feature pack.
  *
@@ -106,6 +150,7 @@ const IMPORT_SENSITIVITY: Record<string, { score: number; rationale: string }> =
 }
 
 async function randSensitivityBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('rand', store.id, async () => {
   const { data: indicators } = await supabase
     .from('market_indicators')
     .select('kind, value, fetched_at')
@@ -139,6 +184,7 @@ async function randSensitivityBlock(supabase: SupabaseClient, store: Store): Pro
       : `No high-import-sensitivity products detected in this store's catalogue.`,
     `Rule of thumb: a 5-10% rand depreciation typically lands as a 3-6% supplier price rise on import-heavy categories within 4-8 weeks.`,
   ].join(' ')
+  })
 }
 
 function inferCategory(productName: string): string | null {
@@ -176,6 +222,7 @@ function daysFromNow(d: Date): number {
 // ── F-A-06 — Credit Book Advisor ───────────────────────────────────────────
 
 async function creditBookBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('credit', store.id, async () => {
   const { data: debtors } = await supabase
     .from('debtors')
     .select('id, name, total_owed, created_at')
@@ -219,6 +266,7 @@ async function creditBookBlock(supabase: SupabaseClient, store: Store): Promise<
     healthy ? `Credit exposure is in the healthy band.` : `Credit exposure is above the healthy band — chase the top 3 first.`,
     `Opportunity-cost framing: R${totalOwed.toFixed(0)} in unpaid credit is one stock run you could've already done.`,
   ].filter(Boolean).join(' ')
+  })
 }
 
 // ── F-A-07 — Energy Cost Advisor (conversational; provides framing only) ───
@@ -237,6 +285,7 @@ function energyAdvisorBlock(): string {
 // ── F-A-10 — SASSA & Grant Risk Advisor ────────────────────────────────────
 
 async function sassaRiskBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('sassa', store.id, async () => {
   // Proxy: revenue in the 7 days around the most recent month-end vs other days.
   const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1)
   const { data: rows } = await supabase
@@ -269,6 +318,7 @@ async function sassaRiskBlock(supabase: SupabaseClient, store: Store): Promise<s
       : `Moderate grant-cycle exposure. Routine business is keeping you steady.`,
     `If asked about specific policy news: SASSA + Treasury announcements are public — check the latest budget and SASSA website for the most current changes.`,
   ].join(' ')
+  })
 }
 
 // ── F-A-12 — Business Valuation Guide (framing) ────────────────────────────
@@ -302,6 +352,7 @@ function fundingNavigatorBlock(store: Store): string {
 // ── F-A-03 — Basket Analysis ───────────────────────────────────────────────
 
 async function basketAnalysisBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('basket', store.id, async () => {
   // Prefer real cart-grouping via `sale_event_id` (added in migration 020).
   // Fall back to time-bucketing (sales within the same minute as a heuristic
   // cart) when no sale_event_id is set yet.
@@ -372,11 +423,13 @@ async function basketAnalysisBlock(supabase: SupabaseClient, store: Store): Prom
     ...pairs.map(p =>
       `• ${p.a} + ${p.b} — ${p.count} co-purchases (${(p.conf * 100).toFixed(0)}% of ${p.a} buyers also took ${p.b}).`),
   ].join('\n')
+  })
 }
 
 // ── F-A-04 — Supplier Scorecard ────────────────────────────────────────────
 
 async function supplierScorecardBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('supplier', store.id, async () => {
   const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
   const { data: suppliers } = await supabase
@@ -443,6 +496,7 @@ async function supplierScorecardBlock(supabase: SupabaseClient, store: Store): P
     `Last 6 months. Lower CV = more consistent prices. > 5% upward invoice trend means renegotiate.`,
     ...lines,
   ].join('\n')
+  })
 }
 
 // ── F-A-08 — Category Strategy advisor (reframed from "Beat the Big Chains")
@@ -462,6 +516,7 @@ function categoryStrategyBlock(): string {
 // ── F-A-09 — Peer Benchmarking (k-anon, graceful) ──────────────────────────
 
 async function peerBenchmarkingBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('peer', store.id, async () => {
   // Cohort: same category + similar location text + same VAT-registration band.
   const { count: cohortCount } = await supabase
     .from('stores')
@@ -520,6 +575,7 @@ async function peerBenchmarkingBlock(supabase: SupabaseClient, store: Store): Pr
         ? `Solidly average for your cohort. Focus on the highest-velocity SKUs.`
         : `Below cohort median. Likely lever: range coverage and stock availability — top performers stock more SKUs.`,
   ].join(' ')
+  })
 }
 
 // ── F-A-01 — Local Price Benchmarking (graceful) ───────────────────────────
@@ -527,6 +583,7 @@ async function peerBenchmarkingBlock(supabase: SupabaseClient, store: Store): Pr
 async function localPriceBenchmarkingBlock(
   supabase: SupabaseClient, store: Store,
 ): Promise<string | null> {
+  return withDailyCache('local-price', store.id, async () => {
   // Use the same "location text" + category gate. Public price-DB fallback
   // would require an integration we don't have; without that, we degrade
   // to the cohort-based benchmark.
@@ -580,11 +637,13 @@ async function localPriceBenchmarkingBlock(
     return `• ${r.name}: yours R${r.mine.toFixed(2)} vs area median R${r.peerMedian.toFixed(2)} (R${Math.abs(r.delta).toFixed(2)} ${verb}).`
   })
   return [`[F-A-01 Local Price Benchmarking]`, ...lines].join('\n')
+  })
 }
 
 // ── F-A-11 — Group Buying (advisory v1) ────────────────────────────────────
 
 async function groupBuyingBlock(supabase: SupabaseClient, store: Store): Promise<string | null> {
+  return withDailyCache('group-buy', store.id, async () => {
   // Light-touch v1: explain the model + count nearby Stoki shops to size the
   // theoretical pool. In-app group-order coordination is a later release.
   void supabase
@@ -596,4 +655,5 @@ async function groupBuyingBlock(supabase: SupabaseClient, store: Store): Promise
     `Stoki's group-buying coordinator (in-app order pooling) is rolling out — for now, set up a WhatsApp group with 2-3 nearby shops and trial it on your highest-volume SKU.`,
     `Cohort visible to ${store.location ?? 'your area'} is being aggregated; we'll surface exact nearby-shop count once opt-in network sharing is enabled in Settings.`,
   ].join(' ')
+  })
 }
