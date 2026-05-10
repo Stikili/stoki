@@ -1,8 +1,22 @@
 import Link from 'next/link'
-import { ArrowLeft, Check, Sparkles } from 'lucide-react'
+import { ArrowLeft, Check, Lock, Sparkles } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import { effectivePlan, grandfatherDaysRemaining, isGrandfatherActive } from '@/lib/effective-plan'
+import { GATES, type GateId } from '@/lib/plan-gates'
 import type { Plan } from '@/domain/entities/store'
+
+// The seven Pro-tier AI advisor features. Explicit list rather than
+// computed from GATES so the page lists them in the order we want users
+// to read them, not Map insertion order.
+const PRO_ADVISOR_GATES: readonly GateId[] = [
+  'advisor.peer_benchmarking',
+  'advisor.supplier_scorecard',
+  'advisor.basket_analysis',
+  'advisor.local_price',
+  'advisor.business_valuation',
+  'advisor.funding_navigator',
+  'advisor.group_buying',
+] as const
 
 /**
  * Plan picker / billing page. Upgrade buttons are stubbed until a payment
@@ -95,6 +109,41 @@ export default async function BillingPage() {
           cta="Request Business access"
         />
       </div>
+
+      {/* What's locked — only shown to Free users (or grandfathered users on
+          their effective plan) so it actually advertises real upgrade value.
+          Pro / Business users already have these unlocked; showing the same
+          list to them as "locked" would be confusing. */}
+      {current === 'free' && (
+        <div className="rounded-2xl p-5 mt-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <Lock size={14} style={{ color: 'var(--muted)' }} />
+            <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>What you unlock on Pro</p>
+          </div>
+          <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
+            Seven AI advisor insights only Pro users get. Tap each to see what it does for your shop.
+          </p>
+          <ul className="flex flex-col gap-3">
+            {PRO_ADVISOR_GATES.map(gateId => {
+              const g = GATES[gateId]
+              return (
+                <li key={gateId} className="flex items-start gap-3">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: 'rgba(0, 200, 150, 0.10)', color: '#00C896', border: '1px solid rgba(0, 200, 150, 0.25)' }}
+                  >
+                    <Lock size={13} strokeWidth={1.8} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{g.label}</p>
+                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--muted)' }}>{g.description}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <p className="text-center text-xs mt-4" style={{ color: 'var(--muted-dim)' }}>
         Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:hello@stoki.app" className="underline" style={{ color: 'var(--muted)' }}>hello@stoki.app</a>.

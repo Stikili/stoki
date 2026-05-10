@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Store } from '@/domain/entities/store'
 import { switchStoreAction } from '@/app/actions/switchStore'
 import { Bell, ChevronDown, Check, Search } from 'lucide-react'
 import Logo from '@/components/Logo'
 import UserMenu from '@/components/UserMenu'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
 import { useI18n } from '@/lib/i18n'
 
 const MUTED = '#7B8CA1';
@@ -16,14 +19,30 @@ export default function StoreHeader({
 }: {
   store: Store; allStores: Store[]; unreadAlerts?: number
 }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [lockedGate, setLockedGate] = useState<GateId | null>(null)
   const [isPending, startTransition] = useTransition()
   const { t } = useI18n()
   const hasMultiple = allStores.length > 1
 
+  // Pre-compute next multi-store gate. The server-side gate in
+  // saveStoreAction is the source of truth; this just prevents wasted
+  // navigation through onboarding for users who can't end up creating one.
+  const nextStoreGate: GateId | null =
+    allStores.length >= 3 && !hasFeature(store, 'store.create.beyond_3') ? 'store.create.beyond_3'
+    : allStores.length >= 1 && !hasFeature(store, 'store.create.beyond_1') ? 'store.create.beyond_1'
+    : null
+
   function select(id: string) {
     if (id === store.id) { setOpen(false); return }
     startTransition(async () => { await switchStoreAction(id); setOpen(false) })
+  }
+
+  function handleNewStore() {
+    setOpen(false)
+    if (nextStoreGate) { setLockedGate(nextStoreGate); return }
+    router.push('/onboarding?new=1')
   }
 
   return (
@@ -81,7 +100,7 @@ export default function StoreHeader({
             <div className="w-12 h-1 rounded-full mx-auto mb-6" style={{ background: 'var(--card-border)' }} />
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>{t('header.yourStores')}</h2>
-              <Link href="/onboarding?new=1" onClick={() => setOpen(false)} className="text-brand text-sm font-semibold min-h-0">{t('header.newStore')}</Link>
+              <button type="button" onClick={handleNewStore} className="text-brand text-sm font-semibold min-h-0">{t('header.newStore')}</button>
             </div>
             <div className="flex flex-col gap-2">
               {allStores.map(s => {
@@ -115,6 +134,12 @@ export default function StoreHeader({
           </div>
         </div>
       )}
+
+      <UpgradePrompt
+        gate={lockedGate ?? 'store.create.beyond_1'}
+        open={lockedGate !== null}
+        onClose={() => setLockedGate(null)}
+      />
     </>
   )
 }

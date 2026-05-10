@@ -49,7 +49,7 @@ export default async function TeamSettingsPage() {
         <ArrowLeft size={14} /> Settings
       </Link>
       <h1 className="text-xl font-bold text-white">Team</h1>
-      <TeamCard storeId={store.id} members={members} currentUserId={user.id} />
+      <TeamCard store={store} members={members} currentUserId={user.id} />
     </div>
   )
 }
