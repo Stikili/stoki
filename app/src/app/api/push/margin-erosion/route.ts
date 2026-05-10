@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
@@ -17,19 +17,25 @@ import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
  */
 
 const MARGIN_THRESHOLD = 0.10 // 10%
+const DEDUP_WINDOW_HOURS = 48
+const FEATURE_MARKER = '[F-P-01]'
 
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  // VAPID is best-effort — when it isn't configured, sendOne silently no-ops
+  // and the route still persists in-app alerts. Push fires only for users
+  // who've opted in.
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0, persisted: 0 })
 
   let sent = 0
   let evaluated = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     evaluated++
     // Only need rows where price > 0 (else margin is meaningless) and cost > 0
     // (else we don't know the actual margin). Keep the column list narrow.
@@ -47,6 +53,7 @@ export async function POST(req: Request) {
       .sort((a, b) => a.margin - b.margin)
 
     if (eroded.length === 0) continue
+    if (await alreadyAlertedRecently(supabase, storeId, FEATURE_MARKER, DEDUP_WINDOW_HOURS)) continue
 
     const worst = eroded[0]
     const marginPct = Math.round(worst.margin * 100)
@@ -57,7 +64,7 @@ export async function POST(req: Request) {
       supabase, storeId, subs,
       { title: '⚠️ Margin erosion detected', body, url: '/inventory?filter=low-margin' },
       'ai_insight',
-      `Margin erosion: ${worst.name} at ${marginPct}%${others > 0 ? ` (and ${others} more)` : ''}`,
+      `${FEATURE_MARKER} Margin erosion: ${worst.name} at ${marginPct}%${others > 0 ? ` (and ${others} more)` : ''}`,
     )
     sent += result.sent
   }

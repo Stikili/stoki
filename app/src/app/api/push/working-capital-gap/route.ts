@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
@@ -26,11 +26,13 @@ import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
 
 const MONTH_END_LEAD_DAYS = 4
 const TRAILING_DAYS = 60
+const DEDUP_WINDOW_HOURS = 48
+const FEATURE_MARKER = '[F-P-07]'
 
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const now = new Date()
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
@@ -41,10 +43,11 @@ export async function POST(req: Request) {
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0 })
 
   let sent = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     const { data: store } = await supabase
       .from('stores')
       .select('cash_balance, cash_balance_updated_at')
@@ -98,6 +101,8 @@ export async function POST(req: Request) {
       subset.push(p)
       used += p.restockCost
     }
+    if (await alreadyAlertedRecently(supabase, storeId, FEATURE_MARKER, DEDUP_WINDOW_HOURS)) continue
+
     const subsetSummary = subset.slice(0, 5).map(p => p.name).join(', ')
     const body = `Month-end is ${daysToMonthEnd === 0 ? 'today' : `${daysToMonthEnd} day${daysToMonthEnd === 1 ? '' : 's'} away`}. Optimal restock = R${Math.round(optimalRestock).toLocaleString('en-ZA')}. Your float = R${Math.round(cashBalance).toLocaleString('en-ZA')}. Tap for the best plan that fits.`
 
@@ -105,7 +110,7 @@ export async function POST(req: Request) {
       supabase, storeId, subs,
       { title: '💡 Working capital gap', body, url: '/inventory?focus=restock' },
       'ai_insight',
-      `Working-capital gap: optimal R${Math.round(optimalRestock).toLocaleString('en-ZA')}, available R${Math.round(cashBalance).toLocaleString('en-ZA')}. Priority: ${subsetSummary}.`,
+      `${FEATURE_MARKER} Working-capital gap: optimal R${Math.round(optimalRestock).toLocaleString('en-ZA')}, available R${Math.round(cashBalance).toLocaleString('en-ZA')}. Priority: ${subsetSummary}.`,
     )
     sent += result.sent
   }

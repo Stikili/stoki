@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
+
+const FEATURE_MARKER = '[F-P-04]'
 
 /**
  * F-P-04 — Stockout Cost Estimate.
@@ -28,18 +30,19 @@ const MIN_DAILY_REVENUE = 20
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0 })
 
   const now = new Date()
   const windowStart = new Date(now)
   windowStart.setDate(windowStart.getDate() - ESTIMATE_WINDOW_DAYS)
 
   let sent = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     // Products at zero. Note: "just-went-to-zero" detection lives implicitly
     // in alert dedup — we fire one alert per stockout episode, then a 48h
     // follow-up. Dedup uses the existing alerts table: if there's already an
@@ -69,21 +72,11 @@ export async function POST(req: Request) {
       const dailyRevenue = totalRevenue / ESTIMATE_WINDOW_DAYS
       if (dailyRevenue < MIN_DAILY_REVENUE) continue
 
-      // Dedup: was there already a stockout alert for this exact product in
-      // the last 48h? Match on message-substring since alerts.message is the
-      // canonical store. (We don't have a separate alerts.product_id column.)
-      const dedupCutoff = new Date(now)
-      dedupCutoff.setHours(dedupCutoff.getHours() - FOLLOWUP_HOURS)
-      const { data: recentAlerts } = await supabase
-        .from('alerts')
-        .select('id, created_at')
-        .eq('store_id', storeId)
-        .eq('type', 'out_of_stock')
-        .ilike('message', `%${product.name}%`)
-        .gte('created_at', dedupCutoff.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1)
-      if ((recentAlerts ?? []).length > 0) continue
+      // Per-product dedup using a product-specific marker so we don't flood
+      // the inbox with hourly stockout alerts for the same SKU. The 48h
+      // window doubles as the followup-trigger threshold.
+      const productMarker = `${FEATURE_MARKER}[${product.name}]`
+      if (await alreadyAlertedRecently(supabase, storeId, productMarker, FOLLOWUP_HOURS)) continue
 
       const dailyRand = Math.round(dailyRevenue)
       const twoDayLoss = Math.round(dailyRevenue * 2)
@@ -93,7 +86,7 @@ export async function POST(req: Request) {
         supabase, storeId, subs,
         { title: '😬 Stockout — you\'re losing money', body, url: '/inventory?filter=out' },
         'out_of_stock',
-        `${product.name} is out of stock (~R${dailyRand}/day at risk).`,
+        `${productMarker} ${product.name} is out of stock (~R${dailyRand}/day at risk).`,
       )
       sent += result.sent
     }

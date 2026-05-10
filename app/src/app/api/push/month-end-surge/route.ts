@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
@@ -20,15 +20,18 @@ import { imminentPayEvent, nextSassaPayDates, formatGrantList } from '@/lib/sass
 
 const SURGE_LEAD_DAYS = 3
 const TOP_N_RISK = 5
+const DEDUP_WINDOW_HOURS = 24
+const FEATURE_MARKER = '[F-P-05]'
 
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0 })
 
   const now = new Date()
   // Two surge triggers: SASSA pay-day OR calendar month-end. Take the
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
   const windowStart = new Date(now); windowStart.setDate(windowStart.getDate() - 60)
 
   let sent = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     const { data: rows } = await supabase
       .from('sales')
       .select('product_id, qty, products(name, qty)')
@@ -76,6 +79,7 @@ export async function POST(req: Request) {
       .sort((a, b) => b.soldQty - a.soldQty)
       .slice(0, TOP_N_RISK)
     if (top.length === 0) continue
+    if (await alreadyAlertedRecently(supabase, storeId, FEATURE_MARKER, DEDUP_WINDOW_HOURS)) continue
 
     const names = top.map(t => t.name).join(', ')
     const dayWord = surgeIn.days === 0 ? 'today' : surgeIn.days === 1 ? 'tomorrow' : `in ${surgeIn.days} days`
@@ -85,7 +89,7 @@ export async function POST(req: Request) {
       supabase, storeId, subs,
       { title: '📅 Month-end surge incoming', body, url: '/inventory?filter=top' },
       'ai_insight',
-      `Surge ${dayWord} (${surgeIn.label}). Top movers to stock: ${names}.`,
+      `${FEATURE_MARKER} Surge ${dayWord} (${surgeIn.label}). Top movers to stock: ${names}.`,
     )
     sent += result.sent
   }

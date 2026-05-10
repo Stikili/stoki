@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
@@ -25,6 +25,8 @@ import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
 
 const TEMP_DEVIATION_C = 8
 const FORECAST_LOOKAHEAD_HOURS = 48
+const DEDUP_WINDOW_HOURS = 36
+const FEATURE_MARKER = '[F-P-06]'
 
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -35,15 +37,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ skipped: true, reason: 'no_api_key' })
   }
 
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0 })
 
   let sent = 0
   let evaluated = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     const { data: store } = await supabase
       .from('stores')
       .select('lat, lng, location')
@@ -54,6 +57,7 @@ export async function POST(req: Request) {
 
     const event = await detectWeatherEvent(Number(store.lat), Number(store.lng), apiKey)
     if (!event) continue
+    if (await alreadyAlertedRecently(supabase, storeId, FEATURE_MARKER, DEDUP_WINDOW_HOURS)) continue
 
     const place = (store.location as string | null) ?? 'your area'
     const hint = event.kind === 'cold'
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
       { title: event.kind === 'cold' ? '🌧️ Cold front incoming' : '☀️ Heatwave incoming',
         body, url: '/inventory' },
       'ai_insight',
-      `Weather alert (${event.kind}, Δ${event.deltaC.toFixed(0)}°C ${event.whenText}). ${hint}`,
+      `${FEATURE_MARKER} Weather alert (${event.kind}, Δ${event.deltaC.toFixed(0)}°C ${event.whenText}). ${hint}`,
     )
     sent += result.sent
   }
