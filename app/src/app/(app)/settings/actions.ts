@@ -17,10 +17,30 @@ export async function updateStoreAction(formData: FormData) {
   const whatsappNumber = (formData.get('whatsappNumber') as string | null)?.trim().replace(/\D/g, '') || undefined
   const businessAddress = (formData.get('businessAddress') as string | null)?.trim() || ''
 
+  // Optional GPS — feeds weather + competitor-proximity push features. Empty
+  // string clears the column; an actual number value writes it.
+  const latRaw = (formData.get('lat') as string | null)?.trim() ?? ''
+  const lngRaw = (formData.get('lng') as string | null)?.trim() ?? ''
+  const lat = latRaw === '' ? null : Number(latRaw)
+  const lng = lngRaw === '' ? null : Number(lngRaw)
+  const validLat = lat === null || (Number.isFinite(lat) && lat >= -90 && lat <= 90)
+  const validLng = lng === null || (Number.isFinite(lng) && lng >= -180 && lng <= 180)
+
+  // Optional cash float — feeds working-capital-gap push feature. Empty =
+  // not tracked; explicit 0 = "I have no cash" (still a meaningful signal).
+  const cashRaw = (formData.get('cashBalance') as string | null)?.trim() ?? ''
+  const cashBalance = cashRaw === '' ? null : Number(cashRaw)
+  const validCash = cashBalance === null || (Number.isFinite(cashBalance) && cashBalance >= 0)
+
   if (!name) return
 
   const storeRepo = new StoreRepository(supabase)
-  await storeRepo.update(store.id, { name, phone, location, whatsappNumber, businessAddress })
+  await storeRepo.update(store.id, {
+    name, phone, location, whatsappNumber, businessAddress,
+    ...(validLat ? { lat } : {}),
+    ...(validLng ? { lng } : {}),
+    ...(validCash ? { cashBalance } : {}),
+  })
 
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/', 'layout')

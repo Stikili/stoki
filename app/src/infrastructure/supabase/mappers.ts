@@ -39,6 +39,10 @@ export function toStore(row: any): Store {
     vatRate: Number(row.vat_rate ?? 15),
     businessAddress: row.business_address ?? null,
     isDemo: row.is_demo ?? false,
+    lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : null,
+    lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
+    cashBalance: row.cash_balance !== null && row.cash_balance !== undefined ? Number(row.cash_balance) : null,
+    cashBalanceUpdatedAt: row.cash_balance_updated_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
