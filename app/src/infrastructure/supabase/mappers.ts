@@ -44,6 +44,12 @@ export function toStore(row: any): Store {
     cashBalance: row.cash_balance !== null && row.cash_balance !== undefined ? Number(row.cash_balance) : null,
     cashBalanceUpdatedAt: row.cash_balance_updated_at ?? null,
     grandfatheredUntil: row.grandfathered_until ?? null,
+    subscriptionStatus: row.subscription_status ?? 'none',
+    subscriptionActiveUntil: row.subscription_active_until ?? null,
+    subscriptionProvider: row.subscription_provider ?? null,
+    subscriptionProviderRef: row.subscription_provider_ref ?? null,
+    subscriptionLastChargeAt: row.subscription_last_charge_at ?? null,
+    subscriptionRetryCount: Number(row.subscription_retry_count ?? 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

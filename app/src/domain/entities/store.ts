@@ -34,6 +34,22 @@ export interface Store {
    *    - new accounts at first-store creation (14-day Pro trial)
    *  Resolved into an "effective plan" via lib/effective-plan.ts. */
   grandfatheredUntil: string | null
+  /** Billing state machine (see lib/subscription.ts). Orthogonal to plan
+   *  and grandfather — drives `plan` through its lifecycle via webhook. */
+  subscriptionStatus: SubscriptionStatus
+  subscriptionActiveUntil: string | null
+  subscriptionProvider: string | null
+  subscriptionProviderRef: string | null
+  subscriptionLastChargeAt: string | null
+  subscriptionRetryCount: number
   createdAt: string
   updatedAt: string
 }
+
+export type SubscriptionStatus =
+  | 'none'        // never subscribed
+  | 'trialing'    // in trial / grandfather (orthogonal to billing)
+  | 'active'      // paid, current
+  | 'past_due'    // charge failed, retrying
+  | 'cancelled'   // user cancelled, still has access until subscriptionActiveUntil
+  | 'expired'     // lapsed

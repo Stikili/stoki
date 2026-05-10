@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Lock, X } from 'lucide-react'
 import { GATES, type GateId } from '@/lib/plan-gates'
+import { recordAnalyticsEventAction } from '@/app/actions/analytics'
 
 /**
  * Soft-paywall sheet shown when a user hits a feature gate in the middle
@@ -22,9 +24,33 @@ export default function UpgradePrompt({
   open: boolean
   onClose: () => void
 }) {
+  // Track whether the user actually clicked through to billing — distinguishes
+  // a "dismiss" from a "convert-intent". The ref persists across re-renders
+  // without retriggering the effect when it flips.
+  const clickedThroughRef = useRef(false)
+
+  useEffect(() => {
+    if (!open) return
+    clickedThroughRef.current = false
+    // paywall_viewed fires when the prompt mounts open. Best-effort; never
+    // blocks the render.
+    void recordAnalyticsEventAction('paywall_viewed', { gate })
+    // paywall_dismissed fires on unmount IFF the user didn't click through.
+    return () => {
+      if (!clickedThroughRef.current) {
+        void recordAnalyticsEventAction('paywall_dismissed', { gate })
+      }
+    }
+  }, [open, gate])
+
   if (!open) return null
   const meta = GATES[gate]
   const planLabel = meta.minPlan === 'pro' ? 'Pro' : meta.minPlan === 'business' ? 'Business' : 'Enterprise'
+
+  function handleCta() {
+    clickedThroughRef.current = true
+    void recordAnalyticsEventAction('paywall_clicked', { gate })
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -64,6 +90,7 @@ export default function UpgradePrompt({
         <div className="flex flex-col gap-2.5">
           <Link
             href="/settings/billing"
+            onClick={handleCta}
             className="btn-primary inline-flex items-center justify-center gap-2 active:scale-[0.985] transition-transform"
           >
             See {planLabel} <ArrowRight size={16} strokeWidth={2.4} />

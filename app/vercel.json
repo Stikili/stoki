@@ -14,6 +14,8 @@
     { "path": "/api/push/price-sweet-spot",     "schedule": "0 8 * * *" },
     { "path": "/api/push/working-capital-gap",  "schedule": "0 7 * * *" },
     { "path": "/api/push/weather-stock",        "schedule": "0 8 * * *" },
-    { "path": "/api/push/competitor-proximity", "schedule": "0 8 1 * *" }
+    { "path": "/api/push/competitor-proximity", "schedule": "0 8 1 * *" },
+
+    { "path": "/api/cron/subscription-retry",   "schedule": "0 8 * * *" }
   ]
 }
