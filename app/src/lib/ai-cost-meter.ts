@@ -15,12 +15,14 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Plan } from '@/domain/entities/store'
+import { advisorDailyLimit } from './plan-gates'
 
 /** Daily advisor message limit per user (free tier). Tune in env.
  *  Default of 10 is the conversion-aware target — high enough to feel
  *  useful on day one, low enough that heavy daily users hit the cap and
- *  see an upgrade prompt. Pro/Business should override via env to a
- *  much higher value (or remove entirely once plan-aware gating ships). */
+ *  see an upgrade prompt. Pro/Business resolve through plan-gates.ts so
+ *  they get a much higher (effectively unlimited) ceiling. */
 export const ADVISOR_DAILY_LIMIT = Number(process.env.ADVISOR_DAILY_LIMIT ?? 10)
 
 export interface MeterDecision {
@@ -39,11 +41,17 @@ function today(): string {
 /**
  * Check whether the user can send another advisor request today. Does not
  * mutate the count — call `recordAdvisorUse` after a successful response.
+ *
+ * The `effectivePlan` argument is resolved by the caller via
+ * `lib/effective-plan.ts` so this function stays pure and trivial to test.
+ * Grandfathered free users come in as 'pro' and get the higher limit.
  */
 export async function checkAdvisorBudget(
   supabase: SupabaseClient,
   userId: string,
+  effectivePlan: Plan = 'free',
 ): Promise<MeterDecision> {
+  const limit = advisorDailyLimit(effectivePlan)
   try {
     const { data } = await supabase
       .from('ai_advisor_usage')
@@ -52,19 +60,17 @@ export async function checkAdvisorBudget(
       .eq('day', today())
       .maybeSingle()
     const used: number = (data?.count as number | undefined) ?? 0
-    if (used >= ADVISOR_DAILY_LIMIT) {
-      return {
-        ok: false,
-        used,
-        limit: ADVISOR_DAILY_LIMIT,
-        message: `${ADVISOR_DAILY_LIMIT} questions a day to chat with stoki — upgrade for unlimited. Resets at midnight.`,
-      }
+    if (used >= limit) {
+      const message = effectivePlan === 'free'
+        ? `${limit} questions a day to chat with stoki — upgrade for unlimited. Resets at midnight.`
+        : `You've hit today's advisor limit (${limit} questions). Resets at midnight — contact us if you need more.`
+      return { ok: false, used, limit, message }
     }
-    return { ok: true, used, limit: ADVISOR_DAILY_LIMIT }
+    return { ok: true, used, limit }
   } catch {
     // Table missing or query failed — fail open so we never block on a
     // missing migration. Caller can still proceed.
-    return { ok: true, used: 0, limit: ADVISOR_DAILY_LIMIT }
+    return { ok: true, used: 0, limit }
   }
 }
 

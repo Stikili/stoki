@@ -8,9 +8,12 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { setSelectedStoreId } from '@/lib/selectedStore'
 import { StoreCategory } from '@/domain/entities/store'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
 
 // Step 2: save name + category, return the storeId (no redirect — client handles next step)
-export async function saveStoreAction(formData: FormData): Promise<{ storeId: string }> {
+export async function saveStoreAction(
+  formData: FormData,
+): Promise<{ storeId: string; locked?: GateId; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -27,11 +30,29 @@ export async function saveStoreAction(formData: FormData): Promise<{ storeId: st
 
   let storeId: string
   if (!isNew && allStores.length === 1 && allStores[0].name === 'My Store') {
+    // First-time user finishing onboarding — repurpose the auto-created
+    // "My Store" row. grandfathered_until is already set on bootstrap, so
+    // no trial stamp needed here.
     const updated = await storeRepo.update(allStores[0].id, { name, phone, category, onboardingCompleted: false })
     storeId = updated.id
   } else {
+    // "Add another store" path — owner explicitly wants a second/third.
+    // Plan gate by current store count vs Business-tier minimum.
+    if (allStores.length >= 1 && !hasFeature(allStores[0], 'store.create.beyond_1')) {
+      return { storeId: '', locked: 'store.create.beyond_1', error: 'Multi-store is a Business feature.' }
+    }
+    if (allStores.length >= 3 && !hasFeature(allStores[0], 'store.create.beyond_3')) {
+      return { storeId: '', locked: 'store.create.beyond_3', error: 'Up to 3 stores on Business — talk to us about Enterprise.' }
+    }
     const newStore = await storeRepo.create(user.id, name, phone)
-    await storeRepo.update(newStore.id, { category, onboardingCompleted: false })
+    // Additional stores added via the multi-store gate inherit the same
+    // grandfather window as the user's first store so the trial / paywall
+    // experience stays consistent.
+    await storeRepo.update(newStore.id, {
+      category,
+      onboardingCompleted: false,
+      grandfatheredUntil: allStores[0]?.grandfatheredUntil ?? null,
+    })
     storeId = newStore.id
   }
   await setSelectedStoreId(storeId)

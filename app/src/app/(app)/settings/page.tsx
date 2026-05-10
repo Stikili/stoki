@@ -8,9 +8,14 @@ import {
   ChevronRight,
   HelpCircle,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
+import {
+  effectivePlan, isGrandfatherActive, grandfatherDaysRemaining,
+} from '@/lib/effective-plan'
+import type { Plan } from '@/domain/entities/store'
 
 /**
  * Settings root — iOS-Settings-style navigation index. Each row drills into
@@ -27,6 +32,8 @@ import IconBadge, { type IconTone } from '@/components/IconBadge'
  */
 export default async function SettingsPage() {
   const { store, role } = await getServerData()
+  const plan = effectivePlan(store)
+  const trialDays = isGrandfatherActive(store) ? grandfatherDaysRemaining(store) : 0
 
   const sections: {
     href: string
@@ -36,6 +43,16 @@ export default async function SettingsPage() {
     hint?: string
     roles: readonly string[]
   }[] = [
+    {
+      href: '/settings/billing',
+      icon: <Sparkles />,
+      tone: 'brand',
+      label: 'Billing & plan',
+      hint: trialDays > 0
+        ? `${planLabel(plan)} · ${trialDays} day${trialDays === 1 ? '' : 's'} trial left`
+        : `${planLabel(plan)} plan`,
+      roles: ['owner'],
+    },
     {
       href: '/settings/store',
       icon: <Building2 />,
@@ -136,4 +153,13 @@ export default async function SettingsPage() {
       </p>
     </div>
   )
+}
+
+function planLabel(p: Plan): string {
+  switch (p) {
+    case 'free':       return 'Free'
+    case 'pro':        return 'Pro'
+    case 'business':   return 'Business'
+    case 'enterprise': return 'Enterprise'
+  }
 }

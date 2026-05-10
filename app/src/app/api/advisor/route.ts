@@ -9,6 +9,7 @@ import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { LLM_API_KEY, LLM_MODEL, LLM_MODEL_FAST } from '@/lib/llm-config'
 import { checkAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
 import { relevantAdvisorContext } from '@/application/advisor/features'
+import { effectivePlan } from '@/lib/effective-plan'
 
 export async function POST(req: NextRequest) {
   const apiKey = LLM_API_KEY
@@ -18,13 +19,6 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Per-user daily message cap. Surfaces a friendly throttle message on
-  // free-tier accounts that would otherwise burn LLM budget.
-  const budget = await checkAdvisorBudget(supabase, user.id)
-  if (!budget.ok) {
-    return NextResponse.json({ message: budget.message, throttled: true })
-  }
-
   const body = await req.json()
   const { messages, storeId } = body
 
@@ -32,6 +26,14 @@ export async function POST(req: NextRequest) {
   const allStores = await storeRepo.findAllByOwner(user.id)
   if (!allStores.length) return NextResponse.json({ error: 'No store' }, { status: 404 })
   const store = allStores.find((s) => s.id === storeId) ?? allStores[0]
+
+  // Per-user daily message cap. Plan-aware via effectivePlan so grandfathered
+  // free users and Pro/Business get the higher ceiling.
+  const plan = effectivePlan(store)
+  const budget = await checkAdvisorBudget(supabase, user.id, plan)
+  if (!budget.ok) {
+    return NextResponse.json({ message: budget.message, throttled: true })
+  }
 
   const saleRepo = new SaleRepository(supabase)
 

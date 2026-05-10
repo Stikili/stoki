@@ -1,4 +1,4 @@
-export type Plan = 'free' | 'starter' | 'growth'
+export type Plan = 'free' | 'pro' | 'business' | 'enterprise'
 export type StoreCategory = 'spaza' | 'general_dealer' | 'food_stall' | 'other'
 
 export interface Store {
@@ -28,6 +28,12 @@ export interface Store {
    *  and the working-capital alert silently skips this store. */
   cashBalance: number | null
   cashBalanceUpdatedAt: string | null
+  /** When set and in the future, the store has elevated (Pro) access
+   *  regardless of `plan`. Used for two windows:
+   *    - existing accounts at paywall rollout (90 days)
+   *    - new accounts at first-store creation (14-day Pro trial)
+   *  Resolved into an "effective plan" via lib/effective-plan.ts. */
+  grandfatheredUntil: string | null
   createdAt: string
   updatedAt: string
 }

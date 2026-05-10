@@ -1,0 +1,171 @@
+import Link from 'next/link'
+import { ArrowLeft, Check, Sparkles } from 'lucide-react'
+import { getServerData } from '@/lib/getServerData'
+import { effectivePlan, grandfatherDaysRemaining, isGrandfatherActive } from '@/lib/effective-plan'
+import type { Plan } from '@/domain/entities/store'
+
+/**
+ * Plan picker / billing page. Upgrade buttons are stubbed until a payment
+ * provider is wired in — they open a mailto: link so the user can request
+ * access manually. The page is otherwise complete: it shows the user's
+ * effective plan, what grandfather window they're in (if any), and the
+ * three tiers with feature lists.
+ */
+export default async function BillingPage() {
+  const { store } = await getServerData()
+  const current = effectivePlan(store)
+  const grandfather = isGrandfatherActive(store) ? grandfatherDaysRemaining(store) : 0
+
+  return (
+    <div className="px-4 pt-6 pb-12 max-w-2xl mx-auto space-y-4">
+      <Link href="/settings" className="inline-flex items-center gap-1.5 text-muted text-sm">
+        <ArrowLeft size={14} /> Settings
+      </Link>
+      <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Billing &amp; plan</h1>
+
+      {/* Current plan / grandfather state */}
+      <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'rgba(0, 200, 150, 0.12)', color: '#00C896', border: '1px solid rgba(0, 200, 150, 0.30)' }}>
+            <Sparkles size={18} strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] mb-0.5" style={{ color: 'var(--muted-dim)' }}>
+              Current plan
+            </p>
+            <p className="font-bold" style={{ color: 'var(--foreground)' }}>{planLabel(current)}</p>
+            {grandfather > 0 ? (
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+                You have <span style={{ color: '#00C896', fontWeight: 600 }}>{grandfather} day{grandfather === 1 ? '' : 's'}</span> of free Pro access remaining{store.plan === 'free' ? ' — your account stays on Free after that unless you upgrade' : ''}.
+              </p>
+            ) : (
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+                {current === 'free'
+                  ? 'Upgrade to unlock invoicing, multi-user, and premium AI advisor features.'
+                  : current === 'pro'
+                    ? 'Pro perks active — invoicing, multi-user, unlimited advisor, bank reconcile.'
+                    : 'Business plan active — multi-store, larger team, cross-store reporting.'}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Plan cards */}
+      <div className="grid grid-cols-1 gap-3">
+        <PlanCard
+          name="Free" subtitle="for the spaza on day one" price="R0"
+          current={current === 'free' && !grandfather}
+          features={[
+            '1 store, 1 user',
+            'Unlimited products & sales',
+            'Credit book + WhatsApp reminders',
+            '10 AI advisor questions / day',
+            'All auto-pushed alerts (margin, stockout, dead stock, fuel day…)',
+            'P&L + cash-up reports',
+          ]}
+        />
+        <PlanCard
+          name="Pro" subtitle="for the trader running their own shop" price="R99 / month"
+          highlight current={current === 'pro'}
+          features={[
+            'Everything in Free',
+            '2 users (owner + cashier or manager)',
+            'B2B invoicing (SARS-compliant)',
+            'Unlimited AI advisor + 7 Pro insights unlocked',
+            'Bank reconciliation, stocktake',
+            'Accounting exports',
+            'WhatsApp broadcasts (50 messages / month)',
+          ]}
+          cta="Request Pro access"
+        />
+        <PlanCard
+          name="Business" subtitle="for shops growing into chains" price="R399 / month"
+          current={current === 'business'}
+          features={[
+            'Everything in Pro',
+            'Up to 3 stores',
+            'Up to 10 users',
+            'Cross-store reports + cohort analytics',
+            'Higher WhatsApp broadcast limits (250 / month)',
+            'API access',
+            'Priority support',
+          ]}
+          cta="Request Business access"
+        />
+      </div>
+
+      <p className="text-center text-xs mt-4" style={{ color: 'var(--muted-dim)' }}>
+        Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:hello@stoki.app" className="underline" style={{ color: 'var(--muted)' }}>hello@stoki.app</a>.
+      </p>
+    </div>
+  )
+}
+
+function planLabel(p: Plan): string {
+  switch (p) {
+    case 'free':       return 'Free'
+    case 'pro':        return 'Pro'
+    case 'business':   return 'Business'
+    case 'enterprise': return 'Enterprise'
+  }
+}
+
+/**
+ * One plan card. `current` highlights the user's effective tier with a
+ * "Current plan" badge. CTA stub: a mailto: link until a real payment
+ * provider lands — keeps the upgrade path honest without faking a flow.
+ */
+function PlanCard({
+  name, subtitle, price, features, highlight, current, cta,
+}: {
+  name: string
+  subtitle: string
+  price: string
+  features: string[]
+  highlight?: boolean
+  current?: boolean
+  cta?: string
+}) {
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        background: 'var(--card-bg)',
+        border: `1px solid ${highlight ? 'rgba(0, 200, 150, 0.45)' : 'var(--card-border)'}`,
+        boxShadow: highlight ? '0 0 0 1px rgba(0, 200, 150, 0.20) inset' : undefined,
+      }}
+    >
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>{name}</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-dim)' }}>{subtitle}</p>
+        </div>
+        {current && (
+          <span className="pill pill-green text-[10px] py-0">Current plan</span>
+        )}
+      </div>
+      <p className="font-bold text-2xl mt-3" style={{ color: 'var(--foreground)' }}>{price}</p>
+      <ul className="flex flex-col gap-2 my-4">
+        {features.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--muted)' }}>
+            <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#00C896' }} />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      {cta && !current && (
+        // Stubbed upgrade — until a payment provider is wired in, the CTA
+        // routes to a mailto: link so the user can reach out and get manually
+        // upgraded. Honest about the state of the product.
+        <a
+          href={`mailto:hello@stoki.app?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
+          className="btn-primary inline-flex items-center justify-center w-full active:scale-[0.985]"
+        >
+          {cta}
+        </a>
+      )}
+    </div>
+  )
+}

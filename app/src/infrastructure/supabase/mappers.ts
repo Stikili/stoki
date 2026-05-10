@@ -43,6 +43,7 @@ export function toStore(row: any): Store {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
     cashBalance: row.cash_balance !== null && row.cash_balance !== undefined ? Number(row.cash_balance) : null,
     cashBalanceUpdatedAt: row.cash_balance_updated_at ?? null,
+    grandfatheredUntil: row.grandfathered_until ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

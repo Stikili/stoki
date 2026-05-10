@@ -8,6 +8,7 @@ import { StoreUserRepository } from '@/infrastructure/supabase/repositories/Stor
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { StoreRole } from '@/domain/entities/store-user'
 import { TAGS } from '@/lib/cache-tags'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
 
 export async function updateStoreAction(formData: FormData) {
   const { supabase, store } = await getServerData()
@@ -81,8 +82,10 @@ export async function setAllProductsVatInclusiveAction(vatInclusive: boolean): P
 // and adds them to the current store with the chosen role.
 // If the email isn't registered yet, sends them a Supabase magic-link invite
 // and the membership row is created the moment they sign in.
-export async function inviteMemberAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
-  const { user, store, role: callerRole } = await getServerData()
+export async function inviteMemberAction(
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string; locked?: GateId }> {
+  const { supabase, user, store, role: callerRole } = await getServerData()
   if (callerRole !== 'owner') return { ok: false, error: 'Only the owner can invite members.' }
 
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
@@ -90,6 +93,22 @@ export async function inviteMemberAction(formData: FormData): Promise<{ ok: bool
   if (!email || !email.includes('@')) return { ok: false, error: 'Enter a valid email.' }
   if (!['owner', 'manager', 'cashier'].includes(newRole)) {
     return { ok: false, error: 'Invalid role.' }
+  }
+
+  // Plan gate. Count existing memberships first, then pick the right gate
+  // for what the user is about to do (add the second member vs. the eleventh).
+  // We use the user-scoped client for the count so RLS limits us to memberships
+  // we can already see — matches what the owner experiences in /settings/team.
+  const { count: memberCount } = await supabase
+    .from('store_users')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', store.id)
+  const current = memberCount ?? 1
+  if (current >= 1 && !hasFeature(store, 'team.invite.beyond_owner')) {
+    return { ok: false, error: 'Adding a teammate is a Pro feature.', locked: 'team.invite.beyond_owner' }
+  }
+  if (current >= 2 && !hasFeature(store, 'team.invite.beyond_2')) {
+    return { ok: false, error: 'Up to 2 teammates on Pro — upgrade to Business for more.', locked: 'team.invite.beyond_2' }
   }
 
   const admin = createAdminClient()

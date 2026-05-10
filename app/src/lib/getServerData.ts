@@ -55,8 +55,17 @@ export const getServerData = cache(async (): Promise<ServerData> => {
     // RLS, so any failure now is a real bug we want surfaced rather than
     // swallowed and turned into a phantom-blocked-user-on-their-own-store.
     await storeUserRepo.add(newStore.id, user.id, 'owner', user.id)
+    // 14-day Pro trial for brand-new accounts. Resolved at request time
+    // via lib/effective-plan.ts; no payment required to unlock.
+    const trialEndsAt = new Date(Date.now() + 14 * 86_400_000).toISOString()
+    await storeRepo.update(newStore.id, { grandfatheredUntil: trialEndsAt })
     revalidateTag(TAGS.stores, 'default')
-    return { supabase, user, store: newStore, allStores: [newStore], role: 'owner' }
+    return {
+      supabase, user,
+      store: { ...newStore, grandfatheredUntil: trialEndsAt },
+      allStores: [{ ...newStore, grandfatheredUntil: trialEndsAt }],
+      role: 'owner',
+    }
   }
 
   const selectedId = await getSelectedStoreId()
