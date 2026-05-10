@@ -39,6 +39,41 @@ export async function saveStoreAction(formData: FormData): Promise<{ storeId: st
   return { storeId }
 }
 
+/**
+ * New: persist optional GPS + cash float captured in the onboarding
+ * "details" step. Keeps the field-validation rules consistent with
+ * settings/actions.ts so a user can hit either entry point and get the
+ * same behaviour. Empty / out-of-range values are silently dropped — we'd
+ * rather not block onboarding on a typo.
+ */
+export async function saveStoreDetailsAction(
+  storeId: string,
+  raw: { lat?: string; lng?: string; cashBalance?: string },
+): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const storeRepo = new StoreRepository(supabase)
+  const allStores = await storeRepo.findAllByOwner(user.id)
+  if (!allStores.find((s) => s.id === storeId)) redirect('/login')
+
+  const lat = raw.lat?.trim() ? Number(raw.lat) : null
+  const lng = raw.lng?.trim() ? Number(raw.lng) : null
+  const cashBalance = raw.cashBalance?.trim() ? Number(raw.cashBalance) : null
+
+  const validLat = lat === null || (Number.isFinite(lat) && lat >= -90 && lat <= 90)
+  const validLng = lng === null || (Number.isFinite(lng) && lng >= -180 && lng <= 180)
+  const validCash = cashBalance === null || (Number.isFinite(cashBalance) && cashBalance >= 0)
+
+  await storeRepo.update(storeId, {
+    ...(validLat ? { lat } : {}),
+    ...(validLng ? { lng } : {}),
+    ...(validCash ? { cashBalance } : {}),
+  })
+  revalidateTag(TAGS.stores, 'default')
+}
+
 // Step 3: optionally seed starter products, mark onboarding complete, redirect to dashboard
 export async function completeOnboardingAction(
   storeId: string,
