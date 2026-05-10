@@ -2,24 +2,41 @@
 
 import { useState, useTransition } from 'react'
 import { StoreUser, StoreRole, STORE_ROLES } from '@/domain/entities/store-user'
+import { Store } from '@/domain/entities/store'
 import {
   inviteMemberAction,
   updateMemberRoleAction,
   removeMemberAction,
 } from '@/app/(app)/settings/actions'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 export default function TeamCard({
-  storeId,
+  store,
   members,
   currentUserId,
 }: {
-  storeId: string
+  store: Store
   members: StoreUser[]
   currentUserId: string
 }) {
   const [showInvite, setShowInvite] = useState(false)
+  const [lockedGate, setLockedGate] = useState<GateId | null>(null)
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  // Pre-compute which gate applies to the *next* invite. The server still
+  // enforces this (settings/actions.ts.inviteMemberAction); the client check
+  // just keeps us from opening a sheet the server is going to reject.
+  const nextGate: GateId | null =
+    members.length >= 2 && !hasFeature(store, 'team.invite.beyond_2') ? 'team.invite.beyond_2'
+    : members.length >= 1 && !hasFeature(store, 'team.invite.beyond_owner') ? 'team.invite.beyond_owner'
+    : null
+
+  function handleInviteClick() {
+    if (nextGate) { setLockedGate(nextGate); return }
+    setShowInvite(true)
+  }
 
   function handleInvite(fd: FormData) {
     startTransition(async () => {
@@ -27,6 +44,11 @@ export default function TeamCard({
       if (result.ok) {
         setFeedback({ kind: 'ok', msg: 'Member added — they\'ll see the store on next login' })
         setShowInvite(false)
+      } else if (result.locked) {
+        // Server-side gate fired — close the sheet and route the user to
+        // the paywall instead of toasting a generic error.
+        setShowInvite(false)
+        setLockedGate(result.locked)
       } else {
         setFeedback({ kind: 'err', msg: result.error ?? 'Could not invite' })
       }
@@ -50,13 +72,11 @@ export default function TeamCard({
     })
   }
 
-  void storeId
-
   return (
     <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
       <div className="flex items-center justify-between mb-1">
         <p className="font-semibold" style={{ color: 'var(--foreground)' }}>Team</p>
-        <button onClick={() => setShowInvite(true)} className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#00C896', color: '#0A0E17' }}>
+        <button onClick={handleInviteClick} className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#00C896', color: '#0A0E17' }}>
           + Invite
         </button>
       </div>
@@ -135,6 +155,12 @@ export default function TeamCard({
           </div>
         </div>
       )}
+
+      <UpgradePrompt
+        gate={lockedGate ?? 'team.invite.beyond_owner'}
+        open={lockedGate !== null}
+        onClose={() => setLockedGate(null)}
+      />
     </div>
   )
 }

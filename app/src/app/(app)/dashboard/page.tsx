@@ -17,6 +17,7 @@ import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
 import SaleFAB from '@/components/SaleFAB'
+import TrialBanner from '@/components/TrialBanner'
 
 export default async function DashboardPage() {
   const { supabase, store, role } = await getServerData()
@@ -126,6 +127,11 @@ export default async function DashboardPage() {
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
       <DashboardHeader storeName={store.name} hour={hour} />
+
+      {/* Trial countdown — only renders inside the final 3 days of the
+          grandfather window. Anchored above the setup checklist so it lands
+          at the top of the scroll for maximum conversion intent. */}
+      <TrialBanner store={store} />
 
       {/* Checklist */}
       {!store.onboardingCompleted || !checklistItems.every((i) => i.done) ? (
