@@ -26,11 +26,10 @@ const POST_WINDOW_DAYS = 7
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
 
   // Pull every price-change row that hit its 7-day mark today and is
   // un-evaluated. We don't loop by store first — there may be very few

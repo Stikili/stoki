@@ -56,12 +56,17 @@ export function authoriseCron(req: Request): boolean {
 }
 
 /** Send to one subscription; on failure (404/410), delete the row so we
- *  don't keep retrying expired browsers. Returns true on success. */
+ *  don't keep retrying expired browsers. Returns true on success.
+ *
+ *  No-ops silently (returns false) if VAPID isn't configured — that way a
+ *  route can still persist its in-app alert rows even when push isn't
+ *  available, instead of failing the whole flow with a 503. */
 export async function sendOne(
   supabase: SupabaseClient,
   sub: PushSubscriptionRow,
   payload: PushPayload,
 ): Promise<boolean> {
+  if (!vapidConfigured && !configureVapid()) return false
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -72,6 +77,49 @@ export async function sendOne(
     await supabase.from('push_subscriptions').delete().eq('id', sub.id)
     return false
   }
+}
+
+/**
+ * IDs of every active (non-deleted) store. Used by auto-push routes that
+ * want to evaluate against ALL stores — not just the subset with push
+ * subscriptions — so the in-app inbox stays in sync even for users who
+ * haven't enabled push notifications.
+ *
+ * Push subscribers are a small fraction of users; this keeps the alert
+ * inbox useful for everyone else.
+ */
+export async function fetchAllStoreIds(supabase: SupabaseClient): Promise<string[]> {
+  const { data } = await supabase
+    .from('stores')
+    .select('id')
+    .is('deleted_at', null)
+  return ((data as { id: string }[] | null) ?? []).map(s => s.id)
+}
+
+/**
+ * Check whether we've already fired an alert with `marker` in the message
+ * for this store within the last `windowHours`. Used to keep cron-driven
+ * features from flooding the inbox with duplicates on every evaluation.
+ *
+ * Marker convention: each route prefixes its alert message with a short
+ * tag like `[F-P-01]`. The query uses ilike on that substring — cheap and
+ * doesn't require a separate alerts.feature_id column.
+ */
+export async function alreadyAlertedRecently(
+  supabase: SupabaseClient,
+  storeId: string,
+  marker: string,
+  windowHours: number,
+): Promise<boolean> {
+  const cutoff = new Date(Date.now() - windowHours * 3600_000).toISOString()
+  const { data } = await supabase
+    .from('alerts')
+    .select('id')
+    .eq('store_id', storeId)
+    .ilike('message', `%${marker}%`)
+    .gte('created_at', cutoff)
+    .limit(1)
+  return (data ?? []).length > 0
 }
 
 /** Convenience: send the same payload to every subscription for `storeId`,

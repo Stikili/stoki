@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import {
-  authoriseCron, configureVapid, distinctStoreIds,
+  alreadyAlertedRecently, authoriseCron, configureVapid, fetchAllStoreIds,
   fetchAllSubscriptions, sendAndPersist,
 } from '@/lib/push-helpers'
 import { isQuietHours, quietHoursResponse } from '@/lib/push-quiet-hours'
+
+const DEDUP_WINDOW_HOURS = 168 // weekly digest — match the cron cadence
+const FEATURE_MARKER = '[F-P-03]'
 
 /**
  * F-P-03 — Dead Stock Alert.
@@ -21,18 +24,19 @@ const DEAD_STOCK_WINDOW_DAYS = 21
 export async function POST(req: Request) {
   if (!authoriseCron(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (isQuietHours()) return NextResponse.json(quietHoursResponse())
-  if (!configureVapid()) return NextResponse.json({ error: 'VAPID not configured' }, { status: 503 })
+  configureVapid()
 
   const supabase = createAdminClient()
   const subs = await fetchAllSubscriptions(supabase)
-  if (subs.length === 0) return NextResponse.json({ sent: 0 })
+  const storeIds = await fetchAllStoreIds(supabase)
+  if (storeIds.length === 0) return NextResponse.json({ sent: 0 })
 
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - DEAD_STOCK_WINDOW_DAYS)
   const cutoffIso = cutoff.toISOString()
 
   let sent = 0
-  for (const storeId of distinctStoreIds(subs)) {
+  for (const storeId of storeIds) {
     // All in-stock products for the store. Filter dead stock in JS — Supabase
     // doesn't have a "left-anti-join" idiom that's cleaner than two queries.
     const { data: products } = await supabase
@@ -53,6 +57,7 @@ export async function POST(req: Request) {
     const soldRecently = new Set((recentSales ?? []).map(s => s.product_id))
     const dead = products.filter(p => !soldRecently.has(p.id))
     if (dead.length === 0) continue
+    if (await alreadyAlertedRecently(supabase, storeId, FEATURE_MARKER, DEDUP_WINDOW_HOURS)) continue
 
     const tiedUp = dead.reduce((sum, p) => sum + Number(p.qty) * Number(p.cost), 0)
     const skuWord = dead.length === 1 ? 'item hasn\'t' : 'items haven\'t'
@@ -62,7 +67,7 @@ export async function POST(req: Request) {
       supabase, storeId, subs,
       { title: '🛑 Dead stock — money tied up', body, url: '/inventory?filter=dead' },
       'ai_insight',
-      `Dead stock: ${dead.length} item${dead.length === 1 ? '' : 's'} unsold in ${DEAD_STOCK_WINDOW_DAYS}d, R${tiedUp.toFixed(0)} tied up.`,
+      `${FEATURE_MARKER} Dead stock: ${dead.length} item${dead.length === 1 ? '' : 's'} unsold in ${DEAD_STOCK_WINDOW_DAYS}d, R${tiedUp.toFixed(0)} tied up.`,
     )
     sent += result.sent
   }
