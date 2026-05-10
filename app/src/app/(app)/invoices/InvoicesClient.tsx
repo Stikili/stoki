@@ -28,6 +28,8 @@ import { haptic } from '@/lib/haptic'
 import { Plus, Printer, Trash2, Mail, MessageCircle, Receipt as ReceiptIcon } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import Swipeable from '@/components/Swipeable'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
 import { buildMailtoUrl, buildWhatsAppUrl } from '@/lib/invoice-delivery'
 
 type FilterState = 'all' | InvoiceStatus
@@ -60,11 +62,16 @@ export default function InvoicesClient({
 }) {
   const { toast } = useToast()
   const sp = useSearchParams()
+  // Plan gate: client-side knowledge so we can show the paywall instead of
+  // opening a create sheet the server is going to reject anyway. Server-side
+  // gate in createInvoiceAction is still defense-in-depth.
+  const canInvoice = hasFeature(store, 'invoice.create')
   // Deep-link from the command palette: `/invoices?new=1` opens the create
   // sheet immediately. Computed during render (not via effect) so the sheet
   // mounts on first paint instead of after a re-render.
   const [filter, setFilter] = useState<FilterState>('all')
-  const [showCreate, setShowCreate] = useState(() => sp.get('new') === '1')
+  const [showCreate, setShowCreate] = useState(() => sp.get('new') === '1' && canInvoice)
+  const [lockedGate, setLockedGate] = useState<GateId | null>(null)
   const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -143,7 +150,12 @@ export default function InvoicesClient({
     <>
       <div className="flex items-center justify-between mb-4 print:hidden">
         <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Invoices</h1>
-        <button onClick={() => setShowCreate(true)} disabled={customers.length === 0} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#00C896', opacity: customers.length === 0 ? 0.4 : 1 }}>
+        <button
+          onClick={() => canInvoice ? setShowCreate(true) : setLockedGate('invoice.create')}
+          disabled={customers.length === 0}
+          className="w-11 h-11 rounded-xl flex items-center justify-center"
+          style={{ background: '#00C896', opacity: customers.length === 0 ? 0.4 : 1 }}
+        >
           <Plus size={20} color="white" strokeWidth={2.5} />
         </button>
       </div>
@@ -279,6 +291,12 @@ export default function InvoicesClient({
           onRecordPayment={(fd) => handleRecordPayment(openInvoice.id, fd)}
         />
       )}
+
+      <UpgradePrompt
+        gate={lockedGate ?? 'invoice.create'}
+        open={lockedGate !== null}
+        onClose={() => setLockedGate(null)}
+      />
     </>
   )
 }

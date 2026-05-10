@@ -9,6 +9,7 @@ import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepos
 import { CustomerRepository } from '@/infrastructure/supabase/repositories/CustomerRepository'
 import { computeVat } from '@/lib/vat'
 import { InvoiceLineItem, InvoiceStatus } from '@/domain/entities/invoice'
+import { hasFeature } from '@/lib/plan-gates'
 
 async function getContext() {
   const supabase = await createClient()
@@ -28,8 +29,14 @@ export interface CreateInvoiceInput {
   lines: Array<{ description: string; qty: number; unitPrice: number; vatInclusive?: boolean; productId?: string }>
 }
 
-export async function createInvoiceAction(input: CreateInvoiceInput): Promise<{ ok: boolean; invoiceId?: string; error?: string }> {
+export async function createInvoiceAction(input: CreateInvoiceInput): Promise<{ ok: boolean; invoiceId?: string; error?: string; locked?: 'invoice.create' }> {
   const { supabase, store } = await getContext()
+  // Plan gate: B2B invoicing is Pro+. We surface a `locked` flag so the
+  // client can open the UpgradePrompt instead of treating it as a generic
+  // error — the user's intent was right, the plan was wrong.
+  if (!hasFeature(store, 'invoice.create')) {
+    return { ok: false, error: 'Invoicing is a Pro feature.', locked: 'invoice.create' }
+  }
   if (!input.customerId) return { ok: false, error: 'Pick a customer' }
   if (input.lines.length === 0) return { ok: false, error: 'Add at least one line item' }
 

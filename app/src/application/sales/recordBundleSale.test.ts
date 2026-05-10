@@ -120,6 +120,7 @@ function makeStore(): Store {
     businessAddress: null,
     isDemo: false,
     lat: null, lng: null, cashBalance: null, cashBalanceUpdatedAt: null,
+    grandfatheredUntil: null,
     createdAt: '', updatedAt: '',
   }
 }

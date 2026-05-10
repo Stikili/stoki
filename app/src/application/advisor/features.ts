@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Store } from '@/domain/entities/store'
+import type { Plan, Store } from '@/domain/entities/store'
 import { upcomingEvents } from '@/lib/sa-calendar'
 import { MIN_COHORT_SIZE, insufficientCohortMessage } from '@/lib/k-anonymity'
+import { GATES, hasFeature, type GateId } from '@/lib/plan-gates'
 
 // ── Daily in-process cache ──────────────────────────────────────────────────
 //
@@ -70,6 +71,12 @@ async function withDailyCache(
  * Given the latest user message, return the concatenated context blocks
  * most relevant to it. Each block is small (< ~200 tokens). The advisor
  * route appends the result to the system prompt before the LLM call.
+ *
+ * `effectivePlan` is resolved by the caller via lib/effective-plan.ts.
+ * Locked features (per lib/plan-gates.ts) return a short upgrade pitch
+ * instead of computing — keeps the LLM honest ("this is a Pro feature,
+ * here's what it would tell you") rather than silently giving a worse
+ * answer.
  */
 export async function relevantAdvisorContext(
   supabase: SupabaseClient,
@@ -81,6 +88,13 @@ export async function relevantAdvisorContext(
   // promise type and Promise.all resolves cleanly.
   const blocks: Array<Promise<string | null>> = []
   const wrap = (s: string | null) => Promise.resolve(s)
+
+  /** Locked features either compute or return an upgrade pitch — never
+   *  silently degrade. Keeps the LLM honest about what's behind a paywall. */
+  const gated = (gate: GateId, compute: () => Promise<string | null> | string | null) => {
+    if (hasFeature(store, gate)) return Promise.resolve(compute())
+    return Promise.resolve(upgradePitch(gate))
+  }
 
   // Trigger heuristics — keyword-based for now. Cheap, deterministic, and
   // the LLM still has the full conversation to fall back on if a block
@@ -101,28 +115,28 @@ export async function relevantAdvisorContext(
     blocks.push(sassaRiskBlock(supabase, store))
   }
   if (anyKeyword(q, ['valuation', 'sell my shop', 'worth', 'business value', 'succession', 'inherit'])) {
-    blocks.push(wrap(valuationGuideBlock()))
+    blocks.push(gated('advisor.business_valuation', () => valuationGuideBlock()))
   }
   if (anyKeyword(q, ['funding', 'loan', 'grant', 'sefa', 'nyda', 'nef', 'idc', 'capital', 'finance'])) {
-    blocks.push(wrap(fundingNavigatorBlock(store)))
+    blocks.push(gated('advisor.funding_navigator', () => fundingNavigatorBlock(store)))
   }
   if (anyKeyword(q, ['basket', 'together', 'pair', 'combo', 'cross-sell', 'bundle', 'shelf'])) {
-    blocks.push(basketAnalysisBlock(supabase, store))
+    blocks.push(gated('advisor.basket_analysis', () => basketAnalysisBlock(supabase, store)))
   }
   if (anyKeyword(q, ['supplier', 'wholesale', 'maponya', 'invoice', 'delivery'])) {
-    blocks.push(supplierScorecardBlock(supabase, store))
+    blocks.push(gated('advisor.supplier_scorecard', () => supplierScorecardBlock(supabase, store)))
   }
   if (anyKeyword(q, ['cheaper', 'shoprite', 'pnp', 'usave', 'big chains', 'compete'])) {
     blocks.push(wrap(categoryStrategyBlock()))
   }
   if (anyKeyword(q, ['benchmark', 'compare', 'peer', 'other shops', 'doing well'])) {
-    blocks.push(peerBenchmarkingBlock(supabase, store))
+    blocks.push(gated('advisor.peer_benchmarking', () => peerBenchmarkingBlock(supabase, store)))
   }
   if (anyKeyword(q, ['nearby', 'price near', 'overpric', 'underpric', 'local price'])) {
-    blocks.push(localPriceBenchmarkingBlock(supabase, store))
+    blocks.push(gated('advisor.local_price', () => localPriceBenchmarkingBlock(supabase, store)))
   }
   if (anyKeyword(q, ['group buy', 'pool order', 'wholesale together', 'buying group'])) {
-    blocks.push(groupBuyingBlock(supabase, store))
+    blocks.push(gated('advisor.group_buying', () => groupBuyingBlock(supabase, store)))
   }
 
   const results = await Promise.all(blocks)
@@ -132,6 +146,24 @@ export async function relevantAdvisorContext(
 function anyKeyword(haystack: string, needles: string[]): boolean {
   return needles.some(n => haystack.includes(n))
 }
+
+/** Short paywall pitch the advisor surfaces when a free-tier user asks
+ *  about a Pro feature. Keeps the LLM honest about what's locked rather
+ *  than silently substituting a worse answer. */
+function upgradePitch(gateId: GateId): string {
+  const gate = GATES[gateId]
+  return [
+    `[Paywall: ${gate.label}]`,
+    `${gate.description}`,
+    `This insight is part of the ${gate.minPlan === 'pro' ? 'Pro' : 'Business'} plan.`,
+    `If asked, tell the owner what this feature would do for them and point to /settings/billing to upgrade — don't fabricate the answer they would have got on Pro.`,
+  ].join(' ')
+}
+
+// `effectivePlan` kept as a named import so a future tool-using variant of
+// this dispatcher (where we'd pass plan explicitly into each tool) doesn't
+// have to find the symbol. Currently the gate check uses `store` directly.
+export type { Plan }
 
 // ── F-A-02 — Rand & Import Sensitivity ─────────────────────────────────────
 
