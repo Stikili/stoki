@@ -119,6 +119,7 @@ function makeStore(): Store {
     onboardingCompleted: true, vatRegistered: false, vatNumber: null, vatRate: 15,
     businessAddress: null,
     isDemo: false,
+    lat: null, lng: null, cashBalance: null, cashBalanceUpdatedAt: null,
     createdAt: '', updatedAt: '',
   }
 }

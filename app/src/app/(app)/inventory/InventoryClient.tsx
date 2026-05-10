@@ -27,9 +27,13 @@ Coke 340ml Can,16.99,12.00,40,15,COKE-340
 Maggi Noodles,3.99,2.50,80,20,MAGGI-CHK
 `
 
-type Filter = 'all' | 'low' | 'out' | 'expiring'
+type Filter = 'all' | 'low' | 'out' | 'expiring' | 'low-margin' | 'dead'
 const statusPill = { ok: 'pill-green', low: 'pill-yellow', out: 'pill-red' }
 const statusText = { ok: 'In Stock', low: 'Low', out: 'Out' }
+
+/** Margin threshold matching the F-P-01 cron — keeps the dashboard alert
+ *  and the inventory filter in lockstep. */
+const LOW_MARGIN_THRESHOLD = 0.10
 
 export default function InventoryClient({
   products,
@@ -38,6 +42,7 @@ export default function InventoryClient({
   storeVatRegistered = false,
   role = 'owner',
   initialFilter = 'all',
+  soldRecentlyIds = [],
 }: {
   products: ProductWithStatus[]
   salesVelocity?: Record<string, number>
@@ -45,6 +50,9 @@ export default function InventoryClient({
   storeVatRegistered?: boolean
   role?: StoreRole
   initialFilter?: Filter
+  /** Product ids that have at least one sale in the dead-stock window
+   *  (21 days). Anything with qty>0 and NOT in this set is "dead". */
+  soldRecentlyIds?: string[]
 }) {
   // Cashier hides cost/margin info — they record sales but don't see profit.
   const canSeeMargins = role !== 'cashier'
@@ -67,16 +75,31 @@ export default function InventoryClient({
   // Capture "now" once per render so expiry calculations stay pure on a given pass.
   const now = useMemo(() => new Date(), [])
 
+  // Set wrapper for fast O(1) "is this product still moving?" checks.
+  const soldRecentlySet = useMemo(() => new Set(soldRecentlyIds), [soldRecentlyIds])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return products.filter(p => {
       if (filter === 'low' && p.status !== 'low') return false
       if (filter === 'out' && p.status !== 'out') return false
       if (filter === 'expiring' && !isExpiringSoon(p, 7, now)) return false
+      if (filter === 'low-margin') {
+        // Skip products without a defined cost OR price — margin is meaningless.
+        if (p.price <= 0 || p.cost <= 0) return false
+        const margin = 1 - p.cost / p.price
+        if (margin >= LOW_MARGIN_THRESHOLD) return false
+      }
+      if (filter === 'dead') {
+        // Dead-stock means: still on the shelf, but zero sales in the
+        // 21-day window. Products at qty=0 are not "dead", they're "out".
+        if (p.qty <= 0) return false
+        if (soldRecentlySet.has(p.id)) return false
+      }
       if (q && !p.name.toLowerCase().includes(q) && !(p.sku ?? '').toLowerCase().includes(q)) return false
       return true
     })
-  }, [products, filter, search, now])
+  }, [products, filter, search, now, soldRecentlySet])
 
   function getSuggestion(id: string) { const r = salesVelocity?.[id]; return r && r >= 0.1 ? Math.ceil(r * 7) : null }
 
@@ -159,15 +182,19 @@ export default function InventoryClient({
         <VoiceInput onResult={setSearch} />
       </div>
 
-      {/* Filters */}
+      {/* Filters — `low-margin` and `dead` are surfaced as deep-link
+          targets from the F-P-01 / F-P-03 push alerts as well as filterable
+          chips. Order: most-common first, alert-driven slices last. */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {(['all','low','out','expiring'] as Filter[]).map(f => (
+        {(['all','low','out','expiring','low-margin','dead'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)} className="px-4 py-2.5 rounded-xl text-sm font-semibold"
             style={filter === f ? { background: '#00C896', color: '#0A0E17' } : { background: '#141B2D', color: '#8896AB' }}>
             {f === 'all' ? t('inventory.all')
               : f === 'low' ? t('inventory.lowStock')
               : f === 'out' ? t('inventory.outOfStock')
-              : 'Expiring'}
+              : f === 'expiring' ? 'Expiring'
+              : f === 'low-margin' ? 'Low margin'
+              : 'Dead stock'}
           </button>
         ))}
       </div>

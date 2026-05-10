@@ -20,6 +20,10 @@ const baseStore: Store = {
   vatRate: 15,
   businessAddress: null,
   isDemo: false,
+  lat: null,
+  lng: null,
+  cashBalance: null,
+  cashBalanceUpdatedAt: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 }

@@ -64,6 +64,9 @@ export class StoreRepository implements IStoreRepository {
     vatNumber?: string | null
     vatRate?: number
     businessAddress?: string | null
+    lat?: number | null
+    lng?: number | null
+    cashBalance?: number | null
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -76,6 +79,14 @@ export class StoreRepository implements IStoreRepository {
     if (patch.vatNumber !== undefined) dbPatch.vat_number = patch.vatNumber || null
     if (patch.vatRate !== undefined) dbPatch.vat_rate = patch.vatRate
     if (patch.businessAddress !== undefined) dbPatch.business_address = patch.businessAddress || null
+    if (patch.lat !== undefined) dbPatch.lat = patch.lat
+    if (patch.lng !== undefined) dbPatch.lng = patch.lng
+    // cashBalance gets paired with a fresh updated_at stamp so the UI can
+    // show "last updated 3 days ago" without a separate column write.
+    if (patch.cashBalance !== undefined) {
+      dbPatch.cash_balance = patch.cashBalance
+      dbPatch.cash_balance_updated_at = patch.cashBalance === null ? null : new Date().toISOString()
+    }
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)
