@@ -121,6 +121,9 @@ function makeStore(): Store {
     isDemo: false,
     lat: null, lng: null, cashBalance: null, cashBalanceUpdatedAt: null,
     grandfatheredUntil: null,
+    subscriptionStatus: 'none',
+    subscriptionActiveUntil: null, subscriptionProvider: null, subscriptionProviderRef: null,
+    subscriptionLastChargeAt: null, subscriptionRetryCount: 0,
     createdAt: '', updatedAt: '',
   }
 }

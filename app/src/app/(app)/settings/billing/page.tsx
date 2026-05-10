@@ -4,6 +4,7 @@ import { getServerData } from '@/lib/getServerData'
 import { effectivePlan, grandfatherDaysRemaining, isGrandfatherActive } from '@/lib/effective-plan'
 import { GATES, type GateId } from '@/lib/plan-gates'
 import type { Plan } from '@/domain/entities/store'
+import BillingActions, { CheckoutButton } from '@/components/settings/BillingActions'
 
 // The seven Pro-tier AI advisor features. Explicit list rather than
 // computed from GATES so the page lists them in the order we want users
@@ -29,6 +30,7 @@ export default async function BillingPage() {
   const { store } = await getServerData()
   const current = effectivePlan(store)
   const grandfather = isGrandfatherActive(store) ? grandfatherDaysRemaining(store) : 0
+  const sub = subscriptionSummary(store.subscriptionStatus, store.subscriptionActiveUntil, store.subscriptionRetryCount)
 
   return (
     <div className="px-4 pt-6 pb-12 max-w-2xl mx-auto space-y-4">
@@ -36,6 +38,29 @@ export default async function BillingPage() {
         <ArrowLeft size={14} /> Settings
       </Link>
       <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Billing &amp; plan</h1>
+
+      {/* Subscription state banner — past_due / cancelled need urgent UX,
+          active gets a quiet confirmation, none/expired hide. */}
+      {sub.banner && (
+        <div
+          className="rounded-2xl p-4"
+          style={{
+            background: sub.banner.tint === 'danger' ? 'rgba(239, 68, 68, 0.08)' :
+                        sub.banner.tint === 'warning' ? 'rgba(245, 158, 11, 0.08)' :
+                        'rgba(0, 200, 150, 0.08)',
+            border: `1px solid ${
+              sub.banner.tint === 'danger' ? 'rgba(239, 68, 68, 0.30)' :
+              sub.banner.tint === 'warning' ? 'rgba(245, 158, 11, 0.30)' :
+              'rgba(0, 200, 150, 0.30)'}`,
+          }}
+        >
+          <p className="font-semibold text-sm" style={{
+            color: sub.banner.tint === 'danger' ? '#ef4444' :
+                   sub.banner.tint === 'warning' ? '#f59e0b' : '#00C896',
+          }}>{sub.banner.title}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{sub.banner.body}</p>
+        </div>
+      )}
 
       {/* Current plan / grandfather state */}
       <div className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
@@ -64,6 +89,11 @@ export default async function BillingPage() {
             )}
           </div>
         </div>
+
+        {/* Cancel button — only shown when there's something to cancel. */}
+        {(store.subscriptionStatus === 'active' || store.subscriptionStatus === 'past_due') && (
+          <BillingActions />
+        )}
       </div>
 
       {/* Plan cards */}
@@ -162,6 +192,57 @@ function planLabel(p: Plan): string {
 }
 
 /**
+ * Build the user-facing summary of the billing state machine. Returns a
+ * banner config (or null) describing what the user should know:
+ *   - active:    quiet "renews on X" line, no urgent tint
+ *   - cancelled: "you cancelled, access until X" — warning tint
+ *   - past_due:  "we couldn't charge your card" — danger tint
+ *   - expired:   no banner, falls through to upgrade pitch in the cards
+ *   - none / trialing: no banner needed (trial countdown lives on dashboard)
+ */
+function subscriptionSummary(
+  status: string,
+  activeUntil: string | null,
+  retryCount: number,
+): { banner: { title: string; body: string; tint: 'success' | 'warning' | 'danger' } | null } {
+  if (!activeUntil) {
+    return { banner: null }
+  }
+  const ends = new Date(activeUntil)
+  const dateLabel = ends.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  if (status === 'active') {
+    return {
+      banner: {
+        title: 'Subscription active',
+        body: `Next renewal on ${dateLabel}. Cancel any time — you'll keep access until then.`,
+        tint: 'success',
+      },
+    }
+  }
+  if (status === 'cancelled') {
+    return {
+      banner: {
+        title: 'Subscription cancelled',
+        body: `You'll keep your current plan until ${dateLabel}, then move to Free. Reactivate any time before then.`,
+        tint: 'warning',
+      },
+    }
+  }
+  if (status === 'past_due') {
+    const attemptsLeft = Math.max(0, 3 - retryCount)
+    return {
+      banner: {
+        title: 'Payment failed',
+        body: `We couldn't charge your card. We'll retry ${attemptsLeft} more time${attemptsLeft === 1 ? '' : 's'}; after that your plan drops to Free. Update your details to keep your features.`,
+        tint: 'danger',
+      },
+    }
+  }
+  return { banner: null }
+}
+
+/**
  * One plan card. `current` highlights the user's effective tier with a
  * "Current plan" badge. CTA stub: a mailto: link until a real payment
  * provider lands — keeps the upgrade path honest without faking a flow.
@@ -206,14 +287,15 @@ function PlanCard({
       </ul>
       {cta && !current && (
         // Stubbed upgrade — until a payment provider is wired in, the CTA
-        // routes to a mailto: link so the user can reach out and get manually
-        // upgraded. Honest about the state of the product.
-        <a
-          href={`mailto:hello@stoki.app?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
-          className="btn-primary inline-flex items-center justify-center w-full active:scale-[0.985]"
-        >
-          {cta}
-        </a>
+        // routes to a mailto: link so the user can reach out and get
+        // manually upgraded. The CheckoutButton wrapper fires a
+        // `checkout_started` analytics event so we can measure conversion
+        // from "saw paywall" → "actually reached out".
+        <CheckoutButton
+          plan={name.toLowerCase() === 'pro' ? 'pro' : name.toLowerCase() === 'business' ? 'business' : 'pro'}
+          label={cta}
+          mailto={`mailto:hello@stoki.app?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
+        />
       )}
     </div>
   )

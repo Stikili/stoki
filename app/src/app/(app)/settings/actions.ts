@@ -9,6 +9,7 @@ import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { StoreRole } from '@/domain/entities/store-user'
 import { TAGS } from '@/lib/cache-tags'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
+import { recordCancellation } from '@/lib/subscription'
 
 export async function updateStoreAction(formData: FormData) {
   const { supabase, store } = await getServerData()
@@ -164,6 +165,24 @@ export async function removeMemberAction(userId: string): Promise<{ ok: boolean;
   await repo.remove(store.id, userId)
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/settings')
+  return { ok: true }
+}
+
+/**
+ * User-initiated cancel. Admin client because the store_users RLS would
+ * otherwise block the update on a row where the only writers are owners
+ * and we want a clean transactional update. The user keeps `plan` until
+ * `subscription_active_until` — they paid for the period.
+ */
+export async function cancelSubscriptionAction(): Promise<{ ok: boolean; error?: string }> {
+  const { user, store, role } = await getServerData()
+  if (role !== 'owner') return { ok: false, error: 'Only the owner can cancel.' }
+  if (store.subscriptionStatus !== 'active' && store.subscriptionStatus !== 'past_due') {
+    return { ok: false, error: 'No active subscription to cancel.' }
+  }
+  await recordCancellation(createAdminClient(), store.id, user.id)
+  revalidateTag(TAGS.stores, 'default')
+  revalidatePath('/settings/billing')
   return { ok: true }
 }
 
