@@ -16,8 +16,12 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-/** Daily advisor message limit per user (free tier). Tune in env. */
-export const ADVISOR_DAILY_LIMIT = Number(process.env.ADVISOR_DAILY_LIMIT ?? 30)
+/** Daily advisor message limit per user (free tier). Tune in env.
+ *  Default of 10 is the conversion-aware target — high enough to feel
+ *  useful on day one, low enough that heavy daily users hit the cap and
+ *  see an upgrade prompt. Pro/Business should override via env to a
+ *  much higher value (or remove entirely once plan-aware gating ships). */
+export const ADVISOR_DAILY_LIMIT = Number(process.env.ADVISOR_DAILY_LIMIT ?? 10)
 
 export interface MeterDecision {
   ok: boolean
@@ -53,7 +57,7 @@ export async function checkAdvisorBudget(
         ok: false,
         used,
         limit: ADVISOR_DAILY_LIMIT,
-        message: `You've hit today's advisor limit (${ADVISOR_DAILY_LIMIT} questions). It resets at midnight — or upgrade your plan to remove the cap.`,
+        message: `${ADVISOR_DAILY_LIMIT} questions a day to chat with stoki — upgrade for unlimited. Resets at midnight.`,
       }
     }
     return { ok: true, used, limit: ADVISOR_DAILY_LIMIT }

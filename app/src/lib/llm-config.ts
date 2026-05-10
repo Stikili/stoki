@@ -24,3 +24,10 @@ export const LLM_API_KEY = process.env.LLM_API_KEY ?? process.env.ANTHROPIC_API_
 
 /** Default LLM model identifier. Override with `LLM_MODEL` in env if needed. */
 export const LLM_MODEL = process.env.LLM_MODEL ?? 'claude-sonnet-4-6'
+
+/** Cheaper "fast" model for advisor questions that don't need the full
+ *  Sonnet reasoning budget — typically ~80% cheaper. The route picks this
+ *  when a question fires no feature-context blocks AND the user message is
+ *  short, falling back to LLM_MODEL otherwise. Override with `LLM_MODEL_FAST`
+ *  in env to pin a different cheap model. */
+export const LLM_MODEL_FAST = process.env.LLM_MODEL_FAST ?? 'claude-haiku-4-5-20251001'
