@@ -148,6 +148,9 @@ async function handleCommand(from: string, text: string): Promise<string | null>
 
     default:
       // Route conversational queries through Claude with full data access.
-      return askBrain(supabase, store, text)
+      // Pass the store owner's id as the conversation memory key — the
+      // WhatsApp message comes in by phone number, so we use the owner
+      // (matched by stores.whatsapp_number) as the user-of-record.
+      return askBrain(supabase, store, text, store.ownerId)
   }
 }
