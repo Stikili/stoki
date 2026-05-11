@@ -689,3 +689,78 @@ async function groupBuyingBlock(supabase: SupabaseClient, store: Store): Promise
   ].join(' ')
   })
 }
+
+// ── Tool-callable dispatcher ───────────────────────────────────────────────
+//
+// `relevantAdvisorContext` (above) is keyword-gated and concatenates blocks
+// into the system prompt. The new `getInsightBlock` lets the bot pull a
+// specific topic on demand via tool call — cheaper, more deliberate, lets
+// the model choose what to surface rather than spraying everything that
+// matched a keyword.
+
+export const INSIGHT_TOPICS = [
+  'rand_sensitivity',
+  'cultural_events',
+  'credit_book',
+  'energy_advisor',
+  'sassa_risk',
+  'category_strategy',
+  'peer_benchmarking',
+  'supplier_scorecard',
+  'basket_analysis',
+  'local_price',
+  'group_buying',
+  'business_valuation',
+  'funding_navigator',
+] as const
+
+export type InsightTopic = typeof INSIGHT_TOPICS[number]
+
+/** Map insight topics to the plan gate that covers them. NULL = always free. */
+const TOPIC_GATES: Record<InsightTopic, GateId | null> = {
+  rand_sensitivity:   null,
+  cultural_events:    null,
+  credit_book:        null,
+  energy_advisor:     null,
+  sassa_risk:         null,
+  category_strategy:  null,
+  peer_benchmarking:   'advisor.peer_benchmarking',
+  supplier_scorecard:  'advisor.supplier_scorecard',
+  basket_analysis:     'advisor.basket_analysis',
+  local_price:         'advisor.local_price',
+  group_buying:        'advisor.group_buying',
+  business_valuation:  'advisor.business_valuation',
+  funding_navigator:   'advisor.funding_navigator',
+}
+
+/**
+ * Resolve a single insight block for a topic. Returns:
+ *   - the computed block string, if the topic is unlocked AND has data
+ *   - the upgrade pitch, if the topic is plan-gated and the store can't access it
+ *   - null, if the topic is unlocked but there's no meaningful data yet
+ */
+export async function getInsightBlock(
+  supabase: SupabaseClient,
+  store: Store,
+  topic: InsightTopic,
+): Promise<string | null> {
+  const gate = TOPIC_GATES[topic]
+  if (gate && !hasFeature(store, gate)) {
+    return upgradePitch(gate)
+  }
+  switch (topic) {
+    case 'rand_sensitivity':   return randSensitivityBlock(supabase, store)
+    case 'cultural_events':    return culturalEventBlock(store)
+    case 'credit_book':        return creditBookBlock(supabase, store)
+    case 'energy_advisor':     return energyAdvisorBlock()
+    case 'sassa_risk':         return sassaRiskBlock(supabase, store)
+    case 'category_strategy':  return categoryStrategyBlock()
+    case 'peer_benchmarking':  return peerBenchmarkingBlock(supabase, store)
+    case 'supplier_scorecard': return supplierScorecardBlock(supabase, store)
+    case 'basket_analysis':    return basketAnalysisBlock(supabase, store)
+    case 'local_price':        return localPriceBenchmarkingBlock(supabase, store)
+    case 'group_buying':       return groupBuyingBlock(supabase, store)
+    case 'business_valuation': return valuationGuideBlock()
+    case 'funding_navigator':  return fundingNavigatorBlock(store)
+  }
+}

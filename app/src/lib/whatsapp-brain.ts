@@ -1,21 +1,17 @@
 // Default export aliased — keeps the rest of this file provider-agnostic.
-// Swap the package + these two import lines if/when we change LLM vendors.
+// Swap the package + this single import line if/when we change LLM vendors.
 import LLMClient from '@anthropic-ai/sdk'
-import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { LLM_MODEL } from '@/lib/llm-config'
-import { z } from 'zod'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Store } from '@/domain/entities/store'
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { DebtorRepository } from '@/infrastructure/supabase/repositories/DebtorRepository'
-import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
-import { recordSale } from '@/application/sales/recordSale'
 import { getProducts } from '@/application/inventory/getProducts'
-import { fuzzyMatch } from '@/lib/whatsapp-parser'
 import { getMarketContext, summariseMarketContext } from '@/lib/market-context'
-
-type Period = 'today' | 'yesterday' | 'this_week' | 'this_month'
+import { buildAllTools } from '@/lib/advisor/tools'
+import { loadRecentMessages, appendExchange } from '@/lib/advisor/conversations'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 
 /**
  * Authoritative SA sources the bot is allowed to search + fetch from.
@@ -51,31 +47,6 @@ const WEB_SOURCE_ALLOWLIST = [
   'bloomberg.com',
 ]
 
-function periodRange(p: Period): { from: Date; to: Date; label: string } {
-  const now = new Date()
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999)
-  switch (p) {
-    case 'today':
-      return { from: todayStart, to: todayEnd, label: 'today' }
-    case 'yesterday': {
-      const start = new Date(todayStart); start.setDate(start.getDate() - 1)
-      const end = new Date(todayEnd); end.setDate(end.getDate() - 1)
-      return { from: start, to: end, label: 'yesterday' }
-    }
-    case 'this_week': {
-      const start = new Date(todayStart)
-      const day = start.getDay() || 7
-      start.setDate(start.getDate() - (day - 1))
-      return { from: start, to: todayEnd, label: 'this week' }
-    }
-    case 'this_month': {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-      return { from: start, to: todayEnd, label: 'this month' }
-    }
-  }
-}
-
 const SYSTEM_PROMPT = `You are Stoki — a friendly, practical assistant for South African small-business owners. Most users are spaza shops, informal traders, food stalls, salons, transport operators. They aren't accountants; they're trying to keep their till healthy through tomorrow.
 
 Your job: help them run their shop AND make sense of what's happening in the economy that affects their takings. Look at their actual numbers when answering, and check the wider market when it matters.
@@ -89,14 +60,17 @@ How to talk:
 - Connect every economic point back to their till. "Repo rate up 25 points" means nothing — "your customers have less money this month" means everything.
 
 When to use which tool:
-- For their own data ("today's profit", "who owes me", "what to reorder", "best seller") — pull from their store. NEVER search the web for store data.
+- For their own data ("today's profit", "who owes me", "what to reorder", "best seller") — pull from their store with get_*. NEVER search the web for store data.
+- For business actions ("record sale", "log expense", "I restocked 2 cases of Coke", "throw away expired bread") — use the record_* tools. Fuzzy-match product names; if no match, suggest alternatives.
+- For forecast questions ("when will I run out of bread?") — use forecast_demand.
+- For deep insights ("how do I compare to nearby shops?", "what's my shop worth?", "where can I get funding?") — use get_business_insight with the right topic.
 - For stable economic indicators (current SARB rate, current fuel price, latest CPI, USD/ZAR) — use get_market_context. Cached so it's fast and free.
-- For news / what's happening / fresh announcements ("how is the economy?", "is fuel increasing?", "what did SARB say today?", "any supplier news?") — use web_search. Allowed sources are SA-authoritative (resbank, statssa, AA, BusinessTech, Daily Maverick, Moneyweb, etc.). Cite the URL so the owner can verify.
+- For news / what's happening / fresh announcements ("how is the economy?", "is fuel increasing?", "what did SARB say today?", "any supplier news?") — use web_search. Allowed sources are SA-authoritative. Cite the URL.
 - For a search hit worth reading in full — follow up with web_fetch.
 
 Rules:
 - Always use tools for factual claims. Never make up numbers, dates, or news.
-- When recording sales/returns, fuzzy-match product names — don't ask for exact spelling.
+- When recording sales/returns/restocks/wastage, fuzzy-match product names — don't ask for exact spelling.
 - If a product can't be found, list close suggestions from inventory.
 - For "how is business?" — pull today's revenue, low stock, overdue debtors AND market context before answering.
 - For "how is the economy?" — pull market context AND search the web for recent commentary on growth + consumer spending. Sum it up in 2-3 plain sentences plus one line on what it means for the user's shop.
@@ -108,229 +82,14 @@ export async function askBrain(
   supabase: SupabaseClient,
   store: Store,
   userMessage: string,
+  userId?: string,
 ): Promise<string> {
-  const productRepo = new ProductRepository(supabase)
-  const saleRepo = new SaleRepository(supabase)
-  const debtorRepo = new DebtorRepository(supabase)
-  const alertRepo = new AlertRepository(supabase)
-
+  // Use shared registry so the WhatsApp brain has symmetric tooling with
+  // the in-app advisor — sales/returns + restock/expense/wastage writes,
+  // 13 F-A advisor insights, demand forecasting. Plus the two external
+  // web tools that are WhatsApp-specific (in-app gets them in a follow-up).
   const tools = [
-    betaZodTool({
-      name: 'get_sales_summary',
-      description: 'Get sales summary for a period: revenue, sale count, items sold, profit margin.',
-      inputSchema: z.object({
-        period: z.enum(['today', 'yesterday', 'this_week', 'this_month']),
-      }),
-      run: async ({ period }) => {
-        const { from, to, label } = periodRange(period)
-        const s = await saleRepo.summarise(store.id, from, to)
-        return JSON.stringify({
-          period: label,
-          revenue: Number(s.totalRevenue.toFixed(2)),
-          sales_count: s.transactionCount,
-          items_sold: s.itemsSold,
-          profit: Number(s.totalMargin.toFixed(2)),
-        })
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_top_products',
-      description: 'Best-selling products for a period, ranked by quantity sold. Excludes returns.',
-      inputSchema: z.object({
-        period: z.enum(['today', 'yesterday', 'this_week', 'this_month']),
-        limit: z.number().int().positive().max(20).default(5),
-      }),
-      run: async ({ period, limit }) => {
-        const { from, to, label } = periodRange(period)
-        const sales = await saleRepo.findByPeriod(store.id, from, to)
-        const tally = new Map<string, { name: string; qty: number; revenue: number }>()
-        for (const sale of sales) {
-          if (sale.type === 'return') continue
-          const id = sale.productId ?? 'unknown'
-          const name = sale.productName ?? 'Unknown'
-          const t = tally.get(id) ?? { name, qty: 0, revenue: 0 }
-          t.qty += sale.qty
-          t.revenue += sale.priceAtSale * sale.qty
-          tally.set(id, t)
-        }
-        const sorted = [...tally.values()]
-          .sort((a, b) => b.qty - a.qty)
-          .slice(0, limit)
-          .map(t => ({ name: t.name, qty: t.qty, revenue: Number(t.revenue.toFixed(2)) }))
-        return JSON.stringify({ period: label, top: sorted })
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_low_stock',
-      description: 'List products at or below their reorder point (low or out of stock).',
-      inputSchema: z.object({}),
-      run: async () => {
-        const products = await getProducts(productRepo, store.id)
-        const low = products.filter(p => p.status === 'low' || p.status === 'out')
-        return JSON.stringify(low.map(p => ({
-          name: p.name,
-          qty: p.qty,
-          status: p.status,
-          reorder_point: p.reorderPoint,
-        })))
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_inventory',
-      description: 'Search inventory by name (substring match) or list first 30 products. Prefer get_low_stock for stock-status questions.',
-      inputSchema: z.object({
-        search: z.string().optional().describe('Substring match against product name'),
-      }),
-      run: async ({ search }) => {
-        const products = await getProducts(productRepo, store.id)
-        const filtered = search
-          ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-          : products
-        return JSON.stringify(filtered.slice(0, 30).map(p => ({
-          name: p.name,
-          qty: p.qty,
-          price: p.price,
-          status: p.status,
-        })))
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_debtors',
-      description: 'Customers who currently owe money, sorted by amount owed descending.',
-      inputSchema: z.object({}),
-      run: async () => {
-        const debtors = await debtorRepo.findAll(store.id)
-        const owing = debtors.filter(d => d.totalOwed > 0)
-        return JSON.stringify(owing.map(d => ({
-          name: d.name,
-          owed: Number(d.totalOwed.toFixed(2)),
-          last_reminded: d.lastRemindedAt,
-        })))
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_unread_alerts',
-      description: 'Unread alerts: out-of-stock warnings, low-stock alerts, AI insights, debtor reminders.',
-      inputSchema: z.object({}),
-      run: async () => {
-        const alerts = await alertRepo.findUnread(store.id)
-        return JSON.stringify(alerts.slice(0, 10).map(a => ({
-          type: a.type,
-          message: a.message,
-          created: a.createdAt,
-        })))
-      },
-    }),
-
-    betaZodTool({
-      name: 'record_sale',
-      description: 'Record a sale. Performs fuzzy match on product name. Returns ok=true with details, or ok=false with suggestions.',
-      inputSchema: z.object({
-        product_name: z.string().describe('Product name (fuzzy matched against inventory)'),
-        qty: z.number().int().positive(),
-      }),
-      run: async ({ product_name, qty }) => {
-        const products = await getProducts(productRepo, store.id)
-        const match = fuzzyMatch(product_name, products.map(p => ({ id: p.id, name: p.name })))
-        if (!match) {
-          const suggestions = products.slice(0, 5).map(p => p.name)
-          return JSON.stringify({ ok: false, error: `No product matching "${product_name}"`, suggestions })
-        }
-        const product = products.find(p => p.id === match.id)!
-        if (product.qty < qty) {
-          return JSON.stringify({ ok: false, error: `Only ${product.qty} ${product.name} in stock` })
-        }
-        await recordSale(saleRepo, productRepo, alertRepo, store, {
-          productId: product.id,
-          qty,
-          priceAtSale: product.price,
-          channel: 'whatsapp',
-        })
-        return JSON.stringify({
-          ok: true,
-          product: product.name,
-          qty,
-          unit_price: product.price,
-          total: Number((product.price * qty).toFixed(2)),
-          stock_left: product.qty - qty,
-        })
-      },
-    }),
-
-    betaZodTool({
-      name: 'get_market_context',
-      description:
-        'Pull the current South African market snapshot: SARB repo + prime rates, petrol 95 + diesel prices, CPI year-on-year, USD/ZAR exchange rate. Use this whenever a question touches pricing decisions, customer affordability, supplier cost pressure, or forecasts. Cached for an hour so cheap to call.',
-      inputSchema: z.object({}),
-      run: async () => {
-        const ctx = await getMarketContext(supabase)
-        return JSON.stringify({
-          as_of: ctx.asOf,
-          interest_rates: {
-            repo_pct: ctx.rates.repo,
-            prime_pct: ctx.rates.prime,
-            source: ctx.rates.source,
-            as_of: ctx.rates.asOf,
-          },
-          fuel_zar_per_litre: {
-            petrol_95: ctx.fuel.petrol95,
-            diesel: ctx.fuel.diesel,
-            source: ctx.fuel.source,
-            as_of: ctx.fuel.asOf,
-          },
-          inflation: {
-            cpi_yoy_pct: ctx.inflation.cpiYoy,
-            source: ctx.inflation.source,
-            as_of: ctx.inflation.asOf,
-          },
-          fx: {
-            usd_zar: ctx.fx.usdZar,
-            eur_zar: ctx.fx.eurZar,
-            source: ctx.fx.source,
-            as_of: ctx.fx.asOf,
-          },
-        })
-      },
-    }),
-
-    betaZodTool({
-      name: 'record_return',
-      description: 'Record a return — reverses a sale and adds stock back.',
-      inputSchema: z.object({
-        product_name: z.string().describe('Product name (fuzzy matched)'),
-        qty: z.number().int().positive(),
-      }),
-      run: async ({ product_name, qty }) => {
-        const products = await getProducts(productRepo, store.id)
-        const match = fuzzyMatch(product_name, products.map(p => ({ id: p.id, name: p.name })))
-        if (!match) return JSON.stringify({ ok: false, error: `No product matching "${product_name}"` })
-        const product = products.find(p => p.id === match.id)!
-        await recordSale(saleRepo, productRepo, alertRepo, store, {
-          productId: product.id,
-          qty,
-          priceAtSale: product.price,
-          type: 'return',
-          channel: 'whatsapp',
-        })
-        return JSON.stringify({
-          ok: true,
-          product: product.name,
-          qty_returned: qty,
-          refunded: Number((product.price * qty).toFixed(2)),
-        })
-      },
-    }),
-
-    // Server-side tools — the model executes these itself, no callback needed.
-    // We restrict the search/fetch surface to authoritative SA sources so
-    // the bot doesn't pull from random forums or marketing fluff. Caps at
-    // 3 search uses per turn to keep costs predictable (~$0.03 worst case
-    // per heavy market-related conversation).
+    ...buildAllTools({ supabase, store, userId, channel: 'whatsapp' }),
     {
       type: 'web_search_20260209' as const,
       name: 'web_search' as const,
@@ -348,6 +107,9 @@ export async function askBrain(
   // Lightweight snapshot so the model has immediate context without tool
   // calls. Pulled in parallel — store data + the market-context cache lookup
   // are independent and the model uses both when reasoning about business health.
+  const productRepo = new ProductRepository(supabase)
+  const saleRepo = new SaleRepository(supabase)
+  const debtorRepo = new DebtorRepository(supabase)
   const [products, debtors, today, market] = await Promise.all([
     getProducts(productRepo, store.id),
     debtorRepo.findAll(store.id),
@@ -371,6 +133,14 @@ export async function askBrain(
     market ? summariseMarketContext(market) : '',
   ].filter(Boolean).join('\n')
 
+  // Conversation memory: load last ~8 turns so the bot can stitch context
+  // across sessions ("did you ever raise that price?"). Admin client lives
+  // outside the user-scoped RLS — analytics-style read.
+  const admin = createAdminClient()
+  const prior = userId
+    ? await loadRecentMessages(admin, userId, store.id, 'whatsapp')
+    : []
+
   const client = new LLMClient()
 
   const finalMessage = await client.beta.messages.toolRunner({
@@ -383,6 +153,7 @@ export async function askBrain(
     ],
     tools,
     messages: [
+      ...prior.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: `${snapshot}\n\nUser asks: ${userMessage}` },
     ],
   })
@@ -393,5 +164,11 @@ export async function askBrain(
     .join('\n')
     .trim()
 
-  return text || 'Sorry — I couldn\'t put together an answer for that. Try "help" to see what I can do.'
+  const response = text || 'Sorry — I couldn\'t put together an answer for that. Try "help" to see what I can do.'
+
+  // Persist this exchange (only the bare user/assistant text, no snapshot,
+  // so future turns load lean). Fire-and-forget; never block.
+  if (userId) void appendExchange(admin, userId, store.id, 'whatsapp', userMessage, response)
+
+  return response
 }
