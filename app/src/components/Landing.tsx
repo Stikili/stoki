@@ -117,7 +117,7 @@ function SlideHero() {
           className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"
           style={{ color: 'var(--foreground)' }}
         >
-          Run your shop{' '}
+          Run your business{' '}
           <span style={{ color: '#00e0a0' }}>without the chaos.</span>
         </h1>
         <p
@@ -192,7 +192,7 @@ function SlideCta() {
             Ready when you are.
           </h2>
           <p className="text-[15px] mb-6" style={{ color: 'var(--muted)' }}>
-            Set up your store in under three minutes.
+            Set up your business in under three minutes.
           </p>
           <Link
             href="/login?intent=register"
