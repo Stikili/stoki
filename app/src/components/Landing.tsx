@@ -208,6 +208,9 @@ function SlideCta() {
           {' '}&amp;{' '}
           <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
         </p>
+        <p className="mt-2 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
+          Stoki (Pty) Ltd · Reg. K2026258855
+        </p>
       </div>
     </section>
   )
