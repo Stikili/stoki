@@ -31,6 +31,15 @@ const AMOUNT_KEYS = ['amount']
 const DEBIT_KEYS = ['debit', 'amount debit', 'money out', 'withdrawal', 'withdrawals']
 const CREDIT_KEYS = ['credit', 'amount credit', 'money in', 'deposit', 'deposits']
 
+/**
+ * Stable fingerprint for a bank-statement line description used as part of
+ * the deduplication key in `bank_reconciliations`. Lowercased, whitespace
+ * collapsed, capped at 200 characters to match the DB column.
+ */
+export function descriptionFingerprint(description: string): string {
+  return description.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 200)
+}
+
 export function parseBankStatementCsv(csv: string): ParsedBankStatement {
   const lines: BankStatementLine[] = []
   const errors: { line: number; message: string }[] = []

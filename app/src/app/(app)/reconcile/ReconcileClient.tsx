@@ -3,14 +3,19 @@
 import { useState, useTransition, useMemo, useRef } from 'react'
 import { Invoice } from '@/domain/entities/invoice'
 import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
-import { parseBankStatementCsv, ParsedBankStatement } from '@/lib/csv-bank-statement'
+import { parseBankStatementCsv, ParsedBankStatement, descriptionFingerprint } from '@/lib/csv-bank-statement'
 import { matchStatement, MatchedStatementLine } from '@/application/reconcile/matchStatement'
-import { applyInvoicePaymentAction, recordReconcileExpenseAction } from './actions'
+import { compositeKey } from '@/infrastructure/supabase/repositories/BankReconciliationRepository'
+import {
+  applyInvoicePaymentAction,
+  recordReconcileExpenseAction,
+  skipLineAction,
+} from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Upload, Check, X } from 'lucide-react'
+import { Upload, Check, X, RotateCcw } from 'lucide-react'
 
-type ResolvedStatus = 'pending' | 'matched' | 'expensed' | 'skipped'
+type ResolvedStatus = 'pending' | 'matched' | 'expensed' | 'skipped' | 'already_handled'
 
 const SAMPLE_CSV = `Date,Description,Amount,Balance
 2026-04-15,POS PURCHASE WOOLWORTHS,-150.00,4850.00
@@ -22,11 +27,16 @@ const SAMPLE_CSV = `Date,Description,Amount,Balance
 export default function ReconcileClient({
   openInvoices,
   recentExpenses,
+  resolvedKeys,
 }: {
   openInvoices: Invoice[]
   recentExpenses: Expense[]
+  /** Composite key strings from the server: `${statementDate}|${amount}|${descFp}` */
+  resolvedKeys: string[]
 }) {
   const { toast } = useToast()
+  const resolvedSet = useMemo(() => new Set(resolvedKeys), [resolvedKeys])
+
   const [csvText, setCsvText] = useState('')
   const [parsed, setParsed] = useState<ParsedBankStatement | null>(null)
   const [matched, setMatched] = useState<MatchedStatementLine[]>([])
@@ -37,15 +47,14 @@ export default function ReconcileClient({
 
   const summary = useMemo(() => {
     let totalIn = 0, totalOut = 0
-    let matchedCount = 0, pendingCount = 0
+    let matchedCount = 0
     for (const m of matched) {
       if (m.line.amount > 0) totalIn += m.line.amount
       else totalOut += Math.abs(m.line.amount)
       const s = statuses[m.line.rowNumber] ?? 'pending'
-      if (s === 'matched' || s === 'expensed' || s === 'skipped') matchedCount++
-      else pendingCount++
+      if (s !== 'pending') matchedCount++
     }
-    return { totalIn, totalOut, matchedCount, pendingCount, total: matched.length }
+    return { totalIn, totalOut, matchedCount, total: matched.length }
   }, [matched, statuses])
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -65,8 +74,19 @@ export default function ReconcileClient({
       return
     }
     const m = matchStatement(result.lines, openInvoices, recentExpenses)
+
+    // Pre-populate statuses for lines already in the DB.
+    const initialStatuses: Record<number, ResolvedStatus> = {}
+    for (const row of m) {
+      const fp = descriptionFingerprint(row.line.description)
+      const key = compositeKey(row.line.date, row.line.amount, fp)
+      if (resolvedSet.has(key)) {
+        initialStatuses[row.line.rowNumber] = 'already_handled'
+      }
+    }
+
     setMatched(m)
-    setStatuses({})
+    setStatuses(initialStatuses)
     haptic(30)
   }
 
@@ -88,6 +108,8 @@ export default function ReconcileClient({
           m.line.amount,
           m.line.date,
           m.line.reference ?? m.line.description,
+          m.line.date,
+          m.line.description,
         )
         setStatuses((prev) => ({ ...prev, [m.line.rowNumber]: 'matched' }))
         haptic(40)
@@ -106,6 +128,8 @@ export default function ReconcileClient({
           m.line.description || 'Bank reconcile',
           Math.abs(m.line.amount),
           m.line.date,
+          m.line.date,
+          m.line.description,
         )
         setStatuses((prev) => ({ ...prev, [m.line.rowNumber]: 'expensed' }))
         setExpenseSheet(null)
@@ -117,8 +141,18 @@ export default function ReconcileClient({
     })
   }
 
-  function skipLine(rowNumber: number) {
-    setStatuses((prev) => ({ ...prev, [rowNumber]: 'skipped' }))
+  function skipLine(m: MatchedStatementLine) {
+    setStatuses((prev) => ({ ...prev, [m.line.rowNumber]: 'skipped' }))
+    // Persist the skip so it's not re-shown on re-upload.
+    startTransition(async () => {
+      try {
+        await skipLineAction(m.line.date, m.line.amount, m.line.description)
+      } catch { /* non-critical — local status already updated */ }
+    })
+  }
+
+  function overrideLine(rowNumber: number) {
+    setStatuses((prev) => ({ ...prev, [rowNumber]: 'pending' }))
   }
 
   return (
@@ -219,7 +253,7 @@ export default function ReconcileClient({
                   style={
                     status === 'matched' || status === 'expensed'
                       ? { borderColor: 'rgba(0,200,150,0.3)' }
-                      : status === 'skipped'
+                      : status === 'skipped' || status === 'already_handled'
                         ? { opacity: 0.5 }
                         : {}
                   }
@@ -250,7 +284,7 @@ export default function ReconcileClient({
                         <p className="text-muted text-[10px] mt-0.5">{m.best.reason}</p>
                       </div>
                       <div className="flex gap-1.5 flex-shrink-0">
-                        <button onClick={() => skipLine(m.line.rowNumber)} disabled={isPending} className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+                        <button onClick={() => skipLine(m)} disabled={isPending} className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
                           <X size={14} color="#7B8CA1" />
                         </button>
                         <button onClick={() => confirmInvoiceMatch(m)} disabled={isPending} className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#00C896' }}>
@@ -268,7 +302,7 @@ export default function ReconcileClient({
                           Already in your books: {m.best.description}
                         </p>
                       </div>
-                      <button onClick={() => skipLine(m.line.rowNumber)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+                      <button onClick={() => skipLine(m)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
                         OK
                       </button>
                     </div>
@@ -278,7 +312,7 @@ export default function ReconcileClient({
                     <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: '1px solid var(--card-border)' }}>
                       <p className="text-xs text-muted">Not in your books</p>
                       <div className="flex gap-1.5">
-                        <button onClick={() => skipLine(m.line.rowNumber)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+                        <button onClick={() => skipLine(m)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
                           Skip
                         </button>
                         <button onClick={() => setExpenseSheet(m)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg font-semibold" style={{ background: '#F59E0B', color: '#0A0E17' }}>
@@ -291,7 +325,7 @@ export default function ReconcileClient({
                   {status === 'pending' && m.best === null && isCredit && (
                     <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: '1px solid var(--card-border)' }}>
                       <p className="text-xs text-muted">No matching invoice</p>
-                      <button onClick={() => skipLine(m.line.rowNumber)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+                      <button onClick={() => skipLine(m)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
                         Skip
                       </button>
                     </div>
@@ -311,6 +345,19 @@ export default function ReconcileClient({
                     <p className="text-xs text-muted pt-2" style={{ borderTop: '1px solid var(--card-border)' }}>
                       Skipped
                     </p>
+                  )}
+                  {status === 'already_handled' && (
+                    <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: '1px solid var(--card-border)' }}>
+                      <p className="text-xs text-muted">Already handled in a previous session</p>
+                      <button
+                        onClick={() => overrideLine(m.line.rowNumber)}
+                        className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg"
+                        style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}
+                      >
+                        <RotateCcw size={10} />
+                        Override
+                      </button>
+                    </div>
                   )}
                 </div>
               )

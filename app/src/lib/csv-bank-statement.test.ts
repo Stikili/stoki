@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBankStatementCsv, normaliseDate, parseAmount } from './csv-bank-statement'
+import { parseBankStatementCsv, normaliseDate, parseAmount, descriptionFingerprint } from './csv-bank-statement'
 
 describe('normaliseDate', () => {
   it('passes through ISO YYYY-MM-DD', () => {
@@ -167,5 +167,34 @@ not-a-date,Bad row,100
     const result = parseBankStatementCsv(csv)
     expect(result.lines[0].description).toBe('Pick n Pay, Sea Point')
     expect(result.lines[0].amount).toBe(-300)
+  })
+})
+
+describe('descriptionFingerprint', () => {
+  it('lowercases the description', () => {
+    expect(descriptionFingerprint('EFT PAYMENT')).toBe('eft payment')
+  })
+
+  it('strips leading and trailing whitespace', () => {
+    expect(descriptionFingerprint('  hello world  ')).toBe('hello world')
+  })
+
+  it('collapses internal whitespace runs to a single space', () => {
+    expect(descriptionFingerprint('POS  PURCHASE   WOOLWORTHS')).toBe('pos purchase woolworths')
+  })
+
+  it('returns the same value for semantically identical descriptions', () => {
+    const a = descriptionFingerprint('EFT Invoice 1042')
+    const b = descriptionFingerprint('EFT  invoice  1042 ')
+    expect(a).toBe(b)
+  })
+
+  it('truncates descriptions longer than 200 characters', () => {
+    const long = 'a'.repeat(250)
+    expect(descriptionFingerprint(long)).toHaveLength(200)
+  })
+
+  it('handles empty string', () => {
+    expect(descriptionFingerprint('')).toBe('')
   })
 })
