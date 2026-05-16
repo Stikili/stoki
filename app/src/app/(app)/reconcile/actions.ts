@@ -6,6 +6,8 @@ import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
+import { BankReconciliationRepository } from '@/infrastructure/supabase/repositories/BankReconciliationRepository'
+import { descriptionFingerprint } from '@/lib/csv-bank-statement'
 
 async function getContext() {
   const supabase = await createClient()
@@ -22,6 +24,8 @@ export async function applyInvoicePaymentAction(
   amount: number,
   paidAt: string,
   reference: string | null,
+  statementDate: string,
+  rawDescription: string,
 ) {
   const { supabase, store } = await getContext()
   const invoiceRepo = new InvoiceRepository(supabase)
@@ -32,6 +36,14 @@ export async function applyInvoicePaymentAction(
     'eft',
     reference ? `Bank reconcile · ${reference}` : `Bank reconcile · ${paidAt}`,
   )
+
+  const reconRepo = new BankReconciliationRepository(supabase)
+  await reconRepo.upsert(store.id, {
+    statementDate,
+    amount,
+    descriptionFingerprint: descriptionFingerprint(rawDescription),
+  }, 'matched')
+
   revalidatePath('/invoices')
   revalidatePath('/dashboard')
   revalidatePath('/reconcile')
@@ -42,6 +54,8 @@ export async function recordReconcileExpenseAction(
   description: string,
   amount: number,
   recordedAt: string,
+  statementDate: string,
+  rawDescription: string,
 ) {
   const { supabase, store } = await getContext()
   const expenseRepo = new ExpenseRepository(supabase)
@@ -51,7 +65,29 @@ export async function recordReconcileExpenseAction(
     amount,
     recordedAt,
   })
+
+  const reconRepo = new BankReconciliationRepository(supabase)
+  await reconRepo.upsert(store.id, {
+    statementDate,
+    amount,
+    descriptionFingerprint: descriptionFingerprint(rawDescription),
+  }, 'expensed')
+
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
   revalidatePath('/reconcile')
+}
+
+export async function skipLineAction(
+  statementDate: string,
+  amount: number,
+  rawDescription: string,
+) {
+  const { supabase, store } = await getContext()
+  const reconRepo = new BankReconciliationRepository(supabase)
+  await reconRepo.upsert(store.id, {
+    statementDate,
+    amount,
+    descriptionFingerprint: descriptionFingerprint(rawDescription),
+  }, 'skipped')
 }
