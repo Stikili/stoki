@@ -27,12 +27,17 @@ const KNOWN_SERVICE_UUIDS = [
 // at 100 to be safe across firmware versions.
 const CHUNK_SIZE = 100
 
+const LS_DEVICE_ID   = 'stoki:bt_printer_id'
+const LS_DEVICE_NAME = 'stoki:bt_printer_name'
+
 interface BluetoothNavigator {
   bluetooth?: {
     requestDevice: (options: unknown) => Promise<BluetoothDeviceLike>
+    getDevices?: () => Promise<BluetoothDeviceLike[]>
   }
 }
 interface BluetoothDeviceLike {
+  id?: string
   name?: string
   gatt?: { connect(): Promise<BluetoothGattLike>; connected: boolean; disconnect(): void }
 }
@@ -55,10 +60,54 @@ export function isPrinterSupported(): boolean {
   return !!(navigator as unknown as BluetoothNavigator).bluetooth
 }
 
+/** Name of the last successfully used printer, or null if none saved. */
+export function getSavedPrinterName(): string | null {
+  try { return localStorage.getItem(LS_DEVICE_NAME) } catch { return null }
+}
+
+/** Clear the saved printer (e.g. when pairing a different one). */
+export function clearSavedPrinter(): void {
+  try {
+    localStorage.removeItem(LS_DEVICE_ID)
+    localStorage.removeItem(LS_DEVICE_NAME)
+  } catch { /* localStorage unavailable */ }
+}
+
+function savePrinter(device: BluetoothDeviceLike): void {
+  try {
+    if (device.id)   localStorage.setItem(LS_DEVICE_ID,   device.id)
+    if (device.name) localStorage.setItem(LS_DEVICE_NAME, device.name)
+  } catch { /* localStorage unavailable */ }
+}
+
 /**
- * Pick a printer (browser shows a chooser dialog) and write the bytes to it.
- * The connection is closed when done — pairing is not persisted across calls
- * because Web Bluetooth requires a fresh user gesture for each session anyway.
+ * Try to retrieve the previously paired device using navigator.bluetooth.getDevices()
+ * (Chromium 85+ only). Returns null when unsupported or no saved device is found.
+ * Degrades silently — callers always fall back to requestDevice().
+ */
+async function tryGetSavedDevice(bt: NonNullable<BluetoothNavigator['bluetooth']>): Promise<BluetoothDeviceLike | null> {
+  if (typeof bt.getDevices !== 'function') return null
+  try {
+    const savedId = localStorage.getItem(LS_DEVICE_ID)
+    const devices = await bt.getDevices()
+    if (savedId) {
+      const match = devices.find((d) => d.id === savedId)
+      if (match) return match
+    }
+    // No ID stored or ID not found — if there's exactly one previously granted
+    // device it's almost certainly the right printer.
+    if (devices.length === 1) return devices[0]
+  } catch { /* getDevices() failed for any reason */ }
+  return null
+}
+
+/**
+ * Pick a printer and write the bytes to it.
+ *
+ * On first use (or when the saved device isn't visible), the browser shows a
+ * chooser dialog. On subsequent calls in Chromium the previously paired device
+ * is used automatically via navigator.bluetooth.getDevices() — no dialog.
+ * The connection is closed when done.
  */
 export async function printBytes(bytes: Uint8Array): Promise<void> {
   if (!isPrinterSupported()) {
@@ -66,13 +115,17 @@ export async function printBytes(bytes: Uint8Array): Promise<void> {
   }
   const bt = (navigator as unknown as BluetoothNavigator).bluetooth!
 
-  const device = await bt.requestDevice({
-    // `acceptAllDevices` lets the user pick anything paired — most thermal
-    // printers don't advertise a recognisable name pattern, and filtering by
-    // service UUIDs alone hides devices that only advertise their name.
-    acceptAllDevices: true,
-    optionalServices: [...KNOWN_SERVICE_UUIDS],
-  })
+  let device = await tryGetSavedDevice(bt)
+
+  if (!device) {
+    device = await bt.requestDevice({
+      // `acceptAllDevices` lets the user pick anything paired — most thermal
+      // printers don't advertise a recognisable name pattern, and filtering by
+      // service UUIDs alone hides devices that only advertise their name.
+      acceptAllDevices: true,
+      optionalServices: [...KNOWN_SERVICE_UUIDS],
+    })
+  }
 
   if (!device.gatt) throw new Error('Selected device has no GATT support')
 
@@ -83,6 +136,7 @@ export async function printBytes(bytes: Uint8Array): Promise<void> {
       throw new Error('Could not find a writable characteristic on this printer. Make sure it is a supported ESC/POS device.')
     }
     await writeChunked(characteristic, bytes)
+    savePrinter(device)
   } finally {
     if (device.gatt.connected) device.gatt.disconnect()
   }
