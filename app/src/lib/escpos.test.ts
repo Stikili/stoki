@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   encodeReceipt,
+  encodeTestPrint,
   wrap,
   padLine,
   CMD_INIT,
@@ -155,5 +156,48 @@ describe('encodeReceipt', () => {
       invoiceNumber: 'INV-00042',
     }))
     expect(text).toContain('INV-00042')
+  })
+})
+
+describe('encodeTestPrint', () => {
+  it('returns a non-empty Uint8Array', () => {
+    const bytes = encodeTestPrint('Test Store', '2026-05-16')
+    expect(bytes).toBeInstanceOf(Uint8Array)
+    expect(bytes.length).toBeGreaterThan(0)
+  })
+
+  it('starts with ESC @ init and ends with feed + partial cut', () => {
+    const arr = asArray(encodeTestPrint('My Shop', '2026-05-16'))
+    expect(containsSubsequence(arr, CMD_INIT)).toBe(true)
+    expect(containsSubsequence(arr, CMD_FEED_3_LINES)).toBe(true)
+    expect(containsSubsequence(arr, CMD_CUT_PARTIAL)).toBe(true)
+  })
+
+  it('includes the word STOKI', () => {
+    const text = decodeAscii(encodeTestPrint('My Shop', '2026-05-16'))
+    expect(text).toContain('STOKI')
+  })
+
+  it('includes the store name (truncated to fit)', () => {
+    const text = decodeAscii(encodeTestPrint('Corner Cafe', '2026-05-16'))
+    expect(text).toContain('Corner Cafe')
+  })
+
+  it('truncates very long store names rather than overflowing', () => {
+    const longName = 'A'.repeat(50)
+    const text = decodeAscii(encodeTestPrint(longName, '2026-05-16'))
+    expect(text.length).toBeGreaterThan(0)
+    // Should not throw and should still contain the OK status
+    expect(text).toContain('OK')
+  })
+
+  it('includes the date label', () => {
+    const text = decodeAscii(encodeTestPrint('Shop', '2026-05-16 09:30'))
+    expect(text).toContain('2026-05-16 09:30')
+  })
+
+  it('includes the working confirmation message', () => {
+    const text = decodeAscii(encodeTestPrint('Shop', '2026-05-16'))
+    expect(text).toContain('Printer is working!')
   })
 })

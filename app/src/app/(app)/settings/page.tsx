@@ -9,6 +9,7 @@ import {
   HelpCircle,
   TrendingUp,
   Sparkles,
+  Printer,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -84,6 +85,14 @@ export default async function SettingsPage() {
       label: 'Market values',
       hint: 'SARB rates, fuel, CPI — values the bot quotes',
       roles: ['owner'],
+    },
+    {
+      href: '/settings/printer',
+      icon: <Printer />,
+      tone: 'slate',
+      label: 'Bluetooth Printer',
+      hint: 'Test your ESC/POS receipt printer',
+      roles: ['owner', 'manager', 'cashier'],
     },
     {
       href: '/settings/account',
