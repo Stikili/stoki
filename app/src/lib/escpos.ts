@@ -162,3 +162,37 @@ export function encodeReceipt(data: ReceiptData): Uint8Array {
 
   return buf.toBytes()
 }
+
+/**
+ * Minimal test-print pattern — used by Settings to verify the printer is
+ * connected and working. Width is fixed at 32 columns (58 mm paper).
+ */
+export function encodeTestPrint(storeName: string, dateLabel: string): Uint8Array {
+  const width = 32
+  const buf = new EscposBuffer()
+
+  buf.pushAll(CMD_INIT)
+  buf.pushAll(CMD_ALIGN_CENTER)
+  buf.pushAll(CMD_BOLD_ON).pushAll(CMD_DOUBLE_HEIGHT)
+  buf.text('STOKI').newline()
+  buf.pushAll(CMD_NORMAL_SIZE).pushAll(CMD_BOLD_OFF)
+  buf.text('Test Print').newline()
+  buf.text(dateLabel).newline()
+  buf.newline()
+
+  buf.pushAll(CMD_ALIGN_LEFT)
+  buf.text('-'.repeat(width)).newline()
+  buf.pushAll(CMD_BOLD_ON)
+  buf.text(padLine('Store', storeName.slice(0, width - 7), width)).newline()
+  buf.pushAll(CMD_BOLD_OFF)
+  buf.text(padLine('Status', 'OK', width)).newline()
+  buf.text('-'.repeat(width)).newline()
+
+  buf.pushAll(CMD_ALIGN_CENTER)
+  buf.text('Printer is working!').newline()
+
+  buf.pushAll(CMD_FEED_3_LINES)
+  buf.pushAll(CMD_CUT_PARTIAL)
+
+  return buf.toBytes()
+}
