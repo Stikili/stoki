@@ -121,6 +121,53 @@ export default function ReconcileClient({
     setStatuses((prev) => ({ ...prev, [rowNumber]: 'skipped' }))
   }
 
+  const highConfidenceInvoiceLines = useMemo(
+    () => matched.filter(
+      (m) =>
+        (statuses[m.line.rowNumber] ?? 'pending') === 'pending' &&
+        m.best?.kind === 'invoice' &&
+        m.best.confidence === 'high',
+    ),
+    [matched, statuses],
+  )
+
+  function autoConfirmAll() {
+    if (highConfidenceInvoiceLines.length === 0) return
+    startTransition(async () => {
+      const results = await Promise.allSettled(
+        highConfidenceInvoiceLines.map(async (m) => {
+          if (m.best?.kind !== 'invoice') return
+          const best = m.best
+          await applyInvoicePaymentAction(
+            best.invoiceId,
+            m.line.amount,
+            m.line.date,
+            m.line.reference ?? m.line.description,
+          )
+          return m.line.rowNumber
+        }),
+      )
+      const succeeded = new Set(
+        results
+          .filter((r): r is PromiseFulfilledResult<number | undefined> => r.status === 'fulfilled')
+          .map((r) => r.value)
+          .filter((v): v is number => v !== undefined),
+      )
+      const failed = results.filter((r) => r.status === 'rejected').length
+      setStatuses((prev) => {
+        const next = { ...prev }
+        for (const rowNumber of succeeded) next[rowNumber] = 'matched'
+        return next
+      })
+      haptic(40)
+      if (failed > 0) {
+        toast(`${succeeded.size} matched, ${failed} failed — check individually`, 'error')
+      } else {
+        toast(`${succeeded.size} invoice${succeeded.size === 1 ? '' : 's'} marked paid`)
+      }
+    })
+  }
+
   return (
     <>
       <h1 className="text-xl font-bold text-white mb-2">Reconcile bank statement</h1>
@@ -206,6 +253,17 @@ export default function ReconcileClient({
                 <p className="text-muted text-[10px] uppercase">Resolved</p>
               </div>
             </div>
+            {highConfidenceInvoiceLines.length > 0 && (
+              <button
+                onClick={autoConfirmAll}
+                disabled={isPending}
+                className="btn-primary mt-3 w-full text-sm"
+                style={{ opacity: isPending ? 0.6 : 1 }}
+              >
+                <Check size={14} className="inline mr-1.5" />
+                Auto-confirm {highConfidenceInvoiceLines.length} high-confidence match{highConfidenceInvoiceLines.length === 1 ? '' : 'es'}
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
