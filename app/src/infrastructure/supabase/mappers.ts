@@ -15,6 +15,7 @@ import { Supplier } from '@/domain/entities/supplier'
 import { StoreUser } from '@/domain/entities/store-user'
 import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
+import { SupplierBill, SupplierBillPayment } from '@/domain/entities/supplier-bill'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
@@ -372,6 +373,38 @@ export function toAlert(row: any): Alert {
     message: row.message,
     readAt: row.read_at ?? null,
     actionTakenAt: row.action_taken_at ?? null,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toSupplierBill(row: any): SupplierBill {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    supplierId: row.supplier_id,
+    supplierName: row.suppliers?.name ?? null,
+    reference: row.reference ?? null,
+    issuedAt: row.issued_at,
+    dueAt: row.due_at,
+    total: Number(row.total),
+    amountPaid: Number(row.amount_paid ?? 0),
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toSupplierBillPayment(row: any): SupplierBillPayment {
+  return {
+    id: row.id,
+    billId: row.bill_id,
+    storeId: row.store_id,
+    amount: Number(row.amount),
+    paidAt: row.paid_at,
+    paymentMethod: row.payment_method,
+    notes: row.notes ?? null,
     createdAt: row.created_at,
   }
 }

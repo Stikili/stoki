@@ -5,8 +5,10 @@ import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepos
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
+import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
+import { agingTotals as billAgingTotals, isOpen as billIsOpen } from '@/domain/entities/supplier-bill'
 import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
 import SassaPayCard from '@/components/SassaPayCard'
@@ -28,6 +30,7 @@ export default async function DashboardPage() {
   const alertRepo = new AlertRepository(supabase)
   const expenseRepo = new ExpenseRepository(supabase)
   const invoiceRepo = new InvoiceRepository(supabase)
+  const billRepo = new SupplierBillRepository(supabase)
 
   const now = new Date()
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
@@ -54,6 +57,7 @@ export default async function DashboardPage() {
     lastWeekSameDay,
     ytdSales,
     ytdExpenses,
+    allBills,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -68,6 +72,7 @@ export default async function DashboardPage() {
     saleRepo.summarise(store.id, lastWeekDayStart, lastWeekDayEnd),
     saleRepo.summarise(store.id, taxYStart, dayEnd),
     expenseRepo.sumByPeriod(store.id, taxYStart, dayEnd),
+    billRepo.findAll(store.id).catch(() => []),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -113,7 +118,11 @@ export default async function DashboardPage() {
     { key: 'debtor', label: 'Add a credit customer', done: hasAnyDebtor, href: '/credit', cta: 'Add a customer' },
   ]
 
-  const hasAnyMoneyData = todaySales.transactionCount > 0 || monthSales.transactionCount > 0 || monthExpenses > 0
+  const hasAnyMoneyData =
+    todaySales.transactionCount > 0 ||
+    monthSales.transactionCount > 0 ||
+    monthExpenses > 0 ||
+    allBills.length > 0
   // Cashier role hides P&L/cost/margin/reports — they record sales only.
   const isCashier = role === 'cashier'
 
@@ -136,6 +145,12 @@ export default async function DashboardPage() {
   const taxEstimate = !isCashier
     ? estimateProvisional(ytdNetProfit, store.taxpayerType, now)
     : null
+
+  // Aged payables summary — drives the supplier-side row in the Money card.
+  const openBills = allBills.filter(billIsOpen)
+  const payables = billAgingTotals(openBills, now)
+  const overdueBillCount =
+    payables.countByBucket.days30 + payables.countByBucket.days60 + payables.countByBucket.days90Plus
 
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
@@ -259,6 +274,7 @@ export default async function DashboardPage() {
             <Link
               href="/invoices"
               className="flex items-center justify-between px-4 py-3.5"
+              style={payables.total > 0 ? { borderBottom: '1px solid var(--card-border)' } : {}}
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
@@ -272,6 +288,28 @@ export default async function DashboardPage() {
                 <p className="text-muted text-xs mt-0.5">
                   R{totalInvoiceOutstanding.toFixed(2)} from {openInvoices.length} invoice{openInvoices.length === 1 ? '' : 's'}
                   {worstOverdueDays > 0 && ` · ${worstOverdueDays}d overdue`}
+                </p>
+              </div>
+              <span className="text-muted">→</span>
+            </Link>
+          )}
+
+          {payables.total > 0 && (
+            <Link
+              href="/payables"
+              className="flex items-center justify-between px-4 py-3.5"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                  Bills to pay{' '}
+                  {overdueBillCount > 0 && (
+                    <span className="pill pill-red min-h-0 text-[9px] py-0 ml-1">
+                      {overdueBillCount} overdue
+                    </span>
+                  )}
+                </p>
+                <p className="text-muted text-xs mt-0.5">
+                  R{payables.total.toFixed(2)} across {openBills.length} bill{openBills.length === 1 ? '' : 's'}
                 </p>
               </div>
               <span className="text-muted">→</span>
