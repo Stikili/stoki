@@ -1,5 +1,6 @@
 export type Plan = 'free' | 'pro' | 'business' | 'enterprise'
 export type StoreCategory = 'spaza' | 'general_dealer' | 'food_stall' | 'other'
+export type TaxpayerType = 'sole_prop' | 'sbc' | 'turnover_tax' | 'company'
 
 export interface Store {
   id: string
@@ -28,6 +29,9 @@ export interface Store {
    *  and the working-capital alert silently skips this store. */
   cashBalance: number | null
   cashBalanceUpdatedAt: string | null
+  /** SARS classification — drives the provisional-tax estimate. Defaults to
+   *  sole_prop (personal income tax on net profit), which fits the SMME core. */
+  taxpayerType: TaxpayerType
   /** When set and in the future, the store has elevated (Pro) access
    *  regardless of `plan`. Used for two windows:
    *    - existing accounts at paywall rollout (90 days)

@@ -10,9 +10,11 @@ import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/
 import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
 import SassaPayCard from '@/components/SassaPayCard'
+import ProvisionalTaxCard from '@/components/ProvisionalTaxCard'
 import { isOverdue } from '@/domain/entities/debtor'
 import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
 import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
+import { estimateProvisional, taxYearStart, currentTaxYear } from '@/lib/tax/provisional'
 import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
@@ -32,6 +34,7 @@ export default async function DashboardPage() {
   const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999)
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6); weekStart.setHours(0, 0, 0, 0)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const taxYStart = taxYearStart(currentTaxYear(now))
   // Same weekday a week ago — used for the "vs last Tuesday" comparison line.
   // Going back exactly 7 calendar days keeps weekday alignment even across DST.
   const lastWeekDayStart = new Date(dayStart); lastWeekDayStart.setDate(lastWeekDayStart.getDate() - 7)
@@ -49,6 +52,8 @@ export default async function DashboardPage() {
     allDebtors,
     openInvoices,
     lastWeekSameDay,
+    ytdSales,
+    ytdExpenses,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -61,6 +66,8 @@ export default async function DashboardPage() {
     getCachedDebtors(store.id),
     invoiceRepo.findOpen(store.id).catch(() => []),
     saleRepo.summarise(store.id, lastWeekDayStart, lastWeekDayEnd),
+    saleRepo.summarise(store.id, taxYStart, dayEnd),
+    expenseRepo.sumByPeriod(store.id, taxYStart, dayEnd),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -123,6 +130,13 @@ export default async function DashboardPage() {
     weekdayName(now),
   )
 
+  // Provisional tax — owners/managers only. Card hides itself when YTD
+  // profit is zero or negative, so we always compute and let it decide.
+  const ytdNetProfit = ytdSales.totalMargin - ytdExpenses
+  const taxEstimate = !isCashier
+    ? estimateProvisional(ytdNetProfit, store.taxpayerType, now)
+    : null
+
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
@@ -140,6 +154,11 @@ export default async function DashboardPage() {
 
       {/* SASSA pay-day signal — only renders inside the 7-day window */}
       <SassaPayCard event={upcomingPayEvent} now={now} />
+
+      {/* Provisional tax — owners/managers only, card self-hides on zero profit */}
+      {taxEstimate && (
+        <ProvisionalTaxCard estimate={taxEstimate} taxpayerType={store.taxpayerType} />
+      )}
 
       {/* Credit hero — outstanding informal trade credit */}
       {totalOutstanding > 0 && (() => {

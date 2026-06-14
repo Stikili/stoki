@@ -55,11 +55,21 @@ export async function updateVatAction(formData: FormData) {
   const vatRateRaw = (formData.get('vatRate') as string | null)?.trim()
   const vatRate = vatRateRaw && vatRateRaw.length > 0 ? parseFloat(vatRateRaw) : 15
 
+  // Taxpayer type drives the provisional-tax estimator on the dashboard. Lives
+  // on the same form because owners think of "VAT & tax" as one settings group.
+  const taxpayerRaw = (formData.get('taxpayerType') as string | null)?.trim()
+  const taxpayerType: 'sole_prop' | 'sbc' | 'turnover_tax' | 'company' | undefined =
+    taxpayerRaw === 'sole_prop' || taxpayerRaw === 'sbc' ||
+    taxpayerRaw === 'turnover_tax' || taxpayerRaw === 'company'
+      ? taxpayerRaw
+      : undefined
+
   const storeRepo = new StoreRepository(supabase)
   await storeRepo.update(store.id, {
     vatRegistered,
     vatNumber: vatRegistered ? vatNumber : null,
     vatRate: Number.isFinite(vatRate) && vatRate >= 0 ? vatRate : 15,
+    ...(taxpayerType ? { taxpayerType } : {}),
   })
 
   revalidateTag(TAGS.stores, 'default')

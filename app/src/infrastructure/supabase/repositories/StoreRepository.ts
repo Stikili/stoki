@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { IStoreRepository } from '@/domain/repositories/IStoreRepository'
-import { Store, StoreCategory, Plan } from '@/domain/entities/store'
+import { Store, StoreCategory, Plan, TaxpayerType } from '@/domain/entities/store'
 import { toStore } from '../mappers'
 import { normalizeZAPhone } from '@/lib/whatsapp'
 
@@ -69,6 +69,7 @@ export class StoreRepository implements IStoreRepository {
     cashBalance?: number | null
     plan?: Plan
     grandfatheredUntil?: string | null
+    taxpayerType?: TaxpayerType
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -91,6 +92,7 @@ export class StoreRepository implements IStoreRepository {
     }
     if (patch.plan !== undefined) dbPatch.plan = patch.plan
     if (patch.grandfatheredUntil !== undefined) dbPatch.grandfathered_until = patch.grandfatheredUntil
+    if (patch.taxpayerType !== undefined) dbPatch.taxpayer_type = patch.taxpayerType
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

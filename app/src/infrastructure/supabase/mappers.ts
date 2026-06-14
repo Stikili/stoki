@@ -43,6 +43,7 @@ export function toStore(row: any): Store {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
     cashBalance: row.cash_balance !== null && row.cash_balance !== undefined ? Number(row.cash_balance) : null,
     cashBalanceUpdatedAt: row.cash_balance_updated_at ?? null,
+    taxpayerType: row.taxpayer_type ?? 'sole_prop',
     grandfatheredUntil: row.grandfathered_until ?? null,
     subscriptionStatus: row.subscription_status ?? 'none',
     subscriptionActiveUntil: row.subscription_active_until ?? null,

@@ -84,6 +84,21 @@ export default function VatCard({ store }: { store: Store }) {
             </div>
           </>
         )}
+        <div>
+          <select
+            name="taxpayerType"
+            defaultValue={store.taxpayerType ?? 'sole_prop'}
+            style={fieldStyle}
+          >
+            <option value="sole_prop">Sole proprietor (personal income tax)</option>
+            <option value="sbc">Small Business Corporation (SBC)</option>
+            <option value="turnover_tax">Turnover tax (micro business)</option>
+            <option value="company">Standard company (27%)</option>
+          </select>
+          <p className="text-muted text-xs mt-1.5 ml-1">
+            SARS classification — drives the provisional-tax estimate on the dashboard.
+          </p>
+        </div>
         <button
           type="submit"
           disabled={isPending}
