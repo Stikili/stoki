@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/infrastructure/supabase/client"
 import { Download, Share, Loader2, Eye, EyeOff, ArrowLeft, Smartphone } from "lucide-react"
@@ -191,6 +191,14 @@ function OrDivider({ label = "OR CONTINUE WITH" }: { label?: string }) {
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  )
+}
+
+function LoginPageInner() {
   const supabase = createClient()
   const router = useRouter()
   const sp = useSearchParams()
