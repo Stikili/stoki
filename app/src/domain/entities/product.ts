@@ -2,6 +2,14 @@ export type StockStatus = 'ok' | 'low' | 'out'
 
 export type ProductUnit = 'each' | 'kg' | 'g' | 'l' | 'ml'
 
+export type VatCode = 'standard' | 'zero' | 'exempt'
+
+export const VAT_CODES: { value: VatCode; label: string; description: string }[] = [
+  { value: 'standard', label: 'Standard 15%', description: 'Most retail goods — sweets, drinks, cigarettes, snacks.' },
+  { value: 'zero',     label: 'Zero-rated 0%', description: 'Brown bread, maize meal, milk, eggs, samp, beans, rice (and other SARS-listed basics).' },
+  { value: 'exempt',   label: 'Exempt',        description: 'Out of VAT scope — rare for retail.' },
+]
+
 export const PRODUCT_UNITS: { value: ProductUnit; label: string }[] = [
   { value: 'each', label: 'Each' },
   { value: 'kg',   label: 'Kilograms' },
@@ -27,6 +35,8 @@ export interface Product {
   /** When true, qty is treated as a decimal weight/volume in `unitLabel`. */
   isWeighable: boolean
   unitLabel: ProductUnit
+  /** SARS VAT classification — drives VAT201 output-VAT split. Default 'standard'. */
+  vatCode: VatCode
   createdAt: string
   updatedAt: string
 }
@@ -50,6 +60,7 @@ export interface NewProduct {
   isBundle?: boolean
   isWeighable?: boolean
   unitLabel?: ProductUnit
+  vatCode?: VatCode
 }
 
 export function getStockStatus(qty: number, reorderPoint: number): StockStatus {

@@ -19,6 +19,7 @@ export class SaleRepository implements ISaleRepository {
         price_at_sale: data.priceAtSale,
         cost_at_sale: data.costAtSale ?? 0,
         vat_amount: data.vatAmount ?? 0,
+        vat_code: data.vatCode ?? null,
         invoice_number: data.invoiceNumber ?? null,
         type: data.type ?? 'sale',
         channel: data.channel ?? 'app',

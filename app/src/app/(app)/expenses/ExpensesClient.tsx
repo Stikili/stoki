@@ -69,6 +69,13 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
               <select name="category" required className="input">{EXPENSE_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}</select>
               <input name="description" placeholder="Description *" required className="input" />
               <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount (R) *" required className="input" />
+              <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>Capital purchase</p>
+                  <p className="text-muted text-[10px] mt-0.5">Fridge, till, vehicle — goes to VAT201 block 14 instead of 15.</p>
+                </div>
+                <input type="checkbox" name="isCapital" className="w-5 h-5 accent-brand" />
+              </label>
               <button type="submit" disabled={isPending} className="btn-primary mt-2" style={{ background: '#F97316' }}>{isPending ? 'Saving…' : 'Add Expense'}</button>
             </form>
           </div>

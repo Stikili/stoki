@@ -49,6 +49,7 @@ class FakeSaleRepo implements ISaleRepository {
       priceAtSale: data.priceAtSale,
       costAtSale: data.costAtSale,
       vatAmount: data.vatAmount,
+      vatCode: data.vatCode ?? null,
       invoiceNumber: data.invoiceNumber,
       type: data.type ?? 'sale',
       channel: data.channel ?? 'app',
@@ -106,7 +107,7 @@ function makeProduct(id: string, overrides: Partial<Product> = {}): Product {
   return {
     id, storeId: 's1', name: id, price: 50, cost: 30, qty: 10, reorderPoint: 5,
     sku: null, photoUrl: null, expiryDate: null, vatInclusive: true,
-    isAirtime: false, isBundle: false, isWeighable: false, unitLabel: 'each',
+    isAirtime: false, isBundle: false, isWeighable: false, unitLabel: 'each', vatCode: 'standard',
     createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }

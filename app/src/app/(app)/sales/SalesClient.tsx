@@ -111,6 +111,7 @@ export default function SalesClient({
       isBundle: false,
       isWeighable: false,
       unitLabel: 'each',
+      vatCode: 'standard',
       createdAt: '',
       updatedAt: '',
       status: 'ok',

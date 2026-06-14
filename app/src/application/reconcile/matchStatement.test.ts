@@ -44,6 +44,7 @@ function makeExpense(overrides: Partial<Expense> = {}): Expense {
     category: 'transport',
     description: 'Petrol',
     amount: 500,
+    isCapital: false,
     recordedAt: '2026-04-15T00:00:00Z',
     createdAt: '2026-04-15T00:00:00Z',
     ...overrides,

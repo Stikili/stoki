@@ -24,6 +24,7 @@ export async function addExpenseAction(formData: FormData) {
     category: formData.get('category') as string || 'other',
     description: (formData.get('description') as string).trim(),
     amount: parseFloat(formData.get('amount') as string) || 0,
+    isCapital: formData.get('isCapital') === 'on',
   })
 
   revalidatePath('/expenses')

@@ -4,6 +4,9 @@ export interface Expense {
   category: string
   description: string
   amount: number
+  /** Capital goods (fridges, vehicles, tills) reported in VAT201 block 14
+   *  rather than the operating-expenses block 15. */
+  isCapital: boolean
   recordedAt: string
   createdAt: string
 }
@@ -12,6 +15,7 @@ export interface NewExpense {
   category: string
   description: string
   amount: number
+  isCapital?: boolean
   recordedAt?: string
 }
 

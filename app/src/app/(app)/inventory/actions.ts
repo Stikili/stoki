@@ -87,6 +87,11 @@ export async function editProductAction(formData: FormData) {
     if (unitLabelRaw === 'kg' || unitLabelRaw === 'g' || unitLabelRaw === 'l' || unitLabelRaw === 'ml') return unitLabelRaw
     return 'each'
   })()
+  const vatCodeRaw = formData.get('vatCode') as string | null
+  const vatCode: 'standard' | 'zero' | 'exempt' | undefined =
+    vatCodeRaw === 'standard' || vatCodeRaw === 'zero' || vatCodeRaw === 'exempt'
+      ? vatCodeRaw
+      : undefined
 
   await productRepo.update(store.id, productId, {
     name: formData.get('name') as string,
@@ -100,6 +105,7 @@ export async function editProductAction(formData: FormData) {
     isAirtime,
     isWeighable,
     unitLabel,
+    ...(vatCode ? { vatCode } : {}),
   })
 
   revalidateTag(TAGS.products, 'default')

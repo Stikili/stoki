@@ -8,6 +8,7 @@ import { Restock } from '@/domain/entities/restock'
 import { Store } from '@/domain/entities/store'
 import { Printer, Download, ArrowLeft } from 'lucide-react'
 import { PRESETS, isoDateLocal } from '@/lib/date-presets'
+import { computeVat201, type Vat201Breakdown } from '@/lib/vat201'
 
 type Tab = 'pnl' | 'sales' | 'vat'
 
@@ -79,28 +80,20 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
     return { revenue, cogs, grossProfit, expenseTotal, netProfit, expenseByCat }
   }, [sales, expenses])
 
-  // VAT aggregates
-  const vat = useMemo(() => {
+  // VAT201 worksheet — owner-entered bad-debt write-off lives on the page so
+  // it survives tab toggles within a session. Recomputes on any input change.
+  const [badDebtWriteOff, setBadDebtWriteOff] = useState('0')
+  const vat201 = useMemo<Vat201Breakdown | null>(() => {
     if (!store.vatRegistered) return null
-    const rate = store.vatRate / 100
-    let outputVat = 0
-    for (const s of sales) {
-      const sign = s.type === 'return' ? -1 : 1
-      outputVat += s.vatAmount * sign
-    }
-    // Input VAT estimate — assumes restock costs are VAT-inclusive from VAT-registered suppliers (most majors are).
-    // SA VAT201 fraction: cost × 15/115 = cost × rate/(1+rate)
-    const inputVatEstimate = restocks.reduce((sum, r) => {
-      if (!r.cost) return sum
-      const lineCost = r.cost * r.qtyAdded
-      return sum + (lineCost * rate) / (1 + rate)
-    }, 0)
-    return {
-      outputVat,
-      inputVatEstimate,
-      netDue: outputVat - inputVatEstimate,
-    }
-  }, [sales, restocks, store.vatRegistered, store.vatRate])
+    const bd = parseFloat(badDebtWriteOff)
+    return computeVat201({
+      sales,
+      restocks,
+      expenses,
+      badDebtWriteOff: Number.isFinite(bd) && bd > 0 ? bd : 0,
+      vatRate: store.vatRate / 100,
+    })
+  }, [sales, restocks, expenses, store.vatRegistered, store.vatRate, badDebtWriteOff])
 
   function downloadSalesCsv() {
     const header = ['Invoice #', 'Date', 'Time', 'Product', 'Qty', 'Unit Price', 'Total', 'VAT', 'Type', 'Payment', 'Channel']
@@ -224,8 +217,15 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
         </div>
       )}
 
-      {tab === 'vat' && store.vatRegistered && vat && (
-        <VatReport store={store} vat={vat} fromIso={from} toIso={to} />
+      {tab === 'vat' && store.vatRegistered && vat201 && (
+        <Vat201Report
+          store={store}
+          vat={vat201}
+          fromIso={from}
+          toIso={to}
+          badDebtWriteOff={badDebtWriteOff}
+          onBadDebtChange={setBadDebtWriteOff}
+        />
       )}
     </>
   )
@@ -303,16 +303,20 @@ function PnlReport({
   )
 }
 
-function VatReport({
+function Vat201Report({
   store,
   vat,
   fromIso,
   toIso,
+  badDebtWriteOff,
+  onBadDebtChange,
 }: {
   store: Store
-  vat: { outputVat: number; inputVatEstimate: number; netDue: number }
+  vat: Vat201Breakdown
   fromIso: string
   toIso: string
+  badDebtWriteOff: string
+  onBadDebtChange: (v: string) => void
 }) {
   return (
     <div className="print-area">
@@ -320,28 +324,74 @@ function VatReport({
         <p className="font-bold text-lg">{store.name}</p>
         {store.vatNumber && <p className="text-xs">VAT No: {store.vatNumber}</p>}
         {store.businessAddress && <p className="text-xs whitespace-pre-line">{store.businessAddress}</p>}
-        <p className="text-xs mt-2">VAT Report · {fmtDate(fromIso)} → {fmtDate(toIso)}</p>
+        <p className="text-xs mt-2">VAT201 Worksheet · {fmtDate(fromIso)} → {fmtDate(toIso)}</p>
       </div>
 
+      {/* Hero — net due */}
       <div className="card p-5 mb-3">
         <p className="text-muted text-xs font-semibold uppercase tracking-widest">Net VAT</p>
-        <p className={`text-3xl font-bold mt-1 ${vat.netDue >= 0 ? 'text-orange-400' : 'text-brand'}`}>{fmtMoney(Math.abs(vat.netDue))}</p>
-        <p className="text-muted text-sm mt-1">{vat.netDue >= 0 ? 'Owed to SARS' : 'Refundable from SARS'}</p>
+        <p className={`text-3xl font-bold mt-1 ${vat.netVatDue >= 0 ? 'text-orange-400' : 'text-brand'}`}>
+          {fmtMoney(Math.abs(vat.netVatDue))}
+        </p>
+        <p className="text-muted text-sm mt-1">
+          {vat.netVatDue >= 0 ? 'Owed to SARS' : 'Refundable from SARS'}
+        </p>
       </div>
 
+      {/* Output blocks (1–4) */}
       <div className="card p-4 mb-3">
-        <Row label={`Output VAT (collected on sales)`} value={fmtMoney(vat.outputVat)} />
-        <Row label={`Input VAT (paid on supplies, est.)`} value={`-${fmtMoney(vat.inputVatEstimate)}`} muted />
-        <RowBold label="Net VAT due" value={fmtMoney(vat.netDue)} valueColor={vat.netDue >= 0 ? '#F97316' : '#00C896'} />
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Output VAT</p>
+        <BlockRow no="1"  label="Standard-rate sales (incl. VAT)" value={fmtMoney(vat.block1_standardSalesIncl)} />
+        <BlockRow no="2"  label="Zero-rated sales"                value={fmtMoney(vat.block2_zeroRatedSales)} />
+        <BlockRow no="3"  label="Exempt &amp; non-supplies"        value={fmtMoney(vat.block3_exemptSales)} />
+        <RowBold label="Block 4 · Total output VAT" value={fmtMoney(vat.totalOutputVat)} />
       </div>
 
+      {/* Input blocks (14, 15, 18) */}
+      <div className="card p-4 mb-3">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Input VAT</p>
+        <BlockRow no="14" label="Capital goods"                   value={fmtMoney(vat.block14_capitalInputVat)} />
+        <BlockRow no="15" label="Other goods &amp; services"       value={fmtMoney(vat.block15_otherInputVat)} />
+        <BlockRow no="18" label="Bad debts written off"           value={fmtMoney(vat.block18_badDebtInputVat)} />
+        <RowBold label="Total input VAT" value={fmtMoney(vat.totalInputVat)} />
+      </div>
+
+      {/* Bad-debt write-off entry */}
+      <div className="card p-4 mb-3 print:hidden">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2">
+          Bad-debt write-off this period (block 18 input)
+        </p>
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          value={badDebtWriteOff}
+          onChange={(e) => onBadDebtChange(e.target.value)}
+          className="input"
+          placeholder="0.00"
+        />
+        <p className="text-muted text-[11px] mt-2 leading-relaxed">
+          Enter the gross (VAT-inclusive) amount of receivables you wrote off this period.
+          Stoki claims 15/115 of it as input VAT in block 18.
+        </p>
+      </div>
+
+      {/* Bottom summary */}
       <div className="card p-4 mb-4">
+        <RowBold
+          label="Net VAT due (block 4 − block 19)"
+          value={fmtMoney(vat.netVatDue)}
+          valueColor={vat.netVatDue >= 0 ? '#F97316' : '#00C896'}
+        />
+      </div>
+
+      <div className="card p-4 mb-4 print:hidden">
         <p className="text-muted text-xs leading-relaxed">
-          <strong>Output VAT</strong> is the 15% you charged on sales (sum of <code>vat_amount</code> on sale records).
-          <br /><br />
-          <strong>Input VAT</strong> is estimated as 15/115 of restock costs, assuming your suppliers are VAT-registered (true for major distributors like Cash &amp; Carry, Massmart). Where suppliers don&apos;t charge VAT, the actual figure is lower.
-          <br /><br />
-          For a SARS-ready VAT201 submission, reconcile against your supplier invoices to get exact input VAT. This view is a working estimate.
+          Block numbers map to the SARS VAT201 form. Input VAT on restocks and operating expenses
+          is estimated by extracting 15/115 from the inclusive cost — assumes suppliers are
+          VAT-registered (true for Cash &amp; Carry, Massmart, Bidvest). Reconcile against your
+          supplier invoices before submission for the exact figure.
         </p>
       </div>
 
@@ -352,6 +402,18 @@ function VatReport({
       >
         <Printer size={14} /> Print / Save as PDF
       </button>
+    </div>
+  )
+}
+
+function BlockRow({ no, label, value }: { no: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm flex items-baseline gap-2" style={{ color: 'var(--foreground)' }}>
+        <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ background: 'var(--surface)', color: 'var(--muted-dim)' }}>{no}</span>
+        <span>{label}</span>
+      </span>
+      <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{value}</span>
     </div>
   )
 }

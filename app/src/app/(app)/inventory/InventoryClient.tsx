@@ -342,15 +342,26 @@ export default function InventoryClient({
               <input name="expiryDate" type="date" defaultValue={editProduct.expiryDate ?? ''} className="input" />
               <p className="text-muted text-xs -mt-1">Expiry date (for perishables)</p>
               {storeVatRegistered && (
-                <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
-                  <span className="text-sm" style={{ color: 'var(--foreground)' }}>Price includes VAT</span>
-                  <input
-                    type="checkbox"
-                    name="vatInclusive"
-                    defaultChecked={editProduct.vatInclusive ?? true}
-                    className="w-5 h-5 accent-brand"
-                  />
-                </label>
+                <>
+                  <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                    <span className="text-sm" style={{ color: 'var(--foreground)' }}>Price includes VAT</span>
+                    <input
+                      type="checkbox"
+                      name="vatInclusive"
+                      defaultChecked={editProduct.vatInclusive ?? true}
+                      className="w-5 h-5 accent-brand"
+                    />
+                  </label>
+                  <div>
+                    <label className="text-muted text-xs ml-1 mb-1 block">VAT category</label>
+                    <select name="vatCode" defaultValue={editProduct.vatCode ?? 'standard'} className="input">
+                      <option value="standard">Standard 15%</option>
+                      <option value="zero">Zero-rated (bread, milk, maize, etc.)</option>
+                      <option value="exempt">Exempt</option>
+                    </select>
+                    <p className="text-muted text-[10px] mt-1 ml-1">Drives the VAT201 worksheet split — zero-rated and exempt items contribute revenue but no output VAT.</p>
+                  </div>
+                </>
               )}
               <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
                 <div>

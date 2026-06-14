@@ -27,6 +27,7 @@ export class ExpenseRepository implements IExpenseRepository {
         category: data.category,
         description: data.description,
         amount: data.amount,
+        is_capital: data.isCapital ?? false,
         recorded_at: data.recordedAt ?? new Date().toISOString(),
       })
       .select()

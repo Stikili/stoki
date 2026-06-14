@@ -47,6 +47,7 @@ export class ProductRepository implements IProductRepository {
         is_bundle: data.isBundle ?? false,
         is_weighable: data.isWeighable ?? false,
         unit_label: data.unitLabel ?? 'each',
+        vat_code: data.vatCode ?? 'standard',
       })
       .select()
       .single()
@@ -69,6 +70,7 @@ export class ProductRepository implements IProductRepository {
     if (data.isBundle !== undefined) patch.is_bundle = data.isBundle
     if (data.isWeighable !== undefined) patch.is_weighable = data.isWeighable
     if (data.unitLabel !== undefined) patch.unit_label = data.unitLabel
+    if (data.vatCode !== undefined) patch.vat_code = data.vatCode
 
     const { data: row, error } = await this.db
       .from('products')

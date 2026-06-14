@@ -14,6 +14,8 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'credit', label: 'On credit' },
 ]
 
+export type SaleVatCode = 'standard' | 'zero' | 'exempt'
+
 export interface Sale {
   id: string
   storeId: string
@@ -23,6 +25,9 @@ export interface Sale {
   priceAtSale: number
   costAtSale: number
   vatAmount: number
+  /** Snapshot of the product's VAT code at sale time. NULL on legacy rows
+   *  recorded before VAT classification existed — treat as 'standard'. */
+  vatCode: SaleVatCode | null
   invoiceNumber: number | null
   type: SaleType
   channel: SaleChannel
@@ -42,6 +47,7 @@ export interface NewSale {
   priceAtSale: number
   costAtSale?: number
   vatAmount?: number
+  vatCode?: SaleVatCode | null
   invoiceNumber?: number | null
   type?: SaleType
   channel?: SaleChannel

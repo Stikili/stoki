@@ -20,11 +20,15 @@ export async function recordSale(
     : null
   const cost = data.costAtSale ?? product?.cost ?? 0
 
-  // VAT calc — only when the store is VAT-registered.
+  // VAT calc — only when the store is VAT-registered. Zero-rated / exempt
+  // products contribute revenue but no output VAT — the VAT201 worksheet
+  // splits these into separate blocks via the snapshotted `vatCode`.
+  const productVatCode = product?.vatCode ?? 'standard'
+  const chargeVat = store.vatRegistered && productVatCode === 'standard'
   const breakdown = computeVat(
     data.priceAtSale,
     data.qty,
-    store.vatRegistered,
+    chargeVat,
     product?.vatInclusive ?? true,
     store.vatRate,
   )
@@ -42,6 +46,7 @@ export async function recordSale(
     ...data,
     costAtSale: cost,
     vatAmount: breakdown.vat,
+    vatCode: store.vatRegistered ? productVatCode : null,
     invoiceNumber,
   })
 

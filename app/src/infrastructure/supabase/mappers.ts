@@ -77,6 +77,7 @@ export function toProduct(row: any): Product {
     isBundle: row.is_bundle ?? false,
     isWeighable: row.is_weighable ?? false,
     unitLabel: row.unit_label ?? 'each',
+    vatCode: row.vat_code ?? 'standard',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -95,6 +96,7 @@ export function toSale(row: any): Sale {
     priceAtSale: Number(row.price_at_sale),
     costAtSale: Number(row.cost_at_sale ?? 0),
     vatAmount: Number(row.vat_amount ?? 0),
+    vatCode: row.vat_code ?? null,
     invoiceNumber: row.invoice_number ?? null,
     type: row.type ?? 'sale',
     channel: row.channel,
@@ -359,6 +361,7 @@ export function toExpense(row: any): Expense {
     category: row.category,
     description: row.description,
     amount: Number(row.amount),
+    isCapital: row.is_capital ?? false,
     recordedAt: row.recorded_at,
     createdAt: row.created_at,
   }
