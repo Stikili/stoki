@@ -17,6 +17,7 @@ import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
 import { SupplierBill, SupplierBillPayment } from '@/domain/entities/supplier-bill'
 import { RecurringExpense } from '@/domain/entities/recurring-expense'
+import { FixedAsset, DepreciationEntry } from '@/domain/entities/fixed-asset'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
@@ -429,5 +430,36 @@ export function toRecurringExpense(row: any): RecurringExpense {
     active: row.active ?? true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toFixedAsset(row: any): FixedAsset {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    name: row.name,
+    category: row.category ?? 'other',
+    cost: Number(row.cost),
+    residualValue: Number(row.residual_value ?? 0),
+    usefulLifeMonths: Number(row.useful_life_months),
+    purchaseDate: row.purchase_date,
+    status: row.status ?? 'active',
+    disposedAt: row.disposed_at ?? null,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toDepreciationEntry(row: any): DepreciationEntry {
+  return {
+    id: row.id,
+    assetId: row.asset_id,
+    storeId: row.store_id,
+    periodOf: row.period_of,
+    amount: Number(row.amount),
+    createdAt: row.created_at,
   }
 }

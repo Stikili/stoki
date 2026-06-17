@@ -40,11 +40,12 @@ interface Props {
   expenses: Expense[]
   restocks: Restock[]
   products: ProductWithStatus[]
+  depreciationTotal: number
   from: string
   to: string
 }
 
-export default function ReportsClient({ store, sales, expenses, restocks, products, from, to }: Props) {
+export default function ReportsClient({ store, sales, expenses, restocks, products, depreciationTotal, from, to }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('pnl')
   const [fromDate, setFromDate] = useState(from)
@@ -66,7 +67,9 @@ export default function ReportsClient({ store, sales, expenses, restocks, produc
     router.push(`/reports?${new URLSearchParams({ from: f, to: t }).toString()}`)
   }
 
-  // P&L aggregates
+  // P&L aggregates. Depreciation is a non-cash deduction from net profit —
+  // it doesn't appear in `expenses` (different table, different concept) so
+  // we subtract it as its own line below operating expenses.
   const pnl = useMemo(() => {
     let revenue = 0
     let cogs = 0
@@ -79,9 +82,9 @@ export default function ReportsClient({ store, sales, expenses, restocks, produc
     const expenseByCat = new Map<string, number>()
     for (const e of expenses) expenseByCat.set(e.category, (expenseByCat.get(e.category) ?? 0) + e.amount)
     const grossProfit = revenue - cogs
-    const netProfit = grossProfit - expenseTotal
-    return { revenue, cogs, grossProfit, expenseTotal, netProfit, expenseByCat }
-  }, [sales, expenses])
+    const netProfit = grossProfit - expenseTotal - depreciationTotal
+    return { revenue, cogs, grossProfit, expenseTotal, depreciation: depreciationTotal, netProfit, expenseByCat }
+  }, [sales, expenses, depreciationTotal])
 
   // Inventory valuation — snapshot of capital tied up in stock right now.
   // Doesn't depend on the period filter; products list is "as of now".
@@ -326,7 +329,7 @@ function PnlReport({
   salesCount,
 }: {
   store: Store
-  pnl: { revenue: number; cogs: number; grossProfit: number; expenseTotal: number; netProfit: number; expenseByCat: Map<string, number> }
+  pnl: { revenue: number; cogs: number; grossProfit: number; expenseTotal: number; depreciation: number; netProfit: number; expenseByCat: Map<string, number> }
   fromIso: string
   toIso: string
   salesCount: number
@@ -368,6 +371,17 @@ function PnlReport({
           </>
         )}
       </div>
+
+      {pnl.depreciation > 0 && (
+        <div className="card p-4 mb-3">
+          <Row label="Depreciation (non-cash)" value={`-${fmtMoney(pnl.depreciation)}`} muted />
+          <p className="text-muted text-[10px] mt-2 leading-relaxed">
+            Sum of monthly depreciation charges across active fixed assets for the period.
+            Subtracted from profit because the wear-out of capital goods is a real cost
+            even though it doesn&apos;t move cash.
+          </p>
+        </div>
+      )}
 
       <div className="card p-4 mb-4">
         <RowBold

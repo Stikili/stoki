@@ -7,6 +7,7 @@ import { ExpenseRepository } from '@/infrastructure/supabase/repositories/Expens
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
 import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
+import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
 import { agingTotals as billAgingTotals, isOpen as billIsOpen } from '@/domain/entities/supplier-bill'
@@ -34,6 +35,7 @@ export default async function DashboardPage() {
   const invoiceRepo = new InvoiceRepository(supabase)
   const billRepo = new SupplierBillRepository(supabase)
   const recurringRepo = new RecurringExpenseRepository(supabase)
+  const assetRepo = new FixedAssetRepository(supabase)
 
   const now = new Date()
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
@@ -63,6 +65,7 @@ export default async function DashboardPage() {
     allBills,
     activeRecurringRules,
     last30Expenses,
+    ytdDepreciation,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -80,6 +83,7 @@ export default async function DashboardPage() {
     billRepo.findAll(store.id).catch(() => []),
     recurringRepo.findActive(store.id).catch(() => []),
     expenseRepo.sumByPeriod(store.id, new Date(now.getTime() - 30 * 86_400_000), now),
+    assetRepo.sumByPeriod(store.id, taxYStart, dayEnd).catch(() => 0),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -148,7 +152,9 @@ export default async function DashboardPage() {
 
   // Provisional tax — owners/managers only. Card hides itself when YTD
   // profit is zero or negative, so we always compute and let it decide.
-  const ytdNetProfit = ytdSales.totalMargin - ytdExpenses
+  // Net profit includes depreciation as a non-cash deduction so the SARS
+  // estimate matches the eventual return.
+  const ytdNetProfit = ytdSales.totalMargin - ytdExpenses - ytdDepreciation
   const taxEstimate = !isCashier
     ? estimateProvisional(ytdNetProfit, store.taxpayerType, now)
     : null

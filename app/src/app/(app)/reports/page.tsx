@@ -2,6 +2,7 @@ import { getServerData } from '@/lib/getServerData'
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { RestockRepository } from '@/infrastructure/supabase/repositories/RestockRepository'
+import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { getCachedProducts } from '@/lib/cached-queries'
 import RestrictedNotice from '@/components/RestrictedNotice'
 import ReportsClient from './ReportsClient'
@@ -32,12 +33,14 @@ export default async function ReportsPage(props: { searchParams: Promise<SearchP
   const saleRepo = new SaleRepository(supabase)
   const expenseRepo = new ExpenseRepository(supabase)
   const restockRepo = new RestockRepository(supabase)
+  const assetRepo = new FixedAssetRepository(supabase)
 
-  const [sales, expenses, restocks, products] = await Promise.all([
+  const [sales, expenses, restocks, products, depreciationTotal] = await Promise.all([
     saleRepo.findByPeriod(store.id, from, to),
     expenseRepo.findByPeriod(store.id, from, to),
     restockRepo.findByPeriod(store.id, from, to).catch(() => []),
     getCachedProducts(store.id).catch(() => []),
+    assetRepo.sumByPeriod(store.id, from, to).catch(() => 0),
   ])
 
   return (
@@ -48,6 +51,7 @@ export default async function ReportsPage(props: { searchParams: Promise<SearchP
         expenses={expenses}
         restocks={restocks}
         products={products}
+        depreciationTotal={depreciationTotal}
         from={isoDate(from)}
         to={isoDate(to)}
       />
