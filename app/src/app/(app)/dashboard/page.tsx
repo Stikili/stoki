@@ -6,9 +6,11 @@ import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRep
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
+import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
 import { agingTotals as billAgingTotals, isOpen as billIsOpen } from '@/domain/entities/supplier-bill'
+import { buildForecast } from '@/lib/cashflow-forecast'
 import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
 import SassaPayCard from '@/components/SassaPayCard'
@@ -31,6 +33,7 @@ export default async function DashboardPage() {
   const expenseRepo = new ExpenseRepository(supabase)
   const invoiceRepo = new InvoiceRepository(supabase)
   const billRepo = new SupplierBillRepository(supabase)
+  const recurringRepo = new RecurringExpenseRepository(supabase)
 
   const now = new Date()
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
@@ -58,6 +61,8 @@ export default async function DashboardPage() {
     ytdSales,
     ytdExpenses,
     allBills,
+    activeRecurringRules,
+    last30Expenses,
   ] = await Promise.all([
     saleRepo.summarise(store.id, dayStart, dayEnd),
     saleRepo.summarise(store.id, weekStart, dayEnd),
@@ -73,6 +78,8 @@ export default async function DashboardPage() {
     saleRepo.summarise(store.id, taxYStart, dayEnd),
     expenseRepo.sumByPeriod(store.id, taxYStart, dayEnd),
     billRepo.findAll(store.id).catch(() => []),
+    recurringRepo.findActive(store.id).catch(() => []),
+    expenseRepo.sumByPeriod(store.id, new Date(now.getTime() - 30 * 86_400_000), now),
   ])
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
@@ -152,6 +159,25 @@ export default async function DashboardPage() {
   const overdueBillCount =
     payables.countByBucket.days30 + payables.countByBucket.days60 + payables.countByBucket.days90Plus
 
+  // Cash-flow alert — only surfaces when a 14-day forecast shows a deficit.
+  // Same inputs as /cashflow but with a shorter window to keep dashboard
+  // noise low; owners hit /cashflow for the full 30-day view.
+  const cfForecast = !isCashier
+    ? buildForecast({
+        startingCash: store.cashBalance,
+        openInvoices,
+        openBills,
+        recurringExpenses: activeRecurringRules,
+        avgDailyRevenue: weekSales.totalRevenue / 7,
+        avgDailyVariableExpense: last30Expenses / 30,
+        windowDays: 14,
+        now,
+      })
+    : null
+  const cashflowAlert = cfForecast && cfForecast.firstDeficitDate
+    ? { date: cfForecast.firstDeficitDate, minBalance: cfForecast.minBalance }
+    : null
+
   return (
     <div className="px-5 pt-5 pb-4 space-y-5">
       {/* Greeting */}
@@ -173,6 +199,25 @@ export default async function DashboardPage() {
       {/* Provisional tax — owners/managers only, card self-hides on zero profit */}
       {taxEstimate && (
         <ProvisionalTaxCard estimate={taxEstimate} taxpayerType={store.taxpayerType} />
+      )}
+
+      {/* Cash-flow deficit alert — 14-day forecast tripped a zero */}
+      {cashflowAlert && (
+        <Link
+          href="/cashflow"
+          className="card p-5 block"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.25)' }}
+        >
+          <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-1">
+            Cash flow warning
+          </p>
+          <p className="text-[28px] font-bold leading-none text-danger">
+            Cash runs out {cashflowAlert.date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+          </p>
+          <p className="text-muted text-sm mt-2">
+            Projected low: R{cashflowAlert.minBalance.toFixed(0)} — tap to see assumptions
+          </p>
+        </Link>
       )}
 
       {/* Credit hero — outstanding informal trade credit */}

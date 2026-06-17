@@ -17,6 +17,7 @@
     { "path": "/api/push/competitor-proximity", "schedule": "0 8 1 * *" },
 
     { "path": "/api/cron/subscription-retry",   "schedule": "0 8 * * *" },
-    { "path": "/api/cron/prune-advisor-conversations", "schedule": "0 2 * * *" }
+    { "path": "/api/cron/prune-advisor-conversations", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/post-recurring-expenses",     "schedule": "5 1 * * *" }
   ]
 }

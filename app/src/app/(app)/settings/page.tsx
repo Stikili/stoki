@@ -9,6 +9,7 @@ import {
   HelpCircle,
   TrendingUp,
   Sparkles,
+  Repeat,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -84,6 +85,14 @@ export default async function SettingsPage() {
       label: 'Market values',
       hint: 'SARB rates, fuel, CPI — values the bot quotes',
       roles: ['owner'],
+    },
+    {
+      href: '/settings/recurring',
+      icon: <Repeat />,
+      tone: 'rose',
+      label: 'Recurring expenses',
+      hint: 'Rent, electricity, insurance — auto-post on schedule',
+      roles: ['owner', 'manager'],
     },
     {
       href: '/settings/account',

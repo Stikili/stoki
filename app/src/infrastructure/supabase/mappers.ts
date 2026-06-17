@@ -16,6 +16,7 @@ import { StoreUser } from '@/domain/entities/store-user'
 import { Customer } from '@/domain/entities/customer'
 import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invoice'
 import { SupplierBill, SupplierBillPayment } from '@/domain/entities/supplier-bill'
+import { RecurringExpense } from '@/domain/entities/recurring-expense'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
@@ -409,5 +410,24 @@ export function toSupplierBillPayment(row: any): SupplierBillPayment {
     paymentMethod: row.payment_method,
     notes: row.notes ?? null,
     createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toRecurringExpense(row: any): RecurringExpense {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    category: row.category,
+    description: row.description,
+    amount: Number(row.amount),
+    isCapital: row.is_capital ?? false,
+    frequency: row.frequency,
+    dayValue: Number(row.day_value),
+    nextDueAt: row.next_due_at,
+    lastPostedAt: row.last_posted_at ?? null,
+    active: row.active ?? true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }

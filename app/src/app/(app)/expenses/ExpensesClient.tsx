@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
 import { addExpenseAction, deleteExpenseAction } from './actions'
 import { useToast } from '@/components/Toast'
-import { Plus, Wallet } from 'lucide-react'
+import { Plus, Wallet, Repeat } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 
 export default function ExpensesClient({ expenses, totalThisMonth }: { expenses: Expense[]; totalThisMonth: number }) {
@@ -25,9 +26,18 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
     <>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white">Expenses</h1>
-        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#F97316' }}>
-          <Plus size={20} color="white" strokeWidth={2.5} />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings/recurring"
+            className="rounded-xl px-3 h-11 inline-flex items-center gap-1.5 text-xs font-semibold"
+            style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}
+          >
+            <Repeat size={14} /> Recurring
+          </Link>
+          <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#F97316' }}>
+            <Plus size={20} color="white" strokeWidth={2.5} />
+          </button>
+        </div>
       </div>
 
       <div className="card p-5 mb-4">
