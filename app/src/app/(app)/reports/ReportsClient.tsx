@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Sale, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { Expense, EXPENSE_CATEGORIES } from '@/domain/entities/expense'
 import { Restock } from '@/domain/entities/restock'
+import { ProductWithStatus } from '@/domain/entities/product'
 import { Store } from '@/domain/entities/store'
 import { Printer, Download, ArrowLeft } from 'lucide-react'
 import { PRESETS, isoDateLocal } from '@/lib/date-presets'
 import { computeVat201, type Vat201Breakdown } from '@/lib/vat201'
+import { computeValuation, type InventoryValuation } from '@/lib/inventory-valuation'
 
-type Tab = 'pnl' | 'sales' | 'vat'
+type Tab = 'pnl' | 'sales' | 'vat' | 'stock'
 
 function fmtMoney(n: number) {
   return `R${n.toFixed(2)}`
@@ -37,11 +39,12 @@ interface Props {
   sales: Sale[]
   expenses: Expense[]
   restocks: Restock[]
+  products: ProductWithStatus[]
   from: string
   to: string
 }
 
-export default function ReportsClient({ store, sales, expenses, restocks, from, to }: Props) {
+export default function ReportsClient({ store, sales, expenses, restocks, products, from, to }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('pnl')
   const [fromDate, setFromDate] = useState(from)
@@ -79,6 +82,10 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
     const netProfit = grossProfit - expenseTotal
     return { revenue, cogs, grossProfit, expenseTotal, netProfit, expenseByCat }
   }, [sales, expenses])
+
+  // Inventory valuation — snapshot of capital tied up in stock right now.
+  // Doesn't depend on the period filter; products list is "as of now".
+  const valuation = useMemo<InventoryValuation>(() => computeValuation(products), [products])
 
   // VAT201 worksheet — owner-entered bad-debt write-off lives on the page so
   // it survives tab toggles within a session. Recomputes on any input change.
@@ -152,18 +159,18 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4 print:hidden">
-        {(['pnl', 'sales', 'vat'] as const).map(tb => (
+      <div className="flex gap-2 mb-4 print:hidden overflow-x-auto -mx-1 px-1 pb-1">
+        {(['pnl', 'sales', 'vat', 'stock'] as const).map(tb => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
             disabled={tb === 'vat' && !store.vatRegistered}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold"
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0"
             style={tab === tb
               ? { background: '#00C896', color: '#0A0E17' }
               : { background: 'var(--card-bg)', color: 'var(--muted)', border: '1px solid var(--card-border)', opacity: tb === 'vat' && !store.vatRegistered ? 0.4 : 1 }}
           >
-            {tb === 'pnl' ? 'P&L' : tb === 'sales' ? 'Sales' : 'VAT'}
+            {tb === 'pnl' ? 'P&L' : tb === 'sales' ? 'Sales' : tb === 'vat' ? 'VAT' : 'Stock'}
           </button>
         ))}
       </div>
@@ -227,7 +234,87 @@ export default function ReportsClient({ store, sales, expenses, restocks, from, 
           onBadDebtChange={setBadDebtWriteOff}
         />
       )}
+
+      {tab === 'stock' && (
+        <StockReport store={store} valuation={valuation} />
+      )}
     </>
+  )
+}
+
+function StockReport({ store, valuation }: { store: Store; valuation: InventoryValuation }) {
+  return (
+    <div className="print-area">
+      <div className="hidden print:block mb-4 text-black">
+        <p className="font-bold text-lg">{store.name}</p>
+        {store.businessAddress && <p className="text-xs whitespace-pre-line">{store.businessAddress}</p>}
+        <p className="text-xs mt-2">Inventory valuation · as of {new Date().toLocaleDateString('en-ZA')}</p>
+      </div>
+
+      {/* Hero — total cost tied up */}
+      <div className="card p-5 mb-3">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest">Capital tied up in stock</p>
+        <p className="text-3xl font-bold mt-1" style={{ color: 'var(--foreground)' }}>{fmtMoney(valuation.totalCostValue)}</p>
+        <p className="text-muted text-xs mt-1">
+          {valuation.countedProductCount} SKU{valuation.countedProductCount === 1 ? '' : 's'} in stock
+          {valuation.outOfStockCount > 0 && ` · ${valuation.outOfStockCount} out of stock`}
+          {valuation.excludedBundleCount > 0 && ` · ${valuation.excludedBundleCount} bundle${valuation.excludedBundleCount === 1 ? '' : 's'} (excluded from totals)`}
+        </p>
+      </div>
+
+      {/* Retail + potential margin */}
+      <div className="card p-4 mb-3">
+        <Row label="Cost value" value={fmtMoney(valuation.totalCostValue)} />
+        <Row label="Retail value (if all sells through)" value={fmtMoney(valuation.totalRetailValue)} muted />
+        <RowBold label="Potential margin" value={fmtMoney(valuation.totalPotentialMargin)} hint={`${valuation.totalPotentialMarginPct.toFixed(1)}% margin`} />
+      </div>
+
+      {/* Per-line table */}
+      {valuation.lines.length === 0 ? (
+        <p className="text-center text-muted py-12">No stock to value.</p>
+      ) : (
+        <div className="card p-2 mb-3">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted">
+                  <th className="text-left p-2 font-semibold">Product</th>
+                  <th className="text-right p-2 font-semibold">Qty</th>
+                  <th className="text-right p-2 font-semibold">Cost</th>
+                  <th className="text-right p-2 font-semibold">Tied up</th>
+                  <th className="text-right p-2 font-semibold">Margin %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {valuation.lines.map(line => (
+                  <tr key={line.productId} style={{ borderTop: '1px solid var(--card-border)' }}>
+                    <td className="p-2 truncate max-w-[140px]" style={{ color: 'var(--foreground)' }}>
+                      {line.productName}
+                      {line.isBundle && <span className="text-muted text-[10px] ml-1">(bundle)</span>}
+                      {line.isAirtime && <span className="text-muted text-[10px] ml-1">(airtime)</span>}
+                    </td>
+                    <td className="p-2 text-right" style={{ color: 'var(--foreground)' }}>
+                      {line.isWeighable && line.unitLabel !== 'each' ? `${line.qty.toFixed(3)} ${line.unitLabel}` : line.qty}
+                    </td>
+                    <td className="p-2 text-right text-muted">{fmtMoney(line.cost)}</td>
+                    <td className="p-2 text-right" style={{ color: 'var(--foreground)' }}>{fmtMoney(line.costValue)}</td>
+                    <td className="p-2 text-right text-muted">{line.marginPct.toFixed(0)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => window.print()}
+        className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 print:hidden"
+        style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}
+      >
+        <Printer size={14} /> Print / Save as PDF
+      </button>
+    </div>
   )
 }
 
