@@ -12,7 +12,20 @@ import { PRESETS, isoDateLocal } from '@/lib/date-presets'
 import { computeVat201, type Vat201Breakdown } from '@/lib/vat201'
 import { computeValuation, type InventoryValuation } from '@/lib/inventory-valuation'
 
-type Tab = 'pnl' | 'sales' | 'vat' | 'stock'
+type Tab = 'pnl' | 'sales' | 'vat' | 'stock' | 'position'
+
+interface SerialisedBalanceSheet {
+  asOf: string
+  cash: number
+  inventory: number
+  invoiceReceivables: number
+  creditBookReceivables: number
+  fixedAssetsBook: number
+  totalAssets: number
+  supplierPayables: number
+  totalLiabilities: number
+  ownersEquity: number
+}
 
 function fmtMoney(n: number) {
   return `R${n.toFixed(2)}`
@@ -41,11 +54,12 @@ interface Props {
   restocks: Restock[]
   products: ProductWithStatus[]
   depreciationTotal: number
+  balanceSheet: SerialisedBalanceSheet
   from: string
   to: string
 }
 
-export default function ReportsClient({ store, sales, expenses, restocks, products, depreciationTotal, from, to }: Props) {
+export default function ReportsClient({ store, sales, expenses, restocks, products, depreciationTotal, balanceSheet, from, to }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('pnl')
   const [fromDate, setFromDate] = useState(from)
@@ -163,7 +177,7 @@ export default function ReportsClient({ store, sales, expenses, restocks, produc
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4 print:hidden overflow-x-auto -mx-1 px-1 pb-1">
-        {(['pnl', 'sales', 'vat', 'stock'] as const).map(tb => (
+        {(['pnl', 'sales', 'vat', 'stock', 'position'] as const).map(tb => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
@@ -173,7 +187,11 @@ export default function ReportsClient({ store, sales, expenses, restocks, produc
               ? { background: '#00C896', color: '#0A0E17' }
               : { background: 'var(--card-bg)', color: 'var(--muted)', border: '1px solid var(--card-border)', opacity: tb === 'vat' && !store.vatRegistered ? 0.4 : 1 }}
           >
-            {tb === 'pnl' ? 'P&L' : tb === 'sales' ? 'Sales' : tb === 'vat' ? 'VAT' : 'Stock'}
+            {tb === 'pnl' ? 'P&L'
+             : tb === 'sales' ? 'Sales'
+             : tb === 'vat' ? 'VAT'
+             : tb === 'stock' ? 'Stock'
+             : 'Position'}
           </button>
         ))}
       </div>
@@ -241,7 +259,74 @@ export default function ReportsClient({ store, sales, expenses, restocks, produc
       {tab === 'stock' && (
         <StockReport store={store} valuation={valuation} />
       )}
+
+      {tab === 'position' && (
+        <PositionReport store={store} bs={balanceSheet} />
+      )}
     </>
+  )
+}
+
+function PositionReport({ store, bs }: { store: Store; bs: SerialisedBalanceSheet }) {
+  const asOf = new Date(bs.asOf)
+  return (
+    <div className="print-area">
+      <div className="hidden print:block mb-4 text-black">
+        <p className="font-bold text-lg">{store.name}</p>
+        {store.businessAddress && <p className="text-xs whitespace-pre-line">{store.businessAddress}</p>}
+        <p className="text-xs mt-2">Statement of position · as of {fmtDate(bs.asOf)}</p>
+      </div>
+
+      <div className="card p-5 mb-3">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest">Owner&apos;s equity</p>
+        <p className={`text-3xl font-bold mt-1 ${bs.ownersEquity >= 0 ? 'text-brand' : 'text-danger'}`}>
+          {fmtMoney(bs.ownersEquity)}
+        </p>
+        <p className="text-muted text-sm mt-1">as of {asOf.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+      </div>
+
+      <div className="card p-4 mb-3">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Assets</p>
+        <Row label="Cash on hand" value={fmtMoney(bs.cash)} />
+        <Row label="Inventory (at cost)" value={fmtMoney(bs.inventory)} muted />
+        <Row label="Invoice receivables" value={fmtMoney(bs.invoiceReceivables)} muted />
+        <Row label="Credit-book receivables" value={fmtMoney(bs.creditBookReceivables)} muted />
+        <Row label="Fixed assets (net book)" value={fmtMoney(bs.fixedAssetsBook)} muted />
+        <RowBold label="Total assets" value={fmtMoney(bs.totalAssets)} />
+      </div>
+
+      <div className="card p-4 mb-3">
+        <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-3">Liabilities</p>
+        <Row label="Supplier bills outstanding" value={fmtMoney(bs.supplierPayables)} />
+        <RowBold label="Total liabilities" value={fmtMoney(bs.totalLiabilities)} />
+      </div>
+
+      <div className="card p-4 mb-4">
+        <RowBold
+          label="Equity (assets − liabilities)"
+          value={fmtMoney(bs.ownersEquity)}
+          valueColor={bs.ownersEquity >= 0 ? '#00C896' : '#EF4444'}
+        />
+      </div>
+
+      <div className="card p-4 mb-4 print:hidden">
+        <p className="text-muted text-xs leading-relaxed">
+          Snapshot drawn from your live data. Cash uses the value you set in
+          store settings; inventory is sum of cost × qty (bundles excluded);
+          receivables are open invoice balances + credit-book totals; fixed
+          assets at net book value. Hand this to your accountant at year-end
+          and they can map it onto a formal trial balance if needed.
+        </p>
+      </div>
+
+      <button
+        onClick={() => window.print()}
+        className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 print:hidden"
+        style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}
+      >
+        <Printer size={14} /> Print / Save as PDF
+      </button>
+    </div>
   )
 }
 
