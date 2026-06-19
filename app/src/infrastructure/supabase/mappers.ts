@@ -18,6 +18,7 @@ import { Invoice, InvoiceLineItem, InvoicePayment } from '@/domain/entities/invo
 import { SupplierBill, SupplierBillPayment } from '@/domain/entities/supplier-bill'
 import { RecurringExpense } from '@/domain/entities/recurring-expense'
 import { FixedAsset, DepreciationEntry } from '@/domain/entities/fixed-asset'
+import { PurchaseOrder, PurchaseOrderLine } from '@/domain/entities/purchase-order'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
@@ -461,5 +462,40 @@ export function toDepreciationEntry(row: any): DepreciationEntry {
     periodOf: row.period_of,
     amount: Number(row.amount),
     createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toPurchaseOrderLine(row: any): PurchaseOrderLine {
+  return {
+    id: row.id,
+    poId: row.po_id,
+    storeId: row.store_id,
+    productId: row.product_id ?? null,
+    productName: row.products?.name ?? null,
+    description: row.description,
+    qtyOrdered: Number(row.qty_ordered),
+    qtyReceived: Number(row.qty_received ?? 0),
+    unitCost: Number(row.unit_cost),
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toPurchaseOrder(row: any): PurchaseOrder {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lines = (row.purchase_order_lines ?? []) as any[]
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    supplierId: row.supplier_id,
+    supplierName: row.suppliers?.name ?? null,
+    poNumber: Number(row.po_number),
+    expectedAt: row.expected_at ?? null,
+    status: row.status ?? 'draft',
+    notes: row.notes ?? null,
+    lines: lines.map(toPurchaseOrderLine),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }

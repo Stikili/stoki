@@ -17,6 +17,7 @@ import {
   CreditCard,
   Activity,
   Archive,
+  PackageCheck,
 } from 'lucide-react'
 import { haptic } from '@/lib/haptic'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -38,6 +39,7 @@ const ALL_TILES = [
   { href: '/payables',   label: 'Payables',   Icon: CreditCard,    tone: 'amber'  as IconTone, hint: 'Bills you owe suppliers — aging buckets and payment tracking.',              roles: ['owner', 'manager'] as StoreRole[] },
   { href: '/cashflow',   label: 'Cash flow',  Icon: Activity,      tone: 'brand'  as IconTone, hint: '30-day projection from invoices, supplier bills, recurring rules and trading averages.', roles: ['owner', 'manager'] as StoreRole[] },
   { href: '/assets',     label: 'Assets',     Icon: Archive,       tone: 'cyan'   as IconTone, hint: 'Fixed-asset register — fridges, vehicles, equipment. Monthly depreciation flows into P&L.', roles: ['owner', 'manager'] as StoreRole[] },
+  { href: '/purchase-orders', label: 'POs',   Icon: PackageCheck,  tone: 'blue'   as IconTone, hint: 'Purchase orders — what you\'ve ordered, what\'s arrived, what\'s overdue.', roles: ['owner', 'manager'] as StoreRole[] },
   { href: '/stocktake',  label: 'Stocktake',  Icon: ClipboardList, tone: 'cyan'   as IconTone, hint: 'Count physical stock vs system, audit shrinkage.',                            roles: ['owner', 'manager'] as StoreRole[] },
   { href: '/reconcile',  label: 'Reconcile',  Icon: Landmark,      tone: 'blue'   as IconTone, hint: 'Match a bank-statement CSV to invoices and expenses.',                        roles: ['owner', 'manager'] as StoreRole[] },
   { href: '/airtime',    label: 'Airtime',    Icon: Signal,        tone: 'violet' as IconTone, hint: 'Load pre-bought voucher PINs — sales auto-dispense.',                         roles: ['owner', 'manager'] as StoreRole[] },
