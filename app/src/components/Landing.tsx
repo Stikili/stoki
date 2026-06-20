@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  ShoppingCart, Package, CreditCard, Sparkles, ArrowRight,
+  ShoppingCart, Package, CreditCard, Sparkles, ArrowRight, Receipt, Activity,
 } from 'lucide-react'
 import Wordmark from '@/components/Wordmark'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -124,7 +124,7 @@ function SlideHero() {
           className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-md mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          Sales, stock, credit, and an AI advisor. Built for South Africa. Works offline.
+          Sales, stock, credit, cash flow and SARS-ready tax &mdash; with an AI advisor that knows your numbers. Built for South Africa. Works offline.
         </p>
         <div className="flex items-center justify-center">
           <Link
@@ -157,22 +157,32 @@ function SlideFeatures() {
           <FeatureMini
             icon={<ShoppingCart size={18} strokeWidth={1.7} />}
             title="Point-of-sale"
-            body="VAT-aware receipts, every payment method, returns."
+            body="VAT-aware receipts, every payment method, returns, weighables, airtime."
           />
           <FeatureMini
             icon={<Package size={18} strokeWidth={1.7} />}
-            title="Stock & expiry"
-            body="Restocks, wastage, expiry alerts, weighable goods."
+            title="Stock"
+            body="Restocks, wastage, expiry alerts, stocktake, valuation, POs."
           />
           <FeatureMini
             icon={<CreditCard size={18} strokeWidth={1.7} />}
-            title="Credit book"
-            body="Track informal trade credit. WhatsApp reminders."
+            title="Money in & out"
+            body="Credit book, B2B invoices, supplier bills with aging buckets."
+          />
+          <FeatureMini
+            icon={<Receipt size={18} strokeWidth={1.7} />}
+            title="SARS-ready"
+            body="Tax invoices, VAT201 worksheet, provisional tax, depreciation."
+          />
+          <FeatureMini
+            icon={<Activity size={18} strokeWidth={1.7} />}
+            title="Cash flow"
+            body="30-day forecast from your dues, recurring rules and trading rhythm."
           />
           <FeatureMini
             icon={<Sparkles size={18} strokeWidth={1.7} />}
             title="Stoki AI"
-            body="Pricing & restock advice. Knows the SA economy."
+            body="Pricing & restock advice. Vision, memory, knows the SA economy."
           />
         </div>
       </div>
