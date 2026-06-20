@@ -19,6 +19,7 @@ import { SupplierBill, SupplierBillPayment } from '@/domain/entities/supplier-bi
 import { RecurringExpense } from '@/domain/entities/recurring-expense'
 import { FixedAsset, DepreciationEntry } from '@/domain/entities/fixed-asset'
 import { PurchaseOrder, PurchaseOrderLine } from '@/domain/entities/purchase-order'
+import { Employee, PayrollRun, PayslipLine } from '@/domain/entities/employee'
 import { Wastage } from '@/domain/entities/wastage'
 import { Stocktake, StocktakeLine } from '@/domain/entities/stocktake'
 import { AirtimePin } from '@/domain/entities/airtime-pin'
@@ -495,6 +496,63 @@ export function toPurchaseOrder(row: any): PurchaseOrder {
     status: row.status ?? 'draft',
     notes: row.notes ?? null,
     lines: lines.map(toPurchaseOrderLine),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toEmployee(row: any): Employee {
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    name: row.name,
+    idNumber: row.id_number ?? null,
+    baseSalary: Number(row.base_salary),
+    hireDate: row.hire_date,
+    endDate: row.end_date ?? null,
+    uifEnrolled: row.uif_enrolled ?? true,
+    active: row.active ?? true,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toPayslipLine(row: any): PayslipLine {
+  return {
+    id: row.id,
+    runId: row.run_id,
+    storeId: row.store_id,
+    employeeId: row.employee_id,
+    employeeName: row.employees?.name ?? null,
+    gross: Number(row.gross),
+    paye: Number(row.paye),
+    uifEmployee: Number(row.uif_employee),
+    uifEmployer: Number(row.uif_employer),
+    sdl: Number(row.sdl),
+    net: Number(row.net),
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toPayrollRun(row: any): PayrollRun {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lines = (row.payslip_lines ?? []) as any[]
+  return {
+    id: row.id,
+    storeId: row.store_id,
+    periodOf: row.period_of,
+    totalGross: Number(row.total_gross),
+    totalPaye: Number(row.total_paye),
+    totalUifEmployee: Number(row.total_uif_employee),
+    totalUifEmployer: Number(row.total_uif_employer),
+    totalSdl: Number(row.total_sdl),
+    totalNet: Number(row.total_net),
+    status: row.status ?? 'draft',
+    lines: lines.map(toPayslipLine),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
