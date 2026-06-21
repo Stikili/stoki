@@ -111,7 +111,7 @@ function SlideHero() {
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
           style={{ color: 'var(--muted-dim)' }}
         >
-          Operating system for SMME retail
+          Built for South African shops &amp; SMMEs
         </p>
         <h1
           className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"
@@ -124,7 +124,7 @@ function SlideHero() {
           className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-md mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          Sales, stock, credit, cash flow and SARS-ready tax &mdash; with an AI advisor that knows your numbers. Built for South Africa. Works offline.
+          From your first sale to your next SARS submission &mdash; one app. With an AI that knows the SA economy. Works offline.
         </p>
         <div className="flex items-center justify-center">
           <Link
@@ -136,7 +136,7 @@ function SlideHero() {
           </Link>
         </div>
         <p className="text-[12px] mt-4" style={{ color: 'var(--muted-dim)' }}>
-          Free for one shop · No card required
+          Free for your first store · No card required
         </p>
       </div>
     </section>
@@ -153,17 +153,11 @@ function SlideFeatures() {
         >
           Everything in one app
         </h2>
+        {/* Ordering: lead with what only Stoki has (Money / SARS / Cash flow /
+            AI), close with the table-stakes proofs (POS / Stock). Reads as
+            "Stoki handles the painful parts of running a business — and of
+            course it's also a till and stock book." */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <FeatureMini
-            icon={<ShoppingCart size={18} strokeWidth={1.7} />}
-            title="Point-of-sale"
-            body="VAT-aware receipts, every payment method, returns, weighables, airtime."
-          />
-          <FeatureMini
-            icon={<Package size={18} strokeWidth={1.7} />}
-            title="Stock"
-            body="Restocks, wastage, expiry alerts, stocktake, valuation, POs."
-          />
           <FeatureMini
             icon={<CreditCard size={18} strokeWidth={1.7} />}
             title="Money in & out"
@@ -172,7 +166,7 @@ function SlideFeatures() {
           <FeatureMini
             icon={<Receipt size={18} strokeWidth={1.7} />}
             title="SARS-ready"
-            body="Tax invoices, VAT201 worksheet, provisional tax, depreciation."
+            body="Tax invoices, VAT201 worksheet, provisional tax, depreciation, payroll."
           />
           <FeatureMini
             icon={<Activity size={18} strokeWidth={1.7} />}
@@ -184,9 +178,47 @@ function SlideFeatures() {
             title="Stoki AI"
             body="Pricing & restock advice. Vision, memory, knows the SA economy."
           />
+          <FeatureMini
+            icon={<ShoppingCart size={18} strokeWidth={1.7} />}
+            title="Point-of-sale"
+            body="VAT-aware receipts, every payment method, returns, weighables, airtime."
+          />
+          <FeatureMini
+            icon={<Package size={18} strokeWidth={1.7} />}
+            title="Stock"
+            body="Restocks, wastage, expiry alerts, stocktake, valuation, POs."
+          />
+        </div>
+
+        {/* Proof strip — capability anchors, not user counts. Defensible
+            against what's actually shipped in the product. */}
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <ProofChip label="5 SA banks"        hint="bank rec via CSV" />
+          <ProofChip label="PAYE · UIF · SDL"  hint="EMP201 export" />
+          <ProofChip label="30-day forecast"   hint="cash you'll have" />
+          <ProofChip label="Works offline"     hint="load-shedding ready" />
         </div>
       </div>
     </section>
+  )
+}
+
+function ProofChip({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div
+      className="rounded-xl px-3 py-2.5 text-center"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--card-border)',
+      }}
+    >
+      <p className="text-[12px] font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>
+        {label}
+      </p>
+      <p className="text-[10px] leading-tight mt-0.5" style={{ color: 'var(--muted-dim)' }}>
+        {hint}
+      </p>
+    </div>
   )
 }
 
@@ -202,7 +234,7 @@ function SlideCta() {
             Ready when you are.
           </h2>
           <p className="text-[15px] mb-6" style={{ color: 'var(--muted)' }}>
-            Set up your business in under three minutes.
+            In your first hour: record a sale, do a cash-up, see your 30-day forecast.
           </p>
           <Link
             href="/login?intent=register"
