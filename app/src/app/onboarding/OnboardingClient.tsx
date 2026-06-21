@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { LocateFixed, MapPin, Wallet } from 'lucide-react'
+import { LocateFixed, MapPin, Wallet, Receipt, Users2 } from 'lucide-react'
 import { saveStoreAction, saveStoreDetailsAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
 import OnboardingHero from '@/components/OnboardingHero'
@@ -40,6 +40,12 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
   const [cashBalance, setCashBalance] = useState<string>('')
   const [gpsBusy, setGpsBusy] = useState(false)
   const [gpsError, setGpsError] = useState<string | null>(null)
+  // VAT + employees — capture during onboarding so empty modules (VAT201,
+  // Payroll) can be hidden from the Manage tile grid until the user is
+  // actually a VAT vendor or has hired someone. Owner can flip these later
+  // in settings.
+  const [vatRegistered, setVatRegistered] = useState(false)
+  const [hasEmployees, setHasEmployees] = useState(false)
 
   function handleCategoryNext() {
     setStep('name')
@@ -84,7 +90,10 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
     if (!storeId) return
     if (skip) { setStep('pack'); return }
     startTransition(async () => {
-      await saveStoreDetailsAction(storeId, { lat, lng, cashBalance })
+      await saveStoreDetailsAction(storeId, {
+        lat, lng, cashBalance,
+        vatRegistered, hasEmployees,
+      })
       setStep('pack')
     })
   }
@@ -273,6 +282,38 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
                   className="input"
                   style={{ padding: '10px 12px', fontSize: '14px' }}
                 />
+              </div>
+
+              {/* Tax + people — hides irrelevant modules from day one. */}
+              <div className="rounded-2xl p-4 mb-3" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>About your business</p>
+
+                <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <Receipt size={14} style={{ color: 'var(--muted)' }} />
+                    <span className="text-sm" style={{ color: 'var(--foreground)' }}>I&apos;m VAT-registered</span>
+                  </span>
+                  <input
+                    type="checkbox" className="w-5 h-5 accent-brand"
+                    checked={vatRegistered}
+                    onChange={e => setVatRegistered(e.target.checked)}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <Users2 size={14} style={{ color: 'var(--muted)' }} />
+                    <span className="text-sm" style={{ color: 'var(--foreground)' }}>I have employees on payroll</span>
+                  </span>
+                  <input
+                    type="checkbox" className="w-5 h-5 accent-brand"
+                    checked={hasEmployees}
+                    onChange={e => setHasEmployees(e.target.checked)}
+                  />
+                </label>
+
+                <p className="text-muted text-[11px] mt-2 leading-relaxed">
+                  Modules you don&apos;t need will stay hidden. Flip these on later from Settings if your business grows into them.
+                </p>
               </div>
 
               <div className="flex flex-col gap-2 mt-4">

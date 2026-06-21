@@ -51,7 +51,20 @@ const ALL_TILES = [
 
 const LONG_PRESS_MS = 450
 
-export default function DashboardTiles({ role }: { role: StoreRole }) {
+export default function DashboardTiles({
+  role,
+  showPayroll = true,
+  showInvoices = true,
+}: {
+  role: StoreRole
+  /** Hide /payroll tile when the owner isn't on PAYE yet (no employees and
+   *  not VAT-registered). Default true preserves current behaviour for
+   *  callers that haven't opted in. */
+  showPayroll?: boolean
+  /** Hide B2B /invoices + /customers when the owner is purely cash-and-carry
+   *  (not VAT-registered). Default true preserves current behaviour. */
+  showInvoices?: boolean
+}) {
   const [hintFor, setHintFor] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -66,7 +79,10 @@ export default function DashboardTiles({ role }: { role: StoreRole }) {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
   }
 
-  const tiles = ALL_TILES.filter((t) => t.roles.includes(role))
+  const tiles = ALL_TILES
+    .filter((t) => t.roles.includes(role))
+    .filter((t) => showPayroll || t.href !== '/payroll')
+    .filter((t) => showInvoices || (t.href !== '/invoices' && t.href !== '/customers'))
   const active = hintFor ? tiles.find((t) => t.href === hintFor) : null
 
   return (

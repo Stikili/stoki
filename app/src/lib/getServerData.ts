@@ -9,7 +9,14 @@ import { StoreRole } from '@/domain/entities/store-user'
 
 export interface ServerData {
   supabase: Awaited<ReturnType<typeof createClient>>
-  user: { id: string; email?: string; phone?: string }
+  user: {
+    id: string
+    email?: string
+    phone?: string
+    /** Onboarding hints and other client-set flags. Read with care — never
+     *  the source of truth for anything billable, just UX shortcuts. */
+    user_metadata?: Record<string, unknown>
+  }
   store: Store
   allStores: Store[]
   /** Caller's role in the selected store. 'owner' for first-time auto-created stores. */

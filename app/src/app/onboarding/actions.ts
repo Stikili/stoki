@@ -69,7 +69,18 @@ export async function saveStoreAction(
  */
 export async function saveStoreDetailsAction(
   storeId: string,
-  raw: { lat?: string; lng?: string; cashBalance?: string },
+  raw: {
+    lat?: string; lng?: string; cashBalance?: string;
+    /** "Are you VAT-registered?" answered during onboarding. Writes through
+     *  to store.vat_registered so the existing VAT plumbing kicks in
+     *  without the owner needing to dig into /settings/vat. */
+    vatRegistered?: boolean;
+    /** "Do you have employees?" answered during onboarding. Stored on the
+     *  user's auth metadata as a *hint* — the actual gating is by employee
+     *  count, but this lets us pre-hide the Payroll tile on day 1 before
+     *  any employees exist, and surface it as soon as the owner adds one. */
+    hasEmployees?: boolean;
+  },
 ): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -91,7 +102,17 @@ export async function saveStoreDetailsAction(
     ...(validLat ? { lat } : {}),
     ...(validLng ? { lng } : {}),
     ...(validCash ? { cashBalance } : {}),
+    ...(raw.vatRegistered !== undefined ? { vatRegistered: raw.vatRegistered } : {}),
   })
+
+  if (raw.hasEmployees !== undefined) {
+    // user_metadata.has_employees_hint is read by DashboardTiles to decide
+    // whether the Payroll tile is visible before any employees exist.
+    await supabase.auth.updateUser({
+      data: { has_employees_hint: raw.hasEmployees },
+    })
+  }
+
   revalidateTag(TAGS.stores, 'default')
 }
 

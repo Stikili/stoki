@@ -9,6 +9,11 @@ export const TAGS = {
   debtors: 'debtors',
   /** Store config — invalidated on settings update, store create/delete */
   stores: 'stores',
+  /** Dashboard snapshot — invalidated on any sale/expense/bill/invoice change.
+   *  Owners refresh dashboard often; caching avoids re-running a 13-way
+   *  parallel fetch on every navigation. 30s natural revalidate also limits
+   *  staleness without explicit invalidation everywhere. */
+  dashboard: 'dashboard',
 } as const
 
 export type CacheTag = (typeof TAGS)[keyof typeof TAGS]

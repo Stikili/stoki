@@ -1,16 +1,12 @@
 import Link from 'next/link'
 import { getServerData } from '@/lib/getServerData'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
-import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
-import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
-import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
-import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
-import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
-import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
-import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
-import { getWeeklySummary } from '@/application/sales/getDailySummary'
-import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue } from '@/domain/entities/invoice'
-import { agingTotals as billAgingTotals, isOpen as billIsOpen } from '@/domain/entities/supplier-bill'
+import { getCachedDashboardSnapshot } from '@/lib/cached-dashboard'
+import { balanceOf, isOverdue as isInvoiceOverdue, daysOverdue, type Invoice } from '@/domain/entities/invoice'
+import { agingTotals as billAgingTotals, isOpen as billIsOpen, type SupplierBill } from '@/domain/entities/supplier-bill'
+import { type Sale, type SalesSummary } from '@/domain/entities/sale'
+import { type Alert } from '@/domain/entities/alert'
+import { type RecurringExpense } from '@/domain/entities/recurring-expense'
 import { buildForecast } from '@/lib/cashflow-forecast'
 import { daysUntilExpiry, isExpiringSoon } from '@/domain/entities/product'
 import SetupChecklist from '@/components/SetupChecklist'
@@ -19,72 +15,43 @@ import ProvisionalTaxCard from '@/components/ProvisionalTaxCard'
 import { isOverdue } from '@/domain/entities/debtor'
 import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
 import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
-import { estimateProvisional, taxYearStart, currentTaxYear } from '@/lib/tax/provisional'
+import { estimateProvisional } from '@/lib/tax/provisional'
 import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
 import SaleFAB from '@/components/SaleFAB'
 import TrialBanner from '@/components/TrialBanner'
 
+interface DailySummary { totalRevenue: number; totalMargin: number; totalVat: number; transactionCount: number }
+
 export default async function DashboardPage() {
-  const { supabase, store, role } = await getServerData()
+  const { user, store, role } = await getServerData()
 
-  const saleRepo = new SaleRepository(supabase)
-  const alertRepo = new AlertRepository(supabase)
-  const expenseRepo = new ExpenseRepository(supabase)
-  const invoiceRepo = new InvoiceRepository(supabase)
-  const billRepo = new SupplierBillRepository(supabase)
-  const recurringRepo = new RecurringExpenseRepository(supabase)
-  const assetRepo = new FixedAssetRepository(supabase)
-
-  const now = new Date()
-  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999)
-  const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6); weekStart.setHours(0, 0, 0, 0)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const taxYStart = taxYearStart(currentTaxYear(now))
-  // Same weekday a week ago — used for the "vs last Tuesday" comparison line.
-  // Going back exactly 7 calendar days keeps weekday alignment even across DST.
-  const lastWeekDayStart = new Date(dayStart); lastWeekDayStart.setDate(lastWeekDayStart.getDate() - 7)
-  const lastWeekDayEnd   = new Date(dayEnd);   lastWeekDayEnd.setDate(lastWeekDayEnd.getDate() - 7)
-
-  const [
-    todaySales,
-    weekSales,
-    monthSales,
-    monthExpenses,
-    todayCashSales,
-    unreadAlerts,
-    weekDaily,
-    allProducts,
-    allDebtors,
-    openInvoices,
-    lastWeekSameDay,
-    ytdSales,
-    ytdExpenses,
-    allBills,
-    activeRecurringRules,
-    last30Expenses,
-    ytdDepreciation,
-  ] = await Promise.all([
-    saleRepo.summarise(store.id, dayStart, dayEnd),
-    saleRepo.summarise(store.id, weekStart, dayEnd),
-    saleRepo.summarise(store.id, monthStart, dayEnd),
-    expenseRepo.sumByPeriod(store.id, monthStart, dayEnd),
-    saleRepo.findByPeriod(store.id, dayStart, dayEnd),
-    alertRepo.findUnread(store.id),
-    getWeeklySummary(saleRepo, store.id),
+  // Cached dashboard snapshot (30s TTL) + the two pre-existing cached repos.
+  // Three parallel reads instead of seventeen. `now` is captured inside the
+  // cached snapshot, frozen for that cache window — see cached-dashboard.ts.
+  const [snap, allProducts, allDebtors] = await Promise.all([
+    getCachedDashboardSnapshot(store.id),
     getCachedProducts(store.id),
     getCachedDebtors(store.id),
-    invoiceRepo.findOpen(store.id).catch(() => []),
-    saleRepo.summarise(store.id, lastWeekDayStart, lastWeekDayEnd),
-    saleRepo.summarise(store.id, taxYStart, dayEnd),
-    expenseRepo.sumByPeriod(store.id, taxYStart, dayEnd),
-    billRepo.findAll(store.id).catch(() => []),
-    recurringRepo.findActive(store.id).catch(() => []),
-    expenseRepo.sumByPeriod(store.id, new Date(now.getTime() - 30 * 86_400_000), now),
-    assetRepo.sumByPeriod(store.id, taxYStart, dayEnd).catch(() => 0),
   ])
+
+  const now = new Date(snap.nowIso)
+  const todaySales        = JSON.parse(snap.todaySalesJson) as SalesSummary
+  const weekSales         = JSON.parse(snap.weekSalesJson) as SalesSummary
+  const monthSales        = JSON.parse(snap.monthSalesJson) as SalesSummary
+  const monthExpenses     = snap.monthExpenses
+  const todayCashSales    = JSON.parse(snap.todayCashSalesJson) as Sale[]
+  const unreadAlerts      = JSON.parse(snap.unreadAlertsJson) as Alert[]
+  const weekDaily         = JSON.parse(snap.weekDailyJson) as DailySummary[]
+  const openInvoices      = JSON.parse(snap.openInvoicesJson) as Invoice[]
+  const lastWeekSameDay   = JSON.parse(snap.lastWeekSameDayJson) as SalesSummary
+  const ytdSales          = JSON.parse(snap.ytdSalesJson) as SalesSummary
+  const ytdExpenses       = snap.ytdExpenses
+  const allBills          = JSON.parse(snap.allBillsJson) as SupplierBill[]
+  const activeRecurringRules = JSON.parse(snap.activeRecurringRulesJson) as RecurringExpense[]
+  const last30Expenses    = snap.last30Expenses
+  const ytdDepreciation   = snap.ytdDepreciation
 
   const lowStockCount = allProducts.filter((p) => p.status === 'low' || p.status === 'out').length
   // Surface anything expiring within 7 days (already-expired included).
@@ -421,8 +388,16 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Manage — feature grid. Long-press any tile to see what it does. */}
-      <DashboardTiles role={role} />
+      {/* Manage — feature grid. Long-press any tile to see what it does.
+          Modules hide until they're relevant: Payroll waits for the first
+          employee or the onboarding "has employees" answer; B2B
+          invoices/customers wait for VAT registration (most casual
+          shoppers won't issue formal tax invoices). */}
+      <DashboardTiles
+        role={role}
+        showPayroll={snap.employeeCount > 0 || user.user_metadata?.has_employees_hint === true}
+        showInvoices={store.vatRegistered}
+      />
 
       <SaleFAB />
     </div>
