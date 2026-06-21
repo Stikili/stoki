@@ -1,6 +1,8 @@
 import { getServerData } from '@/lib/getServerData'
 import { PayrollRepository } from '@/infrastructure/supabase/repositories/PayrollRepository'
 import RestrictedNotice from '@/components/RestrictedNotice'
+import LockedFeatureNotice from '@/components/LockedFeatureNotice'
+import { hasFeature } from '@/lib/plan-gates'
 import PayrollClient from './PayrollClient'
 import { endOfMonth } from '@/domain/entities/fixed-asset'
 
@@ -13,6 +15,9 @@ export default async function PayrollPage() {
         description="Payroll is owner-only — it touches PAYE, UIF and SDL submissions to SARS."
       />
     )
+  }
+  if (!hasFeature(store, 'payroll.run')) {
+    return <LockedFeatureNotice gate="payroll.run" />
   }
 
   const repo = new PayrollRepository(supabase)

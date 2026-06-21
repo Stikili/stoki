@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerData } from '@/lib/getServerData'
 import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
+import { hasFeature } from '@/lib/plan-gates'
 
 export interface CreateBillInput {
   supplierId: string
@@ -18,6 +19,7 @@ export async function createBillAction(
 ): Promise<{ ok: boolean; billId?: string; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'payables.manage')) return { ok: false, error: 'Supplier bills are a Pro feature.' }
   if (!input.supplierId) return { ok: false, error: 'Pick a supplier.' }
   if (!input.dueAt) return { ok: false, error: 'Set a due date.' }
   if (!Number.isFinite(input.total) || input.total <= 0) {
@@ -50,6 +52,7 @@ export async function recordBillPaymentAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'payables.manage')) return { ok: false, error: 'Supplier bills are a Pro feature.' }
   if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, error: 'Payment amount must be greater than zero.' }
   }
@@ -68,6 +71,7 @@ export async function recordBillPaymentAction(
 export async function archiveBillAction(billId: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'payables.manage')) return { ok: false, error: 'Supplier bills are a Pro feature.' }
   const repo = new SupplierBillRepository(supabase)
   try {
     await repo.archive(store.id, billId)

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerData } from '@/lib/getServerData'
 import { PurchaseOrderRepository } from '@/infrastructure/supabase/repositories/PurchaseOrderRepository'
+import { hasFeature } from '@/lib/plan-gates'
 
 export interface CreatePoInput {
   supplierId: string
@@ -16,6 +17,7 @@ export async function createPoAction(
 ): Promise<{ ok: boolean; poId?: string; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'purchase_orders.create')) return { ok: false, error: 'Purchase orders are a Pro feature.' }
   if (!input.supplierId) return { ok: false, error: 'Pick a supplier.' }
   if (input.lines.length === 0) return { ok: false, error: 'Add at least one line.' }
   for (const l of input.lines) {
@@ -50,6 +52,7 @@ export async function receiveLineAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'purchase_orders.create')) return { ok: false, error: 'Purchase orders are a Pro feature.' }
   if (!Number.isFinite(qtyReceived) || qtyReceived < 0) {
     return { ok: false, error: 'Received qty must be >= 0.' }
   }
@@ -68,6 +71,7 @@ export async function receiveLineAction(
 export async function cancelPoAction(poId: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'purchase_orders.create')) return { ok: false, error: 'Purchase orders are a Pro feature.' }
   const repo = new PurchaseOrderRepository(supabase)
   try {
     await repo.setStatus(store.id, poId, 'cancelled')
@@ -81,6 +85,7 @@ export async function cancelPoAction(poId: string): Promise<{ ok: boolean; error
 export async function archivePoAction(poId: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'purchase_orders.create')) return { ok: false, error: 'Purchase orders are a Pro feature.' }
   const repo = new PurchaseOrderRepository(supabase)
   try {
     await repo.archive(store.id, poId)

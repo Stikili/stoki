@@ -1,6 +1,8 @@
 import { getServerData } from '@/lib/getServerData'
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import RestrictedNotice from '@/components/RestrictedNotice'
+import LockedFeatureNotice from '@/components/LockedFeatureNotice'
+import { hasFeature } from '@/lib/plan-gates'
 import AssetsClient from './AssetsClient'
 import { monthlyDepreciation, bookValue } from '@/domain/entities/fixed-asset'
 
@@ -13,6 +15,9 @@ export default async function AssetsPage() {
         description="Fixed assets and depreciation are available to managers and the store owner."
       />
     )
+  }
+  if (!hasFeature(store, 'assets.manage')) {
+    return <LockedFeatureNotice gate="assets.manage" />
   }
 
   const repo = new FixedAssetRepository(supabase)

@@ -19,10 +19,13 @@ import {
   Archive,
   PackageCheck,
   Users2,
+  Lock,
 } from 'lucide-react'
 import { haptic } from '@/lib/haptic'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
+import UpgradePrompt from '@/components/UpgradePrompt'
 import type { StoreRole } from '@/domain/entities/store-user'
+import type { GateId } from '@/lib/plan-gates'
 
 // Tile catalogue. Each tile has:
 //   - icon  : lucide glyph (selected for elegance + low ambiguity at a glance)
@@ -51,10 +54,26 @@ const ALL_TILES = [
 
 const LONG_PRESS_MS = 450
 
+/** Tile href → plan-gate id. Tiles in this map render with a lock badge
+ *  for users whose plan doesn't include the feature; clicking opens the
+ *  upgrade prompt instead of navigating. Tiles NOT in this map are open
+ *  to every plan. */
+const HREF_TO_GATE: Partial<Record<string, GateId>> = {
+  '/invoices':        'invoice.create',
+  '/customers':       'invoice.create',
+  '/reconcile':       'reports.bank_reconcile',
+  '/broadcasts':      'broadcast.send',
+  '/payroll':         'payroll.run',
+  '/assets':          'assets.manage',
+  '/payables':        'payables.manage',
+  '/purchase-orders': 'purchase_orders.create',
+}
+
 export default function DashboardTiles({
   role,
   showPayroll = true,
   showInvoices = true,
+  lockedGates = [],
 }: {
   role: StoreRole
   /** Hide /payroll tile when the owner isn't on PAYE yet (no employees and
@@ -64,8 +83,13 @@ export default function DashboardTiles({
   /** Hide B2B /invoices + /customers when the owner is purely cash-and-carry
    *  (not VAT-registered). Default true preserves current behaviour. */
   showInvoices?: boolean
+  /** Gates the user's plan doesn't include. Locked tiles still appear in
+   *  the grid (with a lock badge) so they drive upsell; clicking opens
+   *  the upgrade prompt instead of navigating. */
+  lockedGates?: GateId[]
 }) {
   const [hintFor, setHintFor] = useState<string | null>(null)
+  const [upgradeGate, setUpgradeGate] = useState<GateId | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function startHold(href: string) {
@@ -79,6 +103,7 @@ export default function DashboardTiles({
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
   }
 
+  const lockedSet = new Set(lockedGates)
   const tiles = ALL_TILES
     .filter((t) => t.roles.includes(role))
     .filter((t) => showPayroll || t.href !== '/payroll')
@@ -90,24 +115,82 @@ export default function DashboardTiles({
       <div>
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-2 ml-1">Manage</p>
         <div className="grid grid-cols-4 gap-2">
-          {tiles.map(({ href, label, Icon, tone }) => (
-            <Link
-              key={href}
-              href={href}
-              onPointerDown={() => startHold(href)}
-              onPointerUp={endHold}
-              onPointerLeave={endHold}
-              onPointerCancel={endHold}
-              onContextMenu={(e) => e.preventDefault()}
-              className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none"
-            >
-              <IconBadge icon={<Icon />} tone={tone} size="md" />
-              <span className="text-[10px] font-semibold mt-2" style={{ color: 'var(--muted)' }}>{label}</span>
-            </Link>
-          ))}
+          {tiles.map(({ href, label, Icon, tone }) => {
+            const gate = HREF_TO_GATE[href]
+            const locked = gate ? lockedSet.has(gate) : false
+
+            const inner = (
+              <>
+                <div className="relative">
+                  <IconBadge icon={<Icon />} tone={tone} size="md" />
+                  {locked && (
+                    <span
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full inline-flex items-center justify-center"
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        color: '#7B8CA1',
+                      }}
+                      aria-label="Pro feature"
+                    >
+                      <Lock size={9} strokeWidth={2.2} />
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="text-[10px] font-semibold mt-2"
+                  style={{ color: locked ? 'var(--muted-dim)' : 'var(--muted)' }}
+                >
+                  {label}
+                </span>
+              </>
+            )
+
+            if (locked && gate) {
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => { haptic(20); setUpgradeGate(gate) }}
+                  onPointerDown={() => startHold(href)}
+                  onPointerUp={endHold}
+                  onPointerLeave={endHold}
+                  onPointerCancel={endHold}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none w-full"
+                  style={{ opacity: 0.85 }}
+                >
+                  {inner}
+                </button>
+              )
+            }
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                onPointerDown={() => startHold(href)}
+                onPointerUp={endHold}
+                onPointerLeave={endHold}
+                onPointerCancel={endHold}
+                onContextMenu={(e) => e.preventDefault()}
+                className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none"
+              >
+                {inner}
+              </Link>
+            )
+          })}
         </div>
         <p className="text-muted text-[10px] mt-2 ml-1">Tip: hold a tile for a short description.</p>
       </div>
+
+      {upgradeGate && (
+        <UpgradePrompt
+          gate={upgradeGate}
+          open={true}
+          onClose={() => setUpgradeGate(null)}
+        />
+      )}
 
       {/* Long-press hint overlay — dismiss layer behind, card in front */}
       {active && (

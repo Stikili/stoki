@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerData } from '@/lib/getServerData'
 import { PayrollRepository } from '@/infrastructure/supabase/repositories/PayrollRepository'
+import { hasFeature } from '@/lib/plan-gates'
 import { buildPayslip, isSdlLiable } from '@/lib/payroll/calculator'
 import type { NewEmployee } from '@/domain/entities/employee'
 
@@ -11,6 +12,7 @@ export async function addEmployeeAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can manage payroll.' }
+  if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
   if (!input.name.trim()) return { ok: false, error: 'Name is required.' }
   if (!Number.isFinite(input.baseSalary) || input.baseSalary < 0) {
     return { ok: false, error: 'Base salary must be >= 0.' }
@@ -30,6 +32,7 @@ export async function addEmployeeAction(
 export async function archiveEmployeeAction(id: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can manage payroll.' }
+  if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
   const repo = new PayrollRepository(supabase)
   try {
     await repo.archiveEmployee(store.id, id)
@@ -45,6 +48,7 @@ export async function toggleEmployeeAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can manage payroll.' }
+  if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
   const repo = new PayrollRepository(supabase)
   try {
     await repo.updateEmployee(store.id, id, { active })
@@ -66,6 +70,7 @@ export async function runPayrollAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can run payroll.' }
+  if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
   const repo = new PayrollRepository(supabase)
 
   try {
@@ -109,6 +114,7 @@ export async function runPayrollAction(
 export async function finaliseRunAction(runId: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can finalise.' }
+  if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
   const repo = new PayrollRepository(supabase)
   try {
     await repo.setRunStatus(store.id, runId, 'final')

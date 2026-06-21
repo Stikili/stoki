@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerData } from '@/lib/getServerData'
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
+import { hasFeature } from '@/lib/plan-gates'
 import type { AssetCategory, NewFixedAsset } from '@/domain/entities/fixed-asset'
 
 const VALID_CATEGORIES: AssetCategory[] = ['vehicle', 'fridge', 'equipment', 'furniture', 'computer', 'other']
@@ -12,6 +13,7 @@ export async function createAssetAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'assets.manage')) return { ok: false, error: 'Fixed assets are a Pro feature.' }
   if (!input.name.trim()) return { ok: false, error: 'Name is required.' }
   if (!Number.isFinite(input.cost) || input.cost <= 0) return { ok: false, error: 'Cost must be greater than zero.' }
   if (!Number.isFinite(input.usefulLifeMonths) || input.usefulLifeMonths <= 0) {
@@ -41,6 +43,7 @@ export async function disposeAssetAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'assets.manage')) return { ok: false, error: 'Fixed assets are a Pro feature.' }
   const repo = new FixedAssetRepository(supabase)
   try {
     await repo.updateStatus(store.id, id, 'disposed', disposedAt)
@@ -55,6 +58,7 @@ export async function disposeAssetAction(
 export async function archiveAssetAction(id: string): Promise<{ ok: boolean; error?: string }> {
   const { supabase, store, role } = await getServerData()
   if (role === 'cashier') return { ok: false, error: 'Not allowed.' }
+  if (!hasFeature(store, 'assets.manage')) return { ok: false, error: 'Fixed assets are a Pro feature.' }
   const repo = new FixedAssetRepository(supabase)
   try {
     await repo.archive(store.id, id)

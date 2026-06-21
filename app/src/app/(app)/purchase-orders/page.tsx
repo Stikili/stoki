@@ -3,6 +3,8 @@ import { PurchaseOrderRepository } from '@/infrastructure/supabase/repositories/
 import { SupplierRepository } from '@/infrastructure/supabase/repositories/SupplierRepository'
 import { getCachedProducts } from '@/lib/cached-queries'
 import RestrictedNotice from '@/components/RestrictedNotice'
+import LockedFeatureNotice from '@/components/LockedFeatureNotice'
+import { hasFeature } from '@/lib/plan-gates'
 import PurchaseOrdersClient from './PurchaseOrdersClient'
 
 export default async function PurchaseOrdersPage() {
@@ -14,6 +16,9 @@ export default async function PurchaseOrdersPage() {
         description="Procurement is available to managers and the store owner."
       />
     )
+  }
+  if (!hasFeature(store, 'purchase_orders.create')) {
+    return <LockedFeatureNotice gate="purchase_orders.create" />
   }
 
   const poRepo = new PurchaseOrderRepository(supabase)

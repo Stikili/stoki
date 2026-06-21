@@ -16,6 +16,7 @@ import { isOverdue } from '@/domain/entities/debtor'
 import { nextSassaPayDates, imminentPayEvent } from '@/lib/sassa'
 import { compareToLastWeek, weekdayName } from '@/lib/revenue-comparison'
 import { estimateProvisional } from '@/lib/tax/provisional'
+import { hasFeature, type GateId } from '@/lib/plan-gates'
 import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
 import AskStokiPrompt from './AskStokiPrompt'
@@ -125,6 +126,19 @@ export default async function DashboardPage() {
   const taxEstimate = !isCashier
     ? estimateProvisional(ytdNetProfit, store.taxpayerType, now)
     : null
+
+  // Plan-gate snapshot for the tile grid. Tiles for locked features still
+  // render (lock badge + click-to-upgrade) so the dashboard drives upsell
+  // rather than hiding paid surface area entirely.
+  const lockedGates: GateId[] = ([
+    'invoice.create',
+    'reports.bank_reconcile',
+    'broadcast.send',
+    'payroll.run',
+    'assets.manage',
+    'payables.manage',
+    'purchase_orders.create',
+  ] as const).filter(g => !hasFeature(store, g))
 
   // Aged payables summary — drives the supplier-side row in the Money card.
   const openBills = allBills.filter(billIsOpen)
@@ -397,6 +411,7 @@ export default async function DashboardPage() {
         role={role}
         showPayroll={snap.employeeCount > 0 || user.user_metadata?.has_employees_hint === true}
         showInvoices={store.vatRegistered}
+        lockedGates={lockedGates}
       />
 
       <SaleFAB />

@@ -28,6 +28,11 @@ export type GateId =
   | 'reports.accounting_export'
   // WhatsApp broadcasts
   | 'broadcast.send'
+  // Accounting / ERP modules (Pro+)
+  | 'payroll.run'
+  | 'assets.manage'
+  | 'payables.manage'
+  | 'purchase_orders.create'
   // AI advisor — locked feature blocks per the spec
   | 'advisor.local_price'         // F-A-01
   | 'advisor.basket_analysis'     // F-A-03
@@ -61,6 +66,11 @@ export const GATES: Record<GateId, Gate> = {
   'reports.accounting_export': { minPlan: 'pro',      label: 'Accounting exports',         description: 'Send to Xero / Sage / your accountant in one click.' },
 
   'broadcast.send':            { minPlan: 'pro',      label: 'WhatsApp broadcasts',        description: 'Send Meta-templated marketing messages to opted-in customers.' },
+
+  'payroll.run':               { minPlan: 'pro',      label: 'Payroll (PAYE / UIF / SDL)', description: 'Calculate monthly PAYE, UIF and SDL across your team and export the EMP201 worksheet for SARS.' },
+  'assets.manage':             { minPlan: 'pro',      label: 'Fixed asset register',       description: 'Track fridges, vehicles, tills and equipment with monthly straight-line depreciation flowing into P&L.' },
+  'payables.manage':           { minPlan: 'pro',      label: 'Supplier bills (payables)',  description: 'Track what you owe each supplier with current / 30 / 60 / 90+ day aging and recorded payments.' },
+  'purchase_orders.create':    { minPlan: 'pro',      label: 'Purchase orders',            description: 'Place POs with suppliers, track expected delivery and goods received against each line.' },
 
   'advisor.local_price':       { minPlan: 'pro',      label: 'Local price benchmarking',   description: 'See how your prices compare to nearby shops.' },
   'advisor.basket_analysis':   { minPlan: 'pro',      label: 'Basket analysis',            description: 'Which products customers buy together — for shelf layout and bundles.' },

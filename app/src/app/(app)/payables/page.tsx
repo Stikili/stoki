@@ -2,6 +2,8 @@ import { getServerData } from '@/lib/getServerData'
 import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
 import { SupplierRepository } from '@/infrastructure/supabase/repositories/SupplierRepository'
 import RestrictedNotice from '@/components/RestrictedNotice'
+import LockedFeatureNotice from '@/components/LockedFeatureNotice'
+import { hasFeature } from '@/lib/plan-gates'
 import PayablesClient from './PayablesClient'
 
 export default async function PayablesPage() {
@@ -14,6 +16,9 @@ export default async function PayablesPage() {
         description="Tracking supplier bills and recording payments is available to managers and the store owner."
       />
     )
+  }
+  if (!hasFeature(store, 'payables.manage')) {
+    return <LockedFeatureNotice gate="payables.manage" />
   }
 
   const billRepo = new SupplierBillRepository(supabase)
