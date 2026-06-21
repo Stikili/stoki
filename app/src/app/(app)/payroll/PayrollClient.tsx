@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation'
 import {
   type Employee, type PayrollRun,
 } from '@/domain/entities/employee'
-import { ArrowLeft, Plus, UserPlus, Calculator, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, UserPlus, Calculator, Download, Trash2 } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
+import { BRACKETS_LAST_VERIFIED, bracketsAreStale } from '@/lib/tax/sa-brackets'
+import SarsDisclaimer from '@/components/SarsDisclaimer'
 import {
   addEmployeeAction, archiveEmployeeAction, toggleEmployeeAction,
   runPayrollAction, finaliseRunAction,
@@ -47,6 +49,7 @@ export default function PayrollClient({
   const { toast } = useToast()
   const [showAdd, setShowAdd] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const stale = bracketsAreStale(new Date())
 
   function onAddEmployee(input: {
     name: string
@@ -148,6 +151,16 @@ export default function PayrollClient({
         </button>
       </div>
 
+      {stale && (
+        <div className="mb-3">
+          <SarsDisclaimer tone="urgent">
+            PAYE tax tables last verified against the {BRACKETS_LAST_VERIFIED} tax year.
+            They may be out of date for the current Budget cycle — confirm the brackets
+            against SARS before paying staff or filing EMP201.
+          </SarsDisclaimer>
+        </div>
+      )}
+
       {/* Current period run */}
       <div className="card p-5 mb-3">
         <p className="text-muted text-xs font-semibold uppercase tracking-widest mb-1">This month</p>
@@ -178,13 +191,19 @@ export default function PayrollClient({
               <button onClick={onRunPayroll} disabled={isPending} className="rounded-xl py-3 text-sm font-semibold" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
                 Recalculate
               </button>
-              <button onClick={() => downloadEmp201Csv(currentRun)} className="rounded-xl px-3 py-3 text-sm font-semibold inline-flex items-center gap-1.5" style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }}>
-                <Download size={14} /> EMP201
+              <button onClick={() => downloadEmp201Csv(currentRun)} className="rounded-xl px-3 py-3 text-sm font-semibold inline-flex items-center gap-1.5" style={{ background: '#142136', color: '#60A5FA', border: '1px solid #1E3A5F' }} title="Working aid: paste these numbers into your SARS EMP201 form on eFiling">
+                <Download size={14} /> EMP201 worksheet
               </button>
               {currentRun.status === 'draft' && (
                 <button onClick={() => onFinalise(currentRun.id)} disabled={isPending} className="btn-primary px-3 w-auto">Finalise</button>
               )}
             </div>
+            <p className="text-muted text-[11px] leading-relaxed mt-3">
+              The EMP201 download is a working aid — a labelled CSV of the per-employee
+              breakdown. The actual SARS submission still happens on eFiling; paste these
+              totals into the form there.
+            </p>
+            <SarsDisclaimer />
           </>
         ) : employees.filter(e => e.active).length === 0 ? (
           <p className="text-muted text-sm mt-2">Add at least one active employee to run payroll.</p>

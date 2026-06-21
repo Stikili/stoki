@@ -1,14 +1,31 @@
 /**
  * SARS tax tables — 2026 tax year (year ending 28 Feb 2026).
  *
- * Used by the provisional-tax estimator. Treated as the default until the
- * Finance Minister announces fresh brackets in the February Budget; in years
- * where Treasury holds brackets flat (recent norm) these stay valid for the
- * next year too. When the new Budget lands, add a `BRACKETS_2027` constant
- * and let estimator pick by tax year.
+ * Used by the provisional-tax estimator AND the payroll PAYE calculator
+ * (lib/payroll/calculator.ts). Single source of truth — when SARS publishes
+ * new brackets after a Budget, edit this file and every dependent surface
+ * recomputes.
+ *
+ * BRACKETS_LAST_VERIFIED is the tax year these tables were checked against.
+ * `bracketsAreStale(now)` returns true once the calendar passes the end of
+ * that tax year so the UI can warn the owner the numbers may be out of
+ * date. When you update the figures, bump LAST_VERIFIED to the new year.
  */
 
 import type { TaxpayerType } from '@/domain/entities/store'
+
+/** Most recent SA tax year these tables were checked against the SARS
+ *  published rates for. Bump when you update bracket values. */
+export const BRACKETS_LAST_VERIFIED = 2026
+
+/** True once the working year has passed the verified year — i.e. the
+ *  brackets are at least one Budget cycle stale and may be wrong. */
+export function bracketsAreStale(now: Date = new Date()): boolean {
+  // SA tax year ending Y runs 1 Mar (Y-1) → 28/29 Feb (Y).
+  // Months 0-1 (Jan, Feb) still belong to tax year Y; Mar+ to Y+1.
+  const currentTaxYear = now.getMonth() <= 1 ? now.getFullYear() : now.getFullYear() + 1
+  return currentTaxYear > BRACKETS_LAST_VERIFIED
+}
 
 export interface Bracket {
   /** Inclusive upper bound of this bracket; null for the open top bracket. */

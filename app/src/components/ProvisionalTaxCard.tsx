@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { Receipt } from 'lucide-react'
 import type { ProvisionalEstimate } from '@/lib/tax/provisional'
 import type { TaxpayerType } from '@/domain/entities/store'
+import { BRACKETS_LAST_VERIFIED, bracketsAreStale } from '@/lib/tax/sa-brackets'
+import SarsDisclaimer from './SarsDisclaimer'
 
 /**
  * Dashboard card: "You owe SARS approx R X based on YTD profit."
@@ -22,6 +24,8 @@ export default function ProvisionalTaxCard({
   const deadline = estimate.nextDeadline.toLocaleDateString('en-ZA', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
+
+  const stale = bracketsAreStale(new Date())
 
   const periodLabel = estimate.nextPeriod === 1
     ? '1st provisional (50%)'
@@ -63,9 +67,18 @@ export default function ProvisionalTaxCard({
         </div>
         <p className="text-muted text-[11px] mt-2 leading-relaxed">
           Annualised straight-line from {estimate.daysIntoYear} days of trading,
-          taxed under {labelFor(taxpayerType)}. Verify against SARS before
-          submitting — actual payment may vary with seasonality.
+          taxed under {labelFor(taxpayerType)}.
         </p>
+        {stale && (
+          <div className="mt-2">
+            <SarsDisclaimer tone="urgent">
+              Tax tables last verified against the {BRACKETS_LAST_VERIFIED} tax year —
+              they may be out of date for the current year. Compare with SARS&apos;
+              latest rates before submitting.
+            </SarsDisclaimer>
+          </div>
+        )}
+        <SarsDisclaimer />
       </div>
     </Link>
   )

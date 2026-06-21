@@ -11,6 +11,7 @@ import { Printer, Download, ArrowLeft } from 'lucide-react'
 import { PRESETS, isoDateLocal } from '@/lib/date-presets'
 import { computeVat201, type Vat201Breakdown } from '@/lib/vat201'
 import { computeValuation, type InventoryValuation } from '@/lib/inventory-valuation'
+import SarsDisclaimer from '@/components/SarsDisclaimer'
 
 type Tab = 'pnl' | 'sales' | 'vat' | 'stock' | 'position'
 
@@ -463,7 +464,8 @@ function PnlReport({
           <p className="text-muted text-[10px] mt-2 leading-relaxed">
             Sum of monthly depreciation charges across active fixed assets for the period.
             Subtracted from profit because the wear-out of capital goods is a real cost
-            even though it doesn&apos;t move cash.
+            even though it doesn&apos;t move cash. Straight-line method only — accountants
+            using accelerated methods will arrive at different figures.
           </p>
         </div>
       )}
@@ -573,12 +575,13 @@ function Vat201Report({
       </div>
 
       <div className="card p-4 mb-4 print:hidden">
-        <p className="text-muted text-xs leading-relaxed">
+        <p className="text-muted text-xs leading-relaxed mb-2">
           Block numbers map to the SARS VAT201 form. Input VAT on restocks and operating expenses
           is estimated by extracting 15/115 from the inclusive cost — assumes suppliers are
           VAT-registered (true for Cash &amp; Carry, Massmart, Bidvest). Reconcile against your
-          supplier invoices before submission for the exact figure.
+          supplier invoices for the exact figure.
         </p>
+        <SarsDisclaimer />
       </div>
 
       <button
