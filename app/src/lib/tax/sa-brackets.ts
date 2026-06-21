@@ -1,22 +1,29 @@
 /**
- * SARS tax tables — 2026 tax year (year ending 28 Feb 2026).
+ * SARS tax tables — valid for 2026 and 2027 tax years.
+ *
+ * Treasury held the personal-income brackets, primary rebate, SBC and
+ * turnover-tax schedules flat in the Feb 2026 Budget, so the figures
+ * originally captured for tax year 2026 (ending 28 Feb 2026) carry through
+ * tax year 2027 (1 Mar 2026 → 28 Feb 2027) unchanged.
  *
  * Used by the provisional-tax estimator AND the payroll PAYE calculator
  * (lib/payroll/calculator.ts). Single source of truth — when SARS publishes
  * new brackets after a Budget, edit this file and every dependent surface
  * recomputes.
  *
- * BRACKETS_LAST_VERIFIED is the tax year these tables were checked against.
- * `bracketsAreStale(now)` returns true once the calendar passes the end of
- * that tax year so the UI can warn the owner the numbers may be out of
- * date. When you update the figures, bump LAST_VERIFIED to the new year.
+ * BRACKETS_LAST_VERIFIED is the latest tax year these tables were checked
+ * against the SARS published rates for. `bracketsAreStale(now)` returns
+ * true once the calendar passes the end of that tax year so the UI can
+ * warn the owner the numbers may be out of date. When you update the
+ * figures, bump LAST_VERIFIED to the new year.
  */
 
 import type { TaxpayerType } from '@/domain/entities/store'
 
-/** Most recent SA tax year these tables were checked against the SARS
- *  published rates for. Bump when you update bracket values. */
-export const BRACKETS_LAST_VERIFIED = 2026
+/** Latest SA tax year these tables were checked against the SARS published
+ *  rates for. Bump when a new Budget either confirms (rates held) or
+ *  publishes new figures. */
+export const BRACKETS_LAST_VERIFIED = 2027
 
 /** True once the working year has passed the verified year — i.e. the
  *  brackets are at least one Budget cycle stale and may be wrong. */
