@@ -177,6 +177,8 @@ export default function ReconcileClient({
             m.line.amount,
             m.line.date,
             m.line.reference ?? m.line.description,
+            m.line.date,
+            m.line.description,
           )
           return m.line.rowNumber
         }),
