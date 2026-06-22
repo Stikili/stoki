@@ -40,6 +40,11 @@ yarn-error.log*
 .git_backup_app/
 *.tsbuildinfo
 
+# Playwright artefacts — generated at whichever CWD ran the suite.
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Next.js — build cache + auto-generated
 **/.next/
 # These autogen at the repo root if `tsc` / `next` is ever run from there
