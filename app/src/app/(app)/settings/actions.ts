@@ -7,7 +7,7 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { StoreUserRepository } from '@/infrastructure/supabase/repositories/StoreUserRepository'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { StoreRole } from '@/domain/entities/store-user'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS, invalidateDashboard } from '@/lib/cache-tags'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
 import { recordCancellation } from '@/lib/subscription'
 
@@ -46,6 +46,7 @@ export async function updateStoreAction(formData: FormData) {
 
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/', 'layout')
+  invalidateDashboard()
 }
 
 export async function updateVatAction(formData: FormData) {

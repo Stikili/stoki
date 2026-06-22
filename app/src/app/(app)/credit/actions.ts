@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -48,6 +48,7 @@ export async function createDebtorAction(formData: FormData) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function addCreditAction(formData: FormData) {
@@ -65,6 +66,7 @@ export async function addCreditAction(formData: FormData) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/alerts')
 }
 
@@ -79,6 +81,7 @@ export async function clearDebtAction(debtorId: string, currentOwed: number) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function settlePartialAction(debtorId: string, amount: number) {
@@ -91,4 +94,5 @@ export async function settlePartialAction(debtorId: string, amount: number) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }

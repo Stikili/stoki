@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { getServerData } from '@/lib/getServerData'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { AlertType } from '@/domain/entities/alert'
@@ -11,6 +12,7 @@ export async function markAlertReadAction(alertId: string) {
   await alertRepo.markRead(store.id, alertId)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function markAllReadAction() {
@@ -19,6 +21,7 @@ export async function markAllReadAction() {
   await alertRepo.markAllRead(store.id)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function createAlertAction(formData: FormData) {
@@ -30,4 +33,5 @@ export async function createAlertAction(formData: FormData) {
   await alertRepo.create(store.id, type, message)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }

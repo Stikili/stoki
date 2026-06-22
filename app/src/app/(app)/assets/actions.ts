@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { getServerData } from '@/lib/getServerData'
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { hasFeature } from '@/lib/plan-gates'
@@ -31,6 +32,7 @@ export async function createAssetAction(
     await repo.create(store.id, input)
     revalidatePath('/assets')
     revalidatePath('/reports')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create asset.' }
@@ -49,6 +51,7 @@ export async function disposeAssetAction(
     await repo.updateStatus(store.id, id, 'disposed', disposedAt)
     revalidatePath('/assets')
     revalidatePath('/reports')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }
@@ -64,6 +67,7 @@ export async function archiveAssetAction(id: string): Promise<{ ok: boolean; err
     await repo.archive(store.id, id)
     revalidatePath('/assets')
     revalidatePath('/reports')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

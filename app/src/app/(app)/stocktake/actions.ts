@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
@@ -48,6 +48,7 @@ export async function submitStocktakeAction(
   revalidatePath('/stocktake')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 
   return { ok: true, variancesAdjusted, totalVarianceValue }
 }

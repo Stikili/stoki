@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { getServerData } from '@/lib/getServerData'
 import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
 import { nextOccurrence, type RecurringFrequency } from '@/domain/entities/recurring-expense'
@@ -43,6 +44,7 @@ export async function createRecurringAction(
     revalidatePath('/settings/recurring')
     revalidatePath('/expenses')
     revalidatePath('/cashflow')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create rule.' }
@@ -60,6 +62,7 @@ export async function toggleRecurringAction(
     await repo.update(store.id, id, { active })
     revalidatePath('/settings/recurring')
     revalidatePath('/cashflow')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }
@@ -76,6 +79,7 @@ export async function archiveRecurringAction(
     await repo.archive(store.id, id)
     revalidatePath('/settings/recurring')
     revalidatePath('/cashflow')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

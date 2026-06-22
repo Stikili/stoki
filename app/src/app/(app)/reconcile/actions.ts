@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -46,6 +47,7 @@ export async function applyInvoicePaymentAction(
 
   revalidatePath('/invoices')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/reconcile')
 }
 
@@ -75,6 +77,7 @@ export async function recordReconcileExpenseAction(
 
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/reconcile')
 }
 

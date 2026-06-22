@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { getServerData } from '@/lib/getServerData'
 import { SupplierBillRepository } from '@/infrastructure/supabase/repositories/SupplierBillRepository'
 import { hasFeature } from '@/lib/plan-gates'
@@ -38,6 +39,7 @@ export async function createBillAction(
     })
     revalidatePath('/payables')
     revalidatePath('/dashboard')
+    invalidateDashboard()
     return { ok: true, billId: bill.id }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create bill.' }
@@ -62,6 +64,7 @@ export async function recordBillPaymentAction(
     await repo.recordPayment(store.id, billId, amount, paymentMethod, notes)
     revalidatePath('/payables')
     revalidatePath('/dashboard')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to record payment.' }
@@ -77,6 +80,7 @@ export async function archiveBillAction(billId: string): Promise<{ ok: boolean; 
     await repo.archive(store.id, billId)
     revalidatePath('/payables')
     revalidatePath('/dashboard')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to archive bill.' }

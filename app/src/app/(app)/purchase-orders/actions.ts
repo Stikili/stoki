@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { getServerData } from '@/lib/getServerData'
 import { PurchaseOrderRepository } from '@/infrastructure/supabase/repositories/PurchaseOrderRepository'
 import { hasFeature } from '@/lib/plan-gates'
@@ -41,6 +42,7 @@ export async function createPoAction(
     })
     revalidatePath('/purchase-orders')
     revalidatePath('/dashboard')
+    invalidateDashboard()
     return { ok: true, poId: po.id }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create PO.' }
@@ -62,6 +64,7 @@ export async function receiveLineAction(
     await repo.refreshStatus(store.id, poId)
     revalidatePath('/purchase-orders')
     revalidatePath('/dashboard')
+    invalidateDashboard()
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

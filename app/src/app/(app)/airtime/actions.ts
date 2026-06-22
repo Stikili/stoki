@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { AirtimePinRepository } from '@/infrastructure/supabase/repositories/AirtimePinRepository'
@@ -50,6 +50,7 @@ export async function uploadAirtimePinsAction(productId: string, csv: string): P
   revalidatePath('/airtime')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 
   return { inserted, skipped, errors: parsed.errors }
 }

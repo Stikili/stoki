@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/infrastructure/supabase/server'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -90,6 +91,7 @@ export async function createInvoiceAction(input: CreateInvoiceInput): Promise<{ 
   revalidatePath('/invoices')
   revalidatePath('/customers')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   return { ok: true, invoiceId: invoice.id }
 }
 
@@ -106,6 +108,7 @@ export async function recordInvoicePaymentAction(
   revalidatePath('/invoices')
   revalidatePath('/customers')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   return { ok: true }
 }
 

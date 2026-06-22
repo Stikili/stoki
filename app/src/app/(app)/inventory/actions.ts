@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -44,6 +44,7 @@ export async function addProductAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function restockAction(formData: FormData) {
@@ -68,6 +69,7 @@ export async function restockAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/cashup')
 }
 
@@ -111,6 +113,7 @@ export async function editProductAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function archiveProductAction(productId: string) {
@@ -122,6 +125,7 @@ export async function archiveProductAction(productId: string) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export interface CsvImportResult {
@@ -158,6 +162,7 @@ export async function bulkImportProductsAction(csv: string): Promise<CsvImportRe
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 
   return { imported, skipped, errors: parsed.errors }
 }
@@ -178,4 +183,5 @@ export async function recordWasteAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }

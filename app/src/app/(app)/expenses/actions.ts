@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -29,6 +30,7 @@ export async function addExpenseAction(formData: FormData) {
 
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }
 
 export async function deleteExpenseAction(expenseId: string) {
@@ -37,4 +39,5 @@ export async function deleteExpenseAction(expenseId: string) {
   await expenseRepo.delete(store.id, expenseId)
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
+  invalidateDashboard()
 }

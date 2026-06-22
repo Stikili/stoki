@@ -17,3 +17,20 @@ export const TAGS = {
 } as const
 
 export type CacheTag = (typeof TAGS)[keyof typeof TAGS]
+
+import { revalidateTag } from 'next/cache'
+
+/**
+ * Invalidate the cached dashboard snapshot. Call from every server action
+ * that mutates something the dashboard shows (sales, expenses, bills,
+ * invoices, recurring rules, assets, cash balance, etc.). Without this,
+ * the 30 s natural TTL on the snapshot makes the dashboard feel broken
+ * right after the user records something.
+ *
+ * Defensive: also revalidates the matching tags for the auxiliary cached
+ * queries the dashboard reads (products, debtors), so a single call from
+ * an action covers the whole dashboard surface.
+ */
+export function invalidateDashboard(): void {
+  revalidateTag(TAGS.dashboard, 'default')
+}

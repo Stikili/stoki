@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { TAGS } from '@/lib/cache-tags'
+import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
 import { createClient } from '@/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
@@ -51,6 +51,7 @@ export async function recordSaleAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/alerts')
   revalidatePath('/cashup')
 }
@@ -144,6 +145,7 @@ export async function recordCartAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/alerts')
   revalidatePath('/cashup')
   revalidatePath('/airtime')
@@ -187,6 +189,7 @@ export async function recordReturnAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
+  invalidateDashboard()
   revalidatePath('/cashup')
   return { ok: true }
 }
