@@ -103,15 +103,11 @@ export async function saveStoreDetailsAction(
     ...(validLng ? { lng } : {}),
     ...(validCash ? { cashBalance } : {}),
     ...(raw.vatRegistered !== undefined ? { vatRegistered: raw.vatRegistered } : {}),
+    // stores.has_employees (migration 032) is per-store — multi-store owners
+    // can have payroll on one shop but not another. Dashboard tile-gating
+    // ORs this against the actual employee count.
+    ...(raw.hasEmployees !== undefined ? { hasEmployees: raw.hasEmployees } : {}),
   })
-
-  if (raw.hasEmployees !== undefined) {
-    // user_metadata.has_employees_hint is read by DashboardTiles to decide
-    // whether the Payroll tile is visible before any employees exist.
-    await supabase.auth.updateUser({
-      data: { has_employees_hint: raw.hasEmployees },
-    })
-  }
 
   revalidateTag(TAGS.stores, 'default')
 }

@@ -70,6 +70,7 @@ export class StoreRepository implements IStoreRepository {
     plan?: Plan
     grandfatheredUntil?: string | null
     taxpayerType?: TaxpayerType
+    hasEmployees?: boolean
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -93,6 +94,7 @@ export class StoreRepository implements IStoreRepository {
     if (patch.plan !== undefined) dbPatch.plan = patch.plan
     if (patch.grandfatheredUntil !== undefined) dbPatch.grandfathered_until = patch.grandfatheredUntil
     if (patch.taxpayerType !== undefined) dbPatch.taxpayer_type = patch.taxpayerType
+    if (patch.hasEmployees !== undefined) dbPatch.has_employees = patch.hasEmployees
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

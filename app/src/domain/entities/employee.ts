@@ -2,7 +2,10 @@ export interface Employee {
   id: string
   storeId: string
   name: string
-  idNumber: string | null
+  /** SHA-256 hash of (PII_SALT + raw_id). Plaintext never persists. */
+  idNumberHash: string | null
+  /** Last 4 digits of the SA ID, for UI display ("•••• 5678"). */
+  idNumberLast4: string | null
   baseSalary: number
   hireDate: string
   endDate: string | null
@@ -15,6 +18,8 @@ export interface Employee {
 
 export interface NewEmployee {
   name: string
+  /** Raw SA ID number as entered by the owner. Hashed + last-4-extracted
+   *  in the server action; never stored as plaintext. */
   idNumber?: string
   baseSalary: number
   hireDate: string

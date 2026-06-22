@@ -32,6 +32,11 @@ export interface Store {
   /** SARS classification — drives the provisional-tax estimate. Defaults to
    *  sole_prop (personal income tax on net profit), which fits the SMME core. */
   taxpayerType: TaxpayerType
+  /** Onboarding answer "do you have employees?". Stored per-store (not per-user)
+   *  so a multi-store owner can have payroll on one shop but not another.
+   *  Drives Manage-tile visibility for /payroll; OR'd against actual employee
+   *  count so adding the first Employee row also surfaces the tile. */
+  hasEmployees: boolean
   /** When set and in the future, the store has elevated (Pro) access
    *  regardless of `plan`. Used for two windows:
    *    - existing accounts at paywall rollout (90 days)

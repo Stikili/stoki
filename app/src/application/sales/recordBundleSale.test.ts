@@ -126,6 +126,7 @@ function makeStore(): Store {
     subscriptionActiveUntil: null, subscriptionProvider: null, subscriptionProviderRef: null,
     subscriptionLastChargeAt: null, subscriptionRetryCount: 0,
     taxpayerType: 'sole_prop',
+    hasEmployees: false,
     createdAt: '', updatedAt: '',
   }
 }

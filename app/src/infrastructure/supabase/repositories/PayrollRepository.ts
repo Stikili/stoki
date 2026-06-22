@@ -3,6 +3,7 @@ import {
   Employee, NewEmployee, PayrollRun, PayslipLine,
 } from '@/domain/entities/employee'
 import { toEmployee, toPayrollRun, toPayslipLine } from '../mappers'
+import { hashPii, last4 } from '@/lib/pii'
 
 export class PayrollRepository {
   constructor(private db: SupabaseClient) {}
@@ -26,12 +27,18 @@ export class PayrollRepository {
   }
 
   async createEmployee(storeId: string, data: NewEmployee): Promise<Employee> {
+    // Hash the SA ID at the repo boundary so the plaintext never lives in
+    // the DB. last4 stays in clear so the UI can show "•••• 5678".
+    const raw = data.idNumber?.trim()
+    const idHash = raw ? hashPii(raw) : null
+    const idLast4 = raw ? last4(raw) : null
     const { data: row, error } = await this.db
       .from('employees')
       .insert({
         store_id: storeId,
         name: data.name,
-        id_number: data.idNumber ?? null,
+        id_number_hash: idHash,
+        id_number_last4: idLast4,
         base_salary: data.baseSalary,
         hire_date: data.hireDate,
         uif_enrolled: data.uifEnrolled ?? true,
@@ -49,7 +56,11 @@ export class PayrollRepository {
   ): Promise<void> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
-    if (patch.idNumber !== undefined) dbPatch.id_number = patch.idNumber || null
+    if (patch.idNumber !== undefined) {
+      const raw = patch.idNumber?.trim()
+      dbPatch.id_number_hash  = raw ? hashPii(raw) : null
+      dbPatch.id_number_last4 = raw ? last4(raw) : null
+    }
     if (patch.baseSalary !== undefined) dbPatch.base_salary = patch.baseSalary
     if (patch.hireDate !== undefined) dbPatch.hire_date = patch.hireDate
     if (patch.uifEnrolled !== undefined) dbPatch.uif_enrolled = patch.uifEnrolled

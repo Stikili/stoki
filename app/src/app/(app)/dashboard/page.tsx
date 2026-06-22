@@ -409,7 +409,7 @@ export default async function DashboardPage() {
           shoppers won't issue formal tax invoices). */}
       <DashboardTiles
         role={role}
-        showPayroll={snap.employeeCount > 0 || user.user_metadata?.has_employees_hint === true}
+        showPayroll={snap.employeeCount > 0 || store.hasEmployees}
         showInvoices={store.vatRegistered}
         lockedGates={lockedGates}
       />
