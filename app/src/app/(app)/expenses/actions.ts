@@ -30,7 +30,7 @@ export async function addExpenseAction(formData: FormData) {
 
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function deleteExpenseAction(expenseId: string) {
@@ -39,5 +39,5 @@ export async function deleteExpenseAction(expenseId: string) {
   await expenseRepo.delete(store.id, expenseId)
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }

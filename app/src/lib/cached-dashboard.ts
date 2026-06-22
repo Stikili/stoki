@@ -25,7 +25,7 @@ import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositori
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { getWeeklySummary } from '@/application/sales/getDailySummary'
 import { taxYearStart, currentTaxYear } from '@/lib/tax/provisional'
-import { TAGS } from './cache-tags'
+import { dashboardTag } from './cache-tags'
 
 export interface DashboardSnapshot {
   /** Snapshot time — frozen inside the cache window. */
@@ -48,8 +48,27 @@ export interface DashboardSnapshot {
   employeeCount: number
 }
 
-export const getCachedDashboardSnapshot = unstable_cache(
-  async (storeId: string): Promise<DashboardSnapshot> => {
+/**
+ * Per-store cached dashboard snapshot. The cache wrapper is built inside
+ * this function (not at module level) so the tag can reference the storeId
+ * — `revalidateTag('dashboard:store-123')` then only wipes store-123's
+ * entry instead of every store's. This is the idiomatic Next 16 pattern
+ * for per-key invalidation with unstable_cache (see Next docs).
+ *
+ * The closure allocation per request is the trade-off; unstable_cache
+ * still deduplicates by keyParts so the actual DB fetch only runs once
+ * per (storeId, 30s window).
+ */
+export function getCachedDashboardSnapshot(storeId: string): Promise<DashboardSnapshot> {
+  const cached = unstable_cache(
+    () => buildSnapshot(storeId),
+    ['dashboard-snapshot', storeId],
+    { tags: [dashboardTag(storeId)], revalidate: 30 },
+  )
+  return cached()
+}
+
+async function buildSnapshot(storeId: string): Promise<DashboardSnapshot> {
     const db = createAdminClient()
     const saleRepo = new SaleRepository(db)
     const alertRepo = new AlertRepository(db)
@@ -128,7 +147,4 @@ export const getCachedDashboardSnapshot = unstable_cache(
       ytdDepreciation,
       employeeCount: employeeCountRes.count ?? 0,
     }
-  },
-  ['dashboard-snapshot'],
-  { tags: [TAGS.dashboard], revalidate: 30 },
-)
+}

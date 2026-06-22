@@ -42,7 +42,7 @@ export async function createPoAction(
     })
     revalidatePath('/purchase-orders')
     revalidatePath('/dashboard')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true, poId: po.id }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create PO.' }
@@ -64,7 +64,7 @@ export async function receiveLineAction(
     await repo.refreshStatus(store.id, poId)
     revalidatePath('/purchase-orders')
     revalidatePath('/dashboard')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

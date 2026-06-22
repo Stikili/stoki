@@ -50,7 +50,7 @@ export async function uploadAirtimePinsAction(productId: string, csv: string): P
   revalidatePath('/airtime')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 
   return { inserted, skipped, errors: parsed.errors }
 }

@@ -32,7 +32,7 @@ export async function createAssetAction(
     await repo.create(store.id, input)
     revalidatePath('/assets')
     revalidatePath('/reports')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create asset.' }
@@ -51,7 +51,7 @@ export async function disposeAssetAction(
     await repo.updateStatus(store.id, id, 'disposed', disposedAt)
     revalidatePath('/assets')
     revalidatePath('/reports')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }
@@ -67,7 +67,7 @@ export async function archiveAssetAction(id: string): Promise<{ ok: boolean; err
     await repo.archive(store.id, id)
     revalidatePath('/assets')
     revalidatePath('/reports')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

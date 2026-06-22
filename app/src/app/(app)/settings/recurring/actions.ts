@@ -44,7 +44,7 @@ export async function createRecurringAction(
     revalidatePath('/settings/recurring')
     revalidatePath('/expenses')
     revalidatePath('/cashflow')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create rule.' }
@@ -62,7 +62,7 @@ export async function toggleRecurringAction(
     await repo.update(store.id, id, { active })
     revalidatePath('/settings/recurring')
     revalidatePath('/cashflow')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }
@@ -79,7 +79,7 @@ export async function archiveRecurringAction(
     await repo.archive(store.id, id)
     revalidatePath('/settings/recurring')
     revalidatePath('/cashflow')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }

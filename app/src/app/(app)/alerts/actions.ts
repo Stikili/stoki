@@ -12,7 +12,7 @@ export async function markAlertReadAction(alertId: string) {
   await alertRepo.markRead(store.id, alertId)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function markAllReadAction() {
@@ -21,7 +21,7 @@ export async function markAllReadAction() {
   await alertRepo.markAllRead(store.id)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function createAlertAction(formData: FormData) {
@@ -33,5 +33,5 @@ export async function createAlertAction(formData: FormData) {
   await alertRepo.create(store.id, type, message)
   revalidatePath('/alerts')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }

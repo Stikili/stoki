@@ -47,7 +47,7 @@ export async function applyInvoicePaymentAction(
 
   revalidatePath('/invoices')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/reconcile')
 }
 
@@ -77,7 +77,7 @@ export async function recordReconcileExpenseAction(
 
   revalidatePath('/expenses')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/reconcile')
 }
 

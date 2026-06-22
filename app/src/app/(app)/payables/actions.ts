@@ -39,7 +39,7 @@ export async function createBillAction(
     })
     revalidatePath('/payables')
     revalidatePath('/dashboard')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true, billId: bill.id }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to create bill.' }
@@ -64,7 +64,7 @@ export async function recordBillPaymentAction(
     await repo.recordPayment(store.id, billId, amount, paymentMethod, notes)
     revalidatePath('/payables')
     revalidatePath('/dashboard')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to record payment.' }
@@ -80,7 +80,7 @@ export async function archiveBillAction(billId: string): Promise<{ ok: boolean; 
     await repo.archive(store.id, billId)
     revalidatePath('/payables')
     revalidatePath('/dashboard')
-    invalidateDashboard()
+    invalidateDashboard(store.id)
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to archive bill.' }

@@ -48,7 +48,7 @@ export async function createDebtorAction(formData: FormData) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function addCreditAction(formData: FormData) {
@@ -66,7 +66,7 @@ export async function addCreditAction(formData: FormData) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/alerts')
 }
 
@@ -81,7 +81,7 @@ export async function clearDebtAction(debtorId: string, currentOwed: number) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function settlePartialAction(debtorId: string, amount: number) {
@@ -94,5 +94,5 @@ export async function settlePartialAction(debtorId: string, amount: number) {
   revalidateTag(TAGS.debtors, 'default')
   revalidatePath('/credit')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }

@@ -20,17 +20,25 @@ export type CacheTag = (typeof TAGS)[keyof typeof TAGS]
 
 import { revalidateTag } from 'next/cache'
 
+/** Per-store tag for dashboard + reports snapshot caches.
+ *  Use as the tag value in unstable_cache options so revalidation only
+ *  affects the calling store, not every store on the system. */
+export function dashboardTag(storeId: string): string {
+  return `dashboard:${storeId}`
+}
+
 /**
- * Invalidate the cached dashboard snapshot. Call from every server action
- * that mutates something the dashboard shows (sales, expenses, bills,
- * invoices, recurring rules, assets, cash balance, etc.). Without this,
- * the 30 s natural TTL on the snapshot makes the dashboard feel broken
- * right after the user records something.
+ * Invalidate the cached dashboard + reports snapshots for a SINGLE store.
+ * Call from every server action that mutates something the dashboard
+ * shows (sales, expenses, bills, invoices, recurring rules, assets, cash
+ * balance, etc.).
  *
- * Defensive: also revalidates the matching tags for the auxiliary cached
- * queries the dashboard reads (products, debtors), so a single call from
- * an action covers the whole dashboard surface.
+ * Per-store scoping matters at multi-tenant scale: a global revalidateTag
+ * (the previous design) would wipe every store's cache on every mutation
+ * anywhere on the system — cache hit rate collapses and the Supabase
+ * connection pool becomes the bottleneck. Tagging per-store keeps
+ * invalidation surgical.
  */
-export function invalidateDashboard(): void {
-  revalidateTag(TAGS.dashboard, 'default')
+export function invalidateDashboard(storeId: string): void {
+  revalidateTag(dashboardTag(storeId), 'default')
 }

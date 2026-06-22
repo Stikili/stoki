@@ -51,7 +51,7 @@ export async function recordSaleAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/alerts')
   revalidatePath('/cashup')
 }
@@ -145,7 +145,7 @@ export async function recordCartAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/alerts')
   revalidatePath('/cashup')
   revalidatePath('/airtime')
@@ -189,7 +189,7 @@ export async function recordReturnAction(
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/sales')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/cashup')
   return { ok: true }
 }

@@ -46,7 +46,7 @@ export async function updateStoreAction(formData: FormData) {
 
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/', 'layout')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function updateVatAction(formData: FormData) {

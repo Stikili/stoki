@@ -44,7 +44,7 @@ export async function addProductAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function restockAction(formData: FormData) {
@@ -69,7 +69,7 @@ export async function restockAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   revalidatePath('/cashup')
 }
 
@@ -113,7 +113,7 @@ export async function editProductAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export async function archiveProductAction(productId: string) {
@@ -125,7 +125,7 @@ export async function archiveProductAction(productId: string) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }
 
 export interface CsvImportResult {
@@ -162,7 +162,7 @@ export async function bulkImportProductsAction(csv: string): Promise<CsvImportRe
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 
   return { imported, skipped, errors: parsed.errors }
 }
@@ -183,5 +183,5 @@ export async function recordWasteAction(formData: FormData) {
   revalidateTag(TAGS.products, 'default')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 }

@@ -48,7 +48,7 @@ export async function submitStocktakeAction(
   revalidatePath('/stocktake')
   revalidatePath('/inventory')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
 
   return { ok: true, variancesAdjusted, totalVarianceValue }
 }

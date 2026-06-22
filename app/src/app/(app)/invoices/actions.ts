@@ -91,7 +91,7 @@ export async function createInvoiceAction(input: CreateInvoiceInput): Promise<{ 
   revalidatePath('/invoices')
   revalidatePath('/customers')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   return { ok: true, invoiceId: invoice.id }
 }
 
@@ -108,7 +108,7 @@ export async function recordInvoicePaymentAction(
   revalidatePath('/invoices')
   revalidatePath('/customers')
   revalidatePath('/dashboard')
-  invalidateDashboard()
+  invalidateDashboard(store.id)
   return { ok: true }
 }
 
