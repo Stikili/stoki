@@ -3,6 +3,7 @@ import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
 import { postDueRecurringExpenses } from '@/application/expenses/postDueRecurringExpenses'
+import { log } from '@/lib/log'
 
 /**
  * Daily cron — spawn an expense row for every recurring rule that's fallen
@@ -14,8 +15,10 @@ import { postDueRecurringExpenses } from '@/application/expenses/postDueRecurrin
  */
 export async function POST(req: Request) {
   if (!authorise(req)) {
+    log.warn('cron.post_recurring_expenses.unauthorized', {})
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  log.info('cron.post_recurring_expenses.start', {})
 
   const supabase = createAdminClient()
   const expenseRepo = new ExpenseRepository(supabase)
@@ -32,6 +35,7 @@ export async function POST(req: Request) {
     .is('deleted_at', null)
     .lte('next_due_at', now.toISOString())
   if (error) {
+    log.error('cron.post_recurring_expenses.query_failed', { error })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -45,10 +49,16 @@ export async function POST(req: Request) {
       totalPosted += posted
       perStore.push({ storeId, posted })
     } catch (e) {
+      log.error('cron.post_recurring_expenses.store_failed', { storeId, error: e })
       perStore.push({ storeId, posted: 0, error: errMsg(e) })
     }
   }
 
+  log.info('cron.post_recurring_expenses.done', {
+    stores: storeIds.length,
+    totalPosted,
+    failures: perStore.filter(p => p.error).length,
+  })
   return NextResponse.json({ totalPosted, stores: perStore })
 }
 

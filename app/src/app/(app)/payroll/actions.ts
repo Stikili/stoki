@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getServerData } from '@/lib/getServerData'
 import { PayrollRepository } from '@/infrastructure/supabase/repositories/PayrollRepository'
 import { hasFeature } from '@/lib/plan-gates'
+import { log } from '@/lib/log'
 import { buildPayslip, isSdlLiable } from '@/lib/payroll/calculator'
 import type { NewEmployee } from '@/domain/entities/employee'
 
@@ -68,9 +69,10 @@ export async function toggleEmployeeAction(
 export async function runPayrollAction(
   periodIso: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const { supabase, store, role } = await getServerData()
+  const { supabase, user, store, role } = await getServerData()
   if (role !== 'owner') return { ok: false, error: 'Only the owner can run payroll.' }
   if (!hasFeature(store, 'payroll.run')) return { ok: false, error: 'Payroll is a Pro feature.' }
+  log.info('payroll.run.start', { storeId: store.id, userId: user.id, periodIso })
   const repo = new PayrollRepository(supabase)
 
   try {
@@ -104,9 +106,14 @@ export async function runPayrollAction(
     )
 
     await repo.upsertRun(store.id, periodIso, totals, lines)
+    log.info('payroll.run.done', {
+      storeId: store.id, userId: user.id, periodIso,
+      employees: lines.length, totalGross: totals.totalGross, totalNet: totals.totalNet,
+    })
     revalidatePath('/payroll')
     return { ok: true }
   } catch (e) {
+    log.error('payroll.run.failed', { storeId: store.id, userId: user.id, periodIso, error: e })
     return { ok: false, error: e instanceof Error ? e.message : 'Failed.' }
   }
 }

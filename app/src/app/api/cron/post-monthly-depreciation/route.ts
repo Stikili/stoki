@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { postMonthlyDepreciation } from '@/application/assets/postMonthlyDepreciation'
+import { log } from '@/lib/log'
 
 /**
  * Monthly cron — post depreciation entries for every active fixed asset.
@@ -10,8 +11,10 @@ import { postMonthlyDepreciation } from '@/application/assets/postMonthlyDepreci
  */
 export async function POST(req: Request) {
   if (!authorise(req)) {
+    log.warn('cron.post_monthly_depreciation.unauthorized', {})
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  log.info('cron.post_monthly_depreciation.start', {})
 
   const supabase = createAdminClient()
   const assetRepo = new FixedAssetRepository(supabase)
@@ -38,10 +41,17 @@ export async function POST(req: Request) {
       totalClosedOut += closedOut
       perStore.push({ storeId, posted, closedOut })
     } catch (e) {
+      log.error('cron.post_monthly_depreciation.store_failed', { storeId, error: e })
       perStore.push({ storeId, posted: 0, closedOut: 0, error: errMsg(e) })
     }
   }
 
+  log.info('cron.post_monthly_depreciation.done', {
+    stores: storeIds.length,
+    totalPosted,
+    totalClosedOut,
+    failures: perStore.filter(p => p.error).length,
+  })
   return NextResponse.json({ totalPosted, totalClosedOut, stores: perStore })
 }
 
