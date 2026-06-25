@@ -27,17 +27,19 @@ export async function saveStoreAction(
   if (!name) redirect('/onboarding')
 
   const allStores = await storeRepo.findAllByOwner(user.id)
+  const isFirstStore = allStores.length === 0
 
   let storeId: string
   if (!isNew && allStores.length === 1 && allStores[0].name === 'My Store') {
-    // First-time user finishing onboarding — repurpose the auto-created
-    // "My Store" row. grandfathered_until is already set on bootstrap, so
-    // no trial stamp needed here.
+    // Legacy "My Store" placeholder from the old getServerData bootstrap —
+    // repurpose. The user already has a store_users membership row from
+    // that bootstrap, so we just rename + categorise.
     const updated = await storeRepo.update(allStores[0].id, { name, phone, category, onboardingCompleted: false })
     storeId = updated.id
   } else {
-    // "Add another store" path — owner explicitly wants a second/third.
-    // Plan gate by current store count vs Business-tier minimum.
+    // Either the user's first store (brand-new account) OR "add another
+    // store" for an existing multi-store owner. Plan gate the multi-store
+    // path — first store is always free.
     if (allStores.length >= 1 && !hasFeature(allStores[0], 'store.create.beyond_1')) {
       return { storeId: '', locked: 'store.create.beyond_1', error: 'Multi-store is a Business feature.' }
     }
@@ -45,14 +47,25 @@ export async function saveStoreAction(
       return { storeId: '', locked: 'store.create.beyond_3', error: 'Up to 3 stores on Business — talk to us about Enterprise.' }
     }
     const newStore = await storeRepo.create(user.id, name, phone)
-    // Additional stores added via the multi-store gate inherit the same
-    // grandfather window as the user's first store so the trial / paywall
-    // experience stays consistent.
-    await storeRepo.update(newStore.id, {
-      category,
-      onboardingCompleted: false,
-      grandfatheredUntil: allStores[0]?.grandfatheredUntil ?? null,
-    })
+    // First store gets a fresh 14-day Pro trial. Additional stores inherit
+    // the trial window from the user's first store so the experience stays
+    // consistent.
+    const grandfatheredUntil = isFirstStore
+      ? new Date(Date.now() + 14 * 86_400_000).toISOString()
+      : (allStores[0]?.grandfatheredUntil ?? null)
+    await storeRepo.update(newStore.id, { category, onboardingCompleted: false, grandfatheredUntil })
+
+    // store_users membership — RLS chicken-and-egg: the policy requires
+    // the user to already be an owner of the store, which is impossible
+    // for a first-time membership. Admin client bypasses, but the scope
+    // is still safe because we just created the store with owner_id =
+    // user.id, so we're only adding a membership for ourselves.
+    const { createAdminClient } = await import('@/infrastructure/supabase/admin')
+    const { StoreUserRepository } = await import('@/infrastructure/supabase/repositories/StoreUserRepository')
+    const admin = createAdminClient()
+    const storeUserRepo = new StoreUserRepository(admin)
+    await storeUserRepo.add(newStore.id, user.id, 'owner', user.id)
+
     storeId = newStore.id
   }
   await setSelectedStoreId(storeId)
