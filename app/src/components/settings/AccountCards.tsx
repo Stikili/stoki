@@ -5,6 +5,7 @@ import { createClient } from '@/infrastructure/supabase/client'
 import { useI18n, LOCALE_NAMES, type Locale } from '@/lib/i18n'
 import { useTheme } from '@/components/ThemeProvider'
 import PushSubscribeButton from '@/components/PushSubscribeButton'
+import { setSimpleViewAction } from '@/app/(app)/settings/actions'
 
 const cardStyle = {
   background: 'var(--card-bg)',
@@ -29,14 +30,71 @@ const inputStyle = {
  * /settings/account; the danger-zone is split out so it can be visually
  * isolated at the bottom of that page.
  */
-export function AccountCards({ storeId }: { storeId: string }) {
+export function AccountCards({ storeId, simpleView, storeName }: { storeId: string; simpleView: boolean; storeName: string }) {
   return (
     <>
       <EmailCard />
       <ThemeToggle />
+      <DashboardDensityCard initial={simpleView} storeName={storeName} />
       <LanguageSelector />
       <NotificationsCard storeId={storeId} />
     </>
+  )
+}
+
+/**
+ * "Simple" vs "Full" dashboard view. Simple keeps the Daily tools always
+ * visible and collapses the Books section (reports, invoices, payroll,
+ * assets, POs, etc.) behind a click-to-expand. Full shows everything.
+ *
+ * Stored per-store so an owner running both a spaza and a formal SMME
+ * keeps each dashboard at the right density without having to flip the
+ * toggle every time they switch shops.
+ */
+function DashboardDensityCard({ initial, storeName }: { initial: boolean; storeName: string }) {
+  const [simple, setSimple] = useState(initial)
+  const [isPending, startTransition] = useTransition()
+
+  function set(next: boolean) {
+    if (next === simple) return
+    setSimple(next) // optimistic
+    startTransition(async () => {
+      try {
+        await setSimpleViewAction(next)
+      } catch {
+        setSimple(!next) // revert on failure
+      }
+    })
+  }
+
+  return (
+    <div className="rounded-2xl p-4" style={cardStyle}>
+      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Dashboard density</p>
+      <p className="text-muted text-sm mb-4">
+        How many tools to show on the dashboard for <span style={{ color: 'var(--foreground)' }}>{storeName}</span>.
+        Simple keeps daily tools (Cash up, Stock, Prices) front and centre and tucks accounting tools (Reports, Invoices, Payroll, Assets, POs) behind a tap. Switch to Full any time.
+      </p>
+      <div className="flex gap-2">
+        {([
+          { key: true,  label: 'Simple', sub: 'Daily tools' },
+          { key: false, label: 'Full',   sub: 'Everything' },
+        ] as const).map(opt => (
+          <button
+            key={String(opt.key)}
+            onClick={() => set(opt.key)}
+            disabled={isPending}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex flex-col items-center gap-0.5"
+            style={simple === opt.key
+              ? { background: '#00C896', color: 'var(--btn-primary-text)' }
+              : { background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--card-border)' }
+            }
+          >
+            <span>{opt.label}</span>
+            <span className="text-[10px] font-medium opacity-80">{opt.sub}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 

@@ -49,6 +49,22 @@ export async function updateStoreAction(formData: FormData) {
   invalidateDashboard(store.id)
 }
 
+/**
+ * Toggle the per-store "Simple view" preference. When true, the dashboard's
+ * Manage grid collapses the Books section behind a click-to-expand. Per
+ * store, not per user — a multi-store owner can have a simple spaza
+ * dashboard on one shop and a full SMME dashboard on another.
+ */
+export async function setSimpleViewAction(simpleView: boolean) {
+  const { supabase, store } = await getServerData()
+  const storeRepo = new StoreRepository(supabase)
+  await storeRepo.update(store.id, { simpleView })
+  revalidateTag(TAGS.stores, 'default')
+  revalidatePath('/dashboard')
+  revalidatePath('/settings/account')
+  invalidateDashboard(store.id)
+}
+
 export async function updateVatAction(formData: FormData) {
   const { supabase, store } = await getServerData()
   const vatRegistered = formData.get('vatRegistered') === 'on'

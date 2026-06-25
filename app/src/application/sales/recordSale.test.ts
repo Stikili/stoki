@@ -111,6 +111,7 @@ function makeStore(overrides: Partial<Store> = {}): Store {
     subscriptionRetryCount: 0,
     taxpayerType: 'sole_prop',
     hasEmployees: false,
+    simpleView: true,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...overrides,

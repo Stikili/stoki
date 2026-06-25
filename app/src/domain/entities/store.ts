@@ -37,6 +37,12 @@ export interface Store {
    *  Drives Manage-tile visibility for /payroll; OR'd against actual employee
    *  count so adding the first Employee row also surfaces the tile. */
   hasEmployees: boolean
+  /** Information-density preference. When true, the dashboard's Manage tile
+   *  grid collapses the "Books" section (accounting / reports / payroll /
+   *  procurement) behind a disclosure, leaving only the "Daily" tools
+   *  visible. Default true biases toward simplicity for the spaza audience;
+   *  SMME owners flip it off from Settings to see everything by default. */
+  simpleView: boolean
   /** When set and in the future, the store has elevated (Pro) access
    *  regardless of `plan`. Used for two windows:
    *    - existing accounts at paywall rollout (90 days)

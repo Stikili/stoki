@@ -71,6 +71,7 @@ export class StoreRepository implements IStoreRepository {
     grandfatheredUntil?: string | null
     taxpayerType?: TaxpayerType
     hasEmployees?: boolean
+    simpleView?: boolean
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -95,6 +96,7 @@ export class StoreRepository implements IStoreRepository {
     if (patch.grandfatheredUntil !== undefined) dbPatch.grandfathered_until = patch.grandfatheredUntil
     if (patch.taxpayerType !== undefined) dbPatch.taxpayer_type = patch.taxpayerType
     if (patch.hasEmployees !== undefined) dbPatch.has_employees = patch.hasEmployees
+    if (patch.simpleView !== undefined) dbPatch.simple_view = patch.simpleView
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

@@ -412,6 +412,7 @@ export default async function DashboardPage() {
         showPayroll={snap.employeeCount > 0 || store.hasEmployees}
         showInvoices={store.vatRegistered}
         lockedGates={lockedGates}
+        simpleView={store.simpleView}
       />
 
       <SaleFAB />

@@ -11,7 +11,7 @@ export default async function AccountSettingsPage() {
         <ArrowLeft size={14} /> Settings
       </Link>
       <h1 className="text-xl font-bold text-white">Account &amp; preferences</h1>
-      <AccountCards storeId={store.id} />
+      <AccountCards storeId={store.id} simpleView={store.simpleView} storeName={store.name} />
 
       <div className="pt-4 mt-2 space-y-3" style={{ borderTop: '1px solid var(--card-border)' }}>
         <p className="text-xs uppercase tracking-widest text-muted ml-1">Danger zone</p>

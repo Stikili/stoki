@@ -50,6 +50,7 @@ export function toStore(row: any): Store {
     cashBalanceUpdatedAt: row.cash_balance_updated_at ?? null,
     taxpayerType: row.taxpayer_type ?? 'sole_prop',
     hasEmployees: row.has_employees ?? false,
+    simpleView: row.simple_view ?? true,
     grandfatheredUntil: row.grandfathered_until ?? null,
     subscriptionStatus: row.subscription_status ?? 'none',
     subscriptionActiveUntil: row.subscription_active_until ?? null,

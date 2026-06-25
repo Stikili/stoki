@@ -80,6 +80,11 @@ export async function saveStoreDetailsAction(
      *  count, but this lets us pre-hide the Payroll tile on day 1 before
      *  any employees exist, and surface it as soon as the owner adds one. */
     hasEmployees?: boolean;
+    /** "I mostly want to…" answer. Drives the initial dashboard density —
+     *  true collapses the Books tile section behind a click-to-expand,
+     *  false shows everything. Owner can flip it later in
+     *  /settings/account → Dashboard density. */
+    simpleView?: boolean;
   },
 ): Promise<void> {
   const supabase = await createClient()
@@ -107,6 +112,7 @@ export async function saveStoreDetailsAction(
     // can have payroll on one shop but not another. Dashboard tile-gating
     // ORs this against the actual employee count.
     ...(raw.hasEmployees !== undefined ? { hasEmployees: raw.hasEmployees } : {}),
+    ...(raw.simpleView !== undefined ? { simpleView: raw.simpleView } : {}),
   })
 
   revalidateTag(TAGS.stores, 'default')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { LocateFixed, MapPin, Wallet, Receipt, Users2 } from 'lucide-react'
+import { LocateFixed, MapPin, Wallet, Receipt, Users2, LayoutGrid } from 'lucide-react'
 import { saveStoreAction, saveStoreDetailsAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
 import OnboardingHero from '@/components/OnboardingHero'
@@ -46,6 +46,10 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
   // in settings.
   const [vatRegistered, setVatRegistered] = useState(false)
   const [hasEmployees, setHasEmployees] = useState(false)
+  // Dashboard density — drives initial Simple / Full toggle on the
+  // dashboard. "unsure" defaults to simple (the spaza-friendly choice).
+  // Owner can flip it later from /settings/account.
+  const [usageStyle, setUsageStyle] = useState<'simple' | 'full' | 'unsure'>('unsure')
 
   function handleCategoryNext() {
     setStep('name')
@@ -93,6 +97,8 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
       await saveStoreDetailsAction(storeId, {
         lat, lng, cashBalance,
         vatRegistered, hasEmployees,
+        // "unsure" and "simple" both land on Simple view; "full" turns it off.
+        simpleView: usageStyle !== 'full',
       })
       setStep('pack')
     })
@@ -314,6 +320,52 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
                 <p className="text-muted text-[11px] mt-2 leading-relaxed">
                   Modules you don&apos;t need will stay hidden. Flip these on later from Settings if your business grows into them.
                 </p>
+              </div>
+
+              {/* Dashboard density — sets the initial Simple / Full split.
+                  Owner can flip later in /settings/account → Dashboard density. */}
+              <div className="rounded-2xl p-4 mb-3" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <LayoutGrid size={14} style={{ color: 'var(--muted)' }} />
+                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>I mostly want to…</p>
+                </div>
+                <p className="text-muted text-xs mb-3">
+                  Affects which tools we show first. Change any time in Settings.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {([
+                    { value: 'simple', label: 'Run my till and stock', hint: 'Cash up, stock, prices' },
+                    { value: 'full',   label: 'Manage the business books too', hint: 'Reports, invoices, payroll, assets' },
+                    { value: 'unsure', label: "I'm not sure yet", hint: 'Start simple — you can switch later' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setUsageStyle(opt.value)}
+                      className="flex items-start gap-3 p-3 rounded-xl text-left transition-all active:scale-[0.99]"
+                      style={usageStyle === opt.value
+                        ? { background: 'var(--pill-green-bg)', border: '1px solid rgba(0,200,150,0.4)' }
+                        : { background: 'var(--card-bg)', border: '1px solid var(--card-border)' }
+                      }
+                    >
+                      <span
+                        className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={usageStyle === opt.value
+                          ? { background: '#00C896' }
+                          : { background: 'transparent', border: '1.5px solid var(--card-border)' }
+                        }
+                      >
+                        {usageStyle === opt.value && (
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--btn-primary-text)' }} />
+                        )}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{opt.label}</p>
+                        <p className="text-muted text-[11px] mt-0.5">{opt.hint}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2 mt-4">
