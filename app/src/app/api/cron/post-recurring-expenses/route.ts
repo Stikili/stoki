@@ -4,6 +4,7 @@ import { ExpenseRepository } from '@/infrastructure/supabase/repositories/Expens
 import { RecurringExpenseRepository } from '@/infrastructure/supabase/repositories/RecurringExpenseRepository'
 import { postDueRecurringExpenses } from '@/application/expenses/postDueRecurringExpenses'
 import { log } from '@/lib/log'
+import { rateLimitByIp } from '@/lib/rate-limit'
 
 /**
  * Daily cron — spawn an expense row for every recurring rule that's fallen
@@ -14,6 +15,12 @@ import { log } from '@/lib/log'
  * on load as a backstop when this cron is dark.
  */
 export async function POST(req: Request) {
+  // Defense-in-depth against a leaked CRON_SECRET: cap inbound POSTs
+  // per IP-bucket so an attacker with the secret can't flood. Legitimate
+  // hits are a handful per day per cron from Vercel's IP range.
+  const ipBlock = await rateLimitByIp(req, 'cron_post_recurring_expenses', 10)
+  if (ipBlock) return ipBlock
+
   if (!authorise(req)) {
     log.warn('cron.post_recurring_expenses.unauthorized', {})
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

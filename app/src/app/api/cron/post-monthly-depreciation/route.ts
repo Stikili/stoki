@@ -3,6 +3,7 @@ import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { FixedAssetRepository } from '@/infrastructure/supabase/repositories/FixedAssetRepository'
 import { postMonthlyDepreciation } from '@/application/assets/postMonthlyDepreciation'
 import { log } from '@/lib/log'
+import { rateLimitByIp } from '@/lib/rate-limit'
 
 /**
  * Monthly cron — post depreciation entries for every active fixed asset.
@@ -10,6 +11,12 @@ import { log } from '@/lib/log'
  * cron). Idempotent via the (asset_id, period_of) unique constraint.
  */
 export async function POST(req: Request) {
+  // Defense-in-depth: cap inbound per IP-bucket. Monthly cron — legit
+  // hits are once a month per region; 10/min/IP is plenty of slack
+  // while still blocking floods if CRON_SECRET ever leaks.
+  const ipBlock = await rateLimitByIp(req, 'cron_post_monthly_depreciation', 10)
+  if (ipBlock) return ipBlock
+
   if (!authorise(req)) {
     log.warn('cron.post_monthly_depreciation.unauthorized', {})
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

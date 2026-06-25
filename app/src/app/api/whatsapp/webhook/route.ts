@@ -10,6 +10,7 @@ import { getProducts } from '@/application/inventory/getProducts'
 import { parseCommand, fuzzyMatch } from '@/lib/whatsapp-parser'
 import { sendWhatsAppText, validateMetaSignature, extractIncomingMessage } from '@/lib/whatsapp'
 import { askBrain } from '@/lib/whatsapp-brain'
+import { rateLimitByIp } from '@/lib/rate-limit'
 
 // Meta webhook verification handshake.
 // Configured during webhook setup in Meta App Dashboard.
@@ -26,6 +27,13 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // IP-based throttle BEFORE signature check — discards floods of
+  // unsigned payloads without spending CPU on HMAC. Meta's legit
+  // delivery rate is low (a few per second worst case); 120/min is
+  // generous. Adjust via env if it ever trips on real traffic.
+  const ipBlock = await rateLimitByIp(req, 'whatsapp_webhook', Number(process.env.WHATSAPP_RATE_LIMIT_PER_MIN ?? 120))
+  if (ipBlock) return ipBlock
+
   const rawBody = await req.text()
 
   // Always validate when the secret is set — including staging deployments.

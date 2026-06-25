@@ -75,20 +75,34 @@ export async function checkAdvisorBudget(
 }
 
 /**
- * Increment today's count for `userId`. Idempotent at the DB level via
- * upsert on (user_id, day). Best-effort — failures are swallowed (we'd
- * rather under-charge than block the response).
+ * Atomically increment today's count for `userId` via the
+ * `increment_advisor_usage` RPC (migration 034). Closes the
+ * read-modify-write race the previous upsert pattern had — a script
+ * firing 10 concurrent advisor requests would all read count=0, all
+ * upsert count=1, and slip past the daily limit before the JS counter
+ * caught up.
+ *
+ * Falls back to the previous read-modify-write pattern if the RPC
+ * isn't available (e.g. migration not yet applied) so this stays a
+ * non-breaking deployment.
  */
 export async function recordAdvisorUse(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
+  const day = today()
   try {
-    // Atomic increment via RPC if it exists; else fall back to upsert+update.
-    // We use a simple read-modify-write here because the volumes are tiny
-    // (single-user concurrent advisor requests are rare) and adding a SQL
-    // function is more migration churn than it's worth.
-    const day = today()
+    const { error } = await supabase.rpc('increment_advisor_usage', {
+      p_user_id: userId,
+      p_day: day,
+    })
+    if (!error) return
+    // RPC missing or errored — fall back below.
+  } catch { /* fall through */ }
+
+  // Fallback path — race-prone but non-breaking. Same code as before
+  // migration 034 so this works pre-migration.
+  try {
     const { data: existing } = await supabase
       .from('ai_advisor_usage')
       .select('count')
@@ -103,4 +117,50 @@ export async function recordAdvisorUse(
         { onConflict: 'user_id,day' },
       )
   } catch { /* non-fatal */ }
+}
+
+/** Global daily cap across ALL users. Tunable via env. Once hit, the
+ *  advisor returns a maintenance-style message instead of calling the
+ *  LLM — protects against the "10 000 users hit their free quota
+ *  the same day" cost-explosion scenario. */
+export const ADVISOR_GLOBAL_DAILY_LIMIT = Number(
+  process.env.ADVISOR_GLOBAL_DAILY_LIMIT ?? 50_000,
+)
+
+/**
+ * Check whether the SYSTEM has any LLM budget left today. Sums today's
+ * row counts across every user; if the total has hit the global ceiling,
+ * blocks all advisor requests until UTC midnight. Fail-open on DB
+ * errors (same philosophy as the per-user budget).
+ */
+export async function checkGlobalAdvisorBudget(
+  supabase: SupabaseClient,
+): Promise<MeterDecision> {
+  const limit = ADVISOR_GLOBAL_DAILY_LIMIT
+  try {
+    // Sum the `count` column across every user for today. We fetch the
+    // rows and sum in JS — at our scale today's row count is bounded
+    // by the user-base size (one row per active user per day) so this
+    // is cheap. If/when row count exceeds a few thousand, switch to a
+    // SQL-side SUM via an RPC.
+    const { data } = await supabase
+      .from('ai_advisor_usage')
+      .select('count')
+      .eq('day', today())
+    const total = (data ?? []).reduce(
+      (sum: number, row: { count: number | null }) => sum + (row.count ?? 0),
+      0,
+    )
+    if (total >= limit) {
+      return {
+        ok: false,
+        used: total,
+        limit,
+        message: 'Stoki AI is taking a short break — too many questions today across all shops. Back at midnight UTC.',
+      }
+    }
+    return { ok: true, used: total, limit }
+  } catch {
+    return { ok: true, used: 0, limit }
+  }
 }

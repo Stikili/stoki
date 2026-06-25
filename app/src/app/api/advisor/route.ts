@@ -7,8 +7,9 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { LLM_API_KEY, LLM_MODEL, LLM_MODEL_FAST } from '@/lib/llm-config'
-import { checkAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
+import { checkAdvisorBudget, checkGlobalAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
 import { effectivePlan } from '@/lib/effective-plan'
+import { rateLimitByIp } from '@/lib/rate-limit'
 import { buildAllTools } from '@/lib/advisor/tools'
 import { loadRecentMessages, appendExchange } from '@/lib/advisor/conversations'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
@@ -40,9 +41,23 @@ export async function POST(req: NextRequest) {
   const apiKey = LLM_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'Advisor not configured' }, { status: 503 })
 
+  // IP-based burst throttle. 30 req/min/IP — accommodates a chatty human
+  // sending several follow-ups in quick succession, blocks scripted abuse.
+  // Tunable via env if you see legitimate users tripping it.
+  const ipBlock = await rateLimitByIp(req, 'advisor', Number(process.env.ADVISOR_RATE_LIMIT_PER_MIN ?? 30))
+  if (ipBlock) return ipBlock
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Global daily ceiling — protects the Anthropic bill from the
+  // "10 000 users hit their free quota the same day" scenario. Returns
+  // a polite maintenance message; default 50 000 total calls/day.
+  const globalBudget = await checkGlobalAdvisorBudget(supabase)
+  if (!globalBudget.ok) {
+    return NextResponse.json({ message: globalBudget.message, throttled: true })
+  }
 
   const body = await req.json()
   const { messages, storeId, images } = body as {
