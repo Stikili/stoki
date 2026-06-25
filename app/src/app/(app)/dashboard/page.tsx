@@ -19,7 +19,6 @@ import { estimateProvisional } from '@/lib/tax/provisional'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
 import DashboardHeader from './DashboardHeader'
 import DashboardTiles from './DashboardTiles'
-import AskStokiPrompt from './AskStokiPrompt'
 import SaleFAB from '@/components/SaleFAB'
 import TrialBanner from '@/components/TrialBanner'
 
@@ -369,9 +368,6 @@ export default async function DashboardPage() {
           <Link href="/credit" className="pill pill-orange min-h-0">R{totalOutstanding.toFixed(0)} owed</Link>
         )}
       </div>
-
-      {/* Ask Stoki — inline prompt + suggestion chips */}
-      <AskStokiPrompt vatRegistered={store.vatRegistered} />
 
       {/* 7-day chart — compact */}
       <div className="card p-5">
