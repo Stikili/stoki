@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useTransition, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, LocateFixed, MapPin, Wallet, Receipt, Users2, LayoutGrid } from 'lucide-react'
 import { saveStoreAction, saveStoreDetailsAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
-import OnboardingHero from '@/components/OnboardingHero'
 import Wordmark from '@/components/Wordmark'
 
 // Seven swipeable panels. Each renders inside a fixed-height viewport
@@ -197,73 +196,100 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
     else if (dx >= SWIPE_COMMIT_PX) attemptPrev()
   }
 
-  // Re-measure track width on resize for the transform math.
-  const [trackWidth, setTrackWidth] = useState(0)
-  useEffect(() => {
-    function measure() { setTrackWidth(trackRef.current?.offsetWidth ?? 0) }
+  // Measure the deck container's actual rendered width so we can size each
+  // panel to exactly one viewport-slot and translate by an integer pixel
+  // amount. The track is a flex row with no explicit width — its width is
+  // STEPS.length × deckWidth simply by adding the panels.
+  // useLayoutEffect runs synchronously before the browser paints, so the
+  // very first frame already has the right width and we skip the 0→width
+  // flicker. ResizeObserver picks up viewport changes after.
+  const [deckWidth, setDeckWidth] = useState(0)
+  useLayoutEffect(() => {
+    if (!trackRef.current) return
+    const measure = () => setDeckWidth(trackRef.current?.offsetWidth ?? 0)
     measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    const ro = new ResizeObserver(measure)
+    ro.observe(trackRef.current)
+    return () => ro.disconnect()
+  }, [])
+  // Fallback resize listener for browsers without ResizeObserver (rare in
+  // 2026 but cheap to keep).
+  useEffect(() => {
+    function onResize() { setDeckWidth(trackRef.current?.offsetWidth ?? 0) }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // Translate distance: full-width step offset plus the active drag.
-  const translatePx = -(stepIdx * trackWidth) + dragDx
+  // Translate distance: one full deck-width per step + the live drag.
+  const translatePx = -(stepIdx * deckWidth) + dragDx
 
   return (
     <div
-      className="fixed inset-0 flex flex-col"
+      className="fixed inset-0 flex items-center justify-center"
       style={{
         background: 'var(--background)',
         // Prevent the body from scrolling underneath while the deck is mounted.
         touchAction: 'pan-y',
       }}
     >
-      {/* Sticky top — small wordmark + step dots. */}
-      <header className="flex flex-col items-center pt-4 pb-3 px-5 flex-shrink-0">
-        <Wordmark height={22} textColor="var(--foreground)" />
-        <div className="flex items-center gap-1.5 mt-3">
-          {STEPS.map((s, i) => (
-            <span
-              key={s}
-              className="rounded-full transition-all duration-300"
-              style={{
-                width: stepIdx === i ? 18 : 6,
-                height: 6,
-                background: stepIdx === i
-                  ? '#00C896'
-                  : stepIdx > i ? 'rgba(0,200,150,0.4)' : 'var(--card-border)',
-              }}
-            />
-          ))}
-        </div>
-      </header>
+      {/*
+        Responsive card.
+        - Mobile (< sm): fills the viewport — true full-screen deck.
+        - Desktop / tablet: centered, capped at max-w-md width and ~820px
+          height, with rounded card chrome so it doesn't look like a
+          monolithic page hijack.
 
-      {/* Swipe deck — fills the viewport between top + bottom chrome. */}
+        h-full + maxHeight:min(100dvh, 820px) makes the deck phone-sized
+        on phones and card-sized on laptops, while always keeping its
+        children's transform math working off `deckWidth` (pixel-measured).
+      */}
       <div
-        ref={trackRef}
-        className="flex-1 overflow-hidden relative"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        className="w-full h-full max-w-md flex flex-col sm:rounded-3xl sm:my-6"
+        style={{
+          maxHeight: 'min(100dvh, 820px)',
+          background: 'var(--background)',
+        }}
       >
+        {/* Top — small wordmark + step dots. */}
+        <header className="flex flex-col items-center pt-5 pb-3 px-5 flex-shrink-0">
+          <Wordmark height={22} textColor="var(--foreground)" />
+          <div className="flex items-center gap-1.5 mt-3">
+            {STEPS.map((s, i) => (
+              <span
+                key={s}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: stepIdx === i ? 18 : 6,
+                  height: 6,
+                  background: stepIdx === i
+                    ? '#00C896'
+                    : stepIdx > i ? 'rgba(0,200,150,0.4)' : 'var(--card-border)',
+                }}
+              />
+            ))}
+          </div>
+        </header>
+
+        {/* Swipe deck — fills the card between top + bottom chrome. */}
         <div
-          className="flex h-full"
-          style={{
-            width: `${STEPS.length * 100}%`,
-            transform: `translateX(${translatePx}px)`,
-            transition: dragDx === 0 ? 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
-            willChange: 'transform',
-          }}
+          ref={trackRef}
+          className="flex-1 overflow-hidden relative min-h-0"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
         >
-          {/* Panel 1 — type. The hero illustration is intentionally only on
-              this first panel, where it doubles as a welcome moment. */}
-          <Panel>
-            {stepIdx === 0 && (
-              <div className="flex justify-center mb-3" data-no-swipe>
-                <OnboardingHero className="w-full max-w-[220px] h-auto" />
-              </div>
-            )}
+          <div
+            className="flex h-full"
+            style={{
+              transform: `translateX(${translatePx}px)`,
+              transition: dragDx === 0 ? 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
+              willChange: 'transform',
+            }}
+          >
+          {/* Panel 1 — type. Kept tight (no hero illustration) so the four
+              category buttons always fit one viewport on a short phone. */}
+          <Panel width={deckWidth}>
             <PanelHeader
               title={isNew ? 'New store' : 'What kind of shop?'}
               subtitle={isNew ? 'Set up another shop on your account.' : 'Track sales, manage credit, and run your shop smarter.'}
@@ -298,7 +324,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           </Panel>
 
           {/* Panel 2 — name + phone. */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title={`Name your ${categoryConfig.label.toLowerCase()}`}
               subtitle="What do your customers call it?"
@@ -325,7 +351,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           </Panel>
 
           {/* Panel 3 — location (GPS). */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title="Where is your shop?"
               subtitle="Powers weather and new-competitor alerts. Optional — never shared."
@@ -366,7 +392,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           </Panel>
 
           {/* Panel 4 — cash on hand. */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title="Cash on hand"
               subtitle="Roughly how much do you have for restocking? Stoki uses this near month-end to suggest a budget-fit reorder list."
@@ -388,7 +414,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           </Panel>
 
           {/* Panel 5 — about your business (VAT + employees). */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title="About your business"
               subtitle="Modules you don't need stay hidden. Flip these on later from Settings if your business grows into them."
@@ -423,7 +449,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           </Panel>
 
           {/* Panel 6 — dashboard density. */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title="I mostly want to…"
               subtitle="Affects which tools we show first. Change any time in Settings."
@@ -473,7 +499,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
 
           {/* Panel 7 — starter pack. Final step, no forward swipe — the
               two action buttons take the user into the app. */}
-          <Panel>
+          <Panel width={deckWidth}>
             <PanelHeader
               title="Starter pack?"
               subtitle={`We'll load ~20 common ${categoryConfig.label.toLowerCase()} products with typical SA prices. You fill in the quantities.`}
@@ -512,57 +538,66 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
               </button>
             </div>
           </Panel>
+          </div>
         </div>
-      </div>
 
-      {/* Sticky bottom action bar — Back + Continue mirror the swipe
-          gestures for users who prefer buttons. Hidden on the pack step,
-          which has its own primary actions. */}
-      {step !== 'pack' && (
-        <footer
-          className="px-5 pb-5 pt-3 flex items-center gap-3 flex-shrink-0"
-          style={{ borderTop: '1px solid var(--card-border)' }}
-          data-no-swipe
-        >
-          <button
-            onClick={attemptPrev}
-            disabled={stepIdx === 0 || isPending}
-            aria-label="Back"
-            className="w-12 h-12 rounded-2xl inline-flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--card-border)',
-              color: stepIdx === 0 ? 'var(--muted-dim)' : 'var(--foreground)',
-              opacity: stepIdx === 0 ? 0.4 : 1,
-            }}
+        {/* Bottom action bar — Back + Continue mirror the swipe gestures
+            for users who prefer (or need) clicks. Hidden on the pack step,
+            which has its own primary actions. On desktop these buttons
+            are the primary navigation since horizontal mouse swipe is
+            unfamiliar to most users. */}
+        {step !== 'pack' && (
+          <footer
+            className="px-5 pb-5 pt-3 flex items-center gap-3 flex-shrink-0"
+            style={{ borderTop: '1px solid var(--card-border)' }}
+            data-no-swipe
           >
-            <ArrowLeft size={18} />
-          </button>
-          <button
-            onClick={attemptNext}
-            disabled={!canAdvance()}
-            className="flex-1 btn-primary inline-flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-            style={{ opacity: canAdvance() ? 1 : 0.5 }}
-          >
-            {isPending ? 'Saving…' : (
-              <>
-                Continue
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-        </footer>
-      )}
+            <button
+              onClick={attemptPrev}
+              disabled={stepIdx === 0 || isPending}
+              aria-label="Back"
+              className="w-12 h-12 rounded-2xl inline-flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--card-border)',
+                color: stepIdx === 0 ? 'var(--muted-dim)' : 'var(--foreground)',
+                opacity: stepIdx === 0 ? 0.4 : 1,
+              }}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <button
+              onClick={attemptNext}
+              disabled={!canAdvance()}
+              className="flex-1 btn-primary inline-flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ opacity: canAdvance() ? 1 : 0.5 }}
+            >
+              {isPending ? 'Saving…' : (
+                <>
+                  Continue
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </footer>
+        )}
+      </div>
     </div>
   )
 }
 
-/** Vertical-stack panel sized to the deck height. Uses 100% so each panel
- *  fills exactly the swipe-deck area, never overflows. Content that's too
- *  tall would visibly clip — that's by design (forces tighter copy). */
-function Panel({ children }: { children: ReactNode }) {
+/** One slot in the swipe deck. Width is set in pixels to match the deck's
+ *  measured rendered width — using `w-full` would size the panel relative
+ *  to the flex track (which is N × deck-width wide), so it has to be an
+ *  explicit pixel value to land exactly one viewport slot. Until the
+ *  first measurement lands (`width === 0`), we render a 0-width panel
+ *  rather than guess. */
+function Panel({ width, children }: { width: number; children: ReactNode }) {
   return (
-    <div className="w-full h-full flex-shrink-0 px-5 pt-2 pb-4 flex flex-col">
+    <div
+      className="h-full flex-shrink-0 px-5 pt-2 pb-4 flex flex-col"
+      style={{ width: width || 0 }}
+    >
       {children}
     </div>
   )
