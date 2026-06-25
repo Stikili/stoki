@@ -21,6 +21,7 @@ import {
   Users2,
   Lock,
   ChevronDown,
+  HelpCircle,
 } from 'lucide-react'
 import { haptic } from '@/lib/haptic'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -164,38 +165,64 @@ export default function DashboardTiles({
       </>
     )
 
+    // Help badge — taps to reveal the same hint as long-press. Long-press
+    // is great for power users but invisible to first-timers; the badge
+    // gives every new user a discoverable "what does this do?" affordance
+    // without docs. Rendered as a sibling of the Link/button (not nested)
+    // to keep HTML valid for screen readers + browsers.
+    const helpBadge = (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); haptic(15); setHintFor(href) }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label={`What does ${label} do?`}
+        className="absolute top-1 left-1 z-10 w-5 h-5 rounded-full inline-flex items-center justify-center"
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--card-border)',
+          color: '#7B8CA1',
+        }}
+      >
+        <HelpCircle size={11} strokeWidth={2.2} />
+      </button>
+    )
+
     if (locked && gate) {
       return (
-        <button
-          key={href}
-          type="button"
-          onClick={() => { haptic(20); setUpgradeGate(gate) }}
+        <div key={href} className="relative">
+          <button
+            type="button"
+            onClick={() => { haptic(20); setUpgradeGate(gate) }}
+            onPointerDown={() => startHold(href)}
+            onPointerUp={endHold}
+            onPointerLeave={endHold}
+            onPointerCancel={endHold}
+            onContextMenu={(e) => e.preventDefault()}
+            className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none w-full"
+            style={{ opacity: 0.85 }}
+          >
+            {inner}
+          </button>
+          {helpBadge}
+        </div>
+      )
+    }
+
+    return (
+      <div key={href} className="relative">
+        <Link
+          href={href}
           onPointerDown={() => startHold(href)}
           onPointerUp={endHold}
           onPointerLeave={endHold}
           onPointerCancel={endHold}
           onContextMenu={(e) => e.preventDefault()}
-          className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none w-full"
-          style={{ opacity: 0.85 }}
+          className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none"
         >
           {inner}
-        </button>
-      )
-    }
-
-    return (
-      <Link
-        key={href}
-        href={href}
-        onPointerDown={() => startHold(href)}
-        onPointerUp={endHold}
-        onPointerLeave={endHold}
-        onPointerCancel={endHold}
-        onContextMenu={(e) => e.preventDefault()}
-        className="card tile-press flex flex-col items-center justify-center py-3.5 px-2 select-none"
-      >
-        {inner}
-      </Link>
+        </Link>
+        {helpBadge}
+      </div>
     )
   }
 
@@ -239,7 +266,7 @@ export default function DashboardTiles({
           </div>
         )}
 
-        <p className="text-muted text-[10px] ml-1">Tip: hold a tile for a short description.</p>
+        <p className="text-muted text-[10px] ml-1">Tip: tap the ⓘ on any tile to see what it does.</p>
       </div>
 
       {upgradeGate && (

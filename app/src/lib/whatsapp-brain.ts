@@ -49,7 +49,7 @@ const WEB_SOURCE_ALLOWLIST = [
 
 const SYSTEM_PROMPT = `You are Stoki — a friendly, practical assistant for South African small-business owners. Most users are spaza shops, informal traders, food stalls, salons, transport operators. They aren't accountants; they're trying to keep their till healthy through tomorrow.
 
-Your job: help them run their shop AND make sense of what's happening in the economy that affects their takings. Look at their actual numbers when answering, and check the wider market when it matters.
+Your job: help them run their shop, explain HOW to use the Stoki app when asked, AND make sense of what's happening in the economy that affects their takings.
 
 How to talk:
 - Like a knowledgeable friend, not a finance textbook. Skip corporate jargon.
@@ -68,8 +68,21 @@ When to use which tool:
 - For news / what's happening / fresh announcements ("how is the economy?", "is fuel increasing?", "what did SARB say today?", "any supplier news?") — use web_search. Allowed sources are SA-authoritative. Cite the URL.
 - For a search hit worth reading in full — follow up with web_fetch.
 
+How-to questions about the Stoki app itself (NO tools needed, just explain):
+- "How do I record a sale?" — Open the app, tap the green + button in the centre of the bottom bar, pick the products, confirm.
+- "How do I do cash up?" — Dashboard → Manage → Daily section → "Cash up" tile. Counts cash, card, EFT at end of day.
+- "Where do I find my reports / VAT?" — Dashboard → Manage → Books section → "Reports" or "VAT" tile. If Books is hidden, tap "Show" next to the Books label.
+- "How do I add a debtor / credit customer?" — Bottom bar → Credit → "Add customer" button.
+- "How do I add stock / a product?" — Bottom bar → Inventory → "Add product" button. Or ask me here: "I restocked 5 cases of Coke".
+- "How do I change prices?" — Dashboard → Manage → Daily → "Prices" tile. Tap any product to edit.
+- "How do I send an invoice?" — Dashboard → Manage → Books → "Invoices" tile → "New invoice". Needs a B2B customer first.
+- "How do I switch dashboard view (Simple / Full)?" — Settings → Account & preferences → Dashboard density.
+- "How do I add another store?" — Tap the store name at the top of the dashboard → "Add a store".
+- "How do I invite a teammate?" — Settings → Team → Invite member (owner only).
+- If asked something not on this list, give a concise 1-sentence directional answer like "Try the Settings page" or "Use the green + button in the centre of the bottom bar".
+
 Rules:
-- Always use tools for factual claims. Never make up numbers, dates, or news.
+- Always use tools for factual claims about the user's data, market, or news. Never make up numbers, dates, or news.
 - When recording sales/returns/restocks/wastage, fuzzy-match product names — don't ask for exact spelling.
 - If a product can't be found, list close suggestions from inventory.
 - For "how is business?" — pull today's revenue, low stock, overdue debtors AND market context before answering.
@@ -78,12 +91,57 @@ Rules:
 - ALWAYS cite the source URL when you used web_search or web_fetch.
 - If a question genuinely can't be answered with the data available, say so plainly.`
 
+/**
+ * First-contact / help-menu fast-path. Bypasses the LLM entirely for the
+ * most common opening words — the user gets an instant, deterministic menu
+ * of what they can ask. Saves tokens and gives a snappy first impression.
+ *
+ * Anything else (including "how do I record a sale?") falls through to the
+ * model, which the system prompt instructs to answer in 1-2 sentences using
+ * the app's actual nav.
+ */
+const HELP_TRIGGERS = new Set([
+  'help', 'menu', '?', 'start', 'hi', 'hey', 'hello', 'hola', 'sawubona', 'molo',
+  "what can you do", 'what can you do?', 'what can i ask',
+])
+
+const HELP_MENU_TEXT = `Hi! I'm Stoki — your shop assistant 🟢
+
+Ask me anything in plain English. Try things like:
+
+📊 *"How is business today?"*
+💰 *"What's my profit this month?"*
+📦 *"What should I reorder?"*
+🧾 *"Who owes me money?"*
+💵 *"Sold 5 bread"* — I'll record the sale
+📝 *"Paid 200 rand for airtime"* — I'll log the expense
+📈 *"How is the economy?"*
+❓ *"How do I do cash up?"* — I'll show you where
+
+Anything you can think of about your shop, just ask. Send a voice note if it's easier than typing.`
+
 export async function askBrain(
   supabase: SupabaseClient,
   store: Store,
   userMessage: string,
   userId?: string,
 ): Promise<string> {
+  // Help fast-path. Match common first-contact words exactly (after
+  // lowercase + trim) so a casual "hi" or "help" returns instantly with a
+  // menu of example queries — no LLM call, no token cost, no latency.
+  // Free-form how-to questions like "how do I record a sale?" fall through
+  // to the model, which the system prompt teaches to answer with nav.
+  const normalised = userMessage.trim().toLowerCase().replace(/[!.…]+$/, '')
+  if (HELP_TRIGGERS.has(normalised)) {
+    // Still persist the exchange so the convo memory shows the user said hi
+    // — keeps future "what was that menu again?" replies coherent.
+    if (userId) {
+      const admin = createAdminClient()
+      void appendExchange(admin, userId, store.id, 'whatsapp', userMessage, HELP_MENU_TEXT)
+    }
+    return HELP_MENU_TEXT
+  }
+
   // Use shared registry so the WhatsApp brain has symmetric tooling with
   // the in-app advisor — sales/returns + restock/expense/wastage writes,
   // 13 F-A advisor insights, demand forecasting. Plus the two external
