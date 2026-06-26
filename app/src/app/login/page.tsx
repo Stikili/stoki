@@ -23,6 +23,18 @@ type PhoneStep = "idle" | "otp"
 
 const REMEMBER_KEY = "stoki_last_identifier"
 
+/** Feature flag: surface the phone-OTP login path in the UI.
+ *  Set to `false` until a SMS provider (Twilio / MessageBird / Vonage) is
+ *  wired in Supabase Dashboard → Authentication → Phone Auth. When off:
+ *   - the "OTP — SA cell number" alt-button is hidden
+ *   - the auth mode is hard-locked to "email"
+ *   - returning users with a remembered phone identifier are still placed
+ *     in email mode (so they don't dead-end in a hidden path)
+ *  All sendOtp / verifyOtp code below is intact — flipping this to `true`
+ *  re-enables the path with no other changes. See
+ *  [[phone-otp-deferred]] memory for the re-enable runbook. */
+const PHONE_OTP_ENABLED = false
+
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, "")
   if (digits.startsWith("27")) return `+${digits}`
@@ -224,12 +236,17 @@ function LoginPageInner() {
 
   // Pre-fill the last-used identifier and switch to its native mode so the
   // returning user lands in the right form path without doing anything.
+  // While PHONE_OTP_ENABLED is off, the mode is always "email" — a
+  // returning user whose saved identifier is a phone number still lands
+  // in email mode (rather than a hidden / broken phone path).
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY)
     if (saved) {
       setIdentifier(saved)
       setRememberMe(true)
-      setMode(detectKindFromText(saved) === "phone" ? "phone" : "email")
+      if (PHONE_OTP_ENABLED) {
+        setMode(detectKindFromText(saved) === "phone" ? "phone" : "email")
+      }
     }
   }, [])
 
@@ -542,8 +559,8 @@ function LoginPageInner() {
                   loadingLabel={mode === "phone" ? "Sending…" : intent === "register" ? "Creating…" : "Signing in…"}
                   onClick={() => submit()}
                 />
-                <OrDivider />
-                {mode === "email" ? (
+                {PHONE_OTP_ENABLED && <OrDivider />}
+                {PHONE_OTP_ENABLED && (mode === "email" ? (
                   <button type="button" onClick={switchToPhone} className="btn-outline">
                     <Smartphone size={15} strokeWidth={1.7} />
                     OTP — SA cell number
@@ -553,7 +570,7 @@ function LoginPageInner() {
                     <ArrowLeft size={15} strokeWidth={2} />
                     Use email &amp; password
                   </button>
-                )}
+                ))}
                 {error && <ErrorMsg error={error} />}
               </div>
 
