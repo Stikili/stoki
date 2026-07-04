@@ -3,6 +3,7 @@ import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { effectivePlan, isGrandfatherActive } from '@/lib/effective-plan'
 import { toStore } from '@/infrastructure/supabase/mappers'
 import type { Store } from '@/domain/entities/store'
+import BetaInviteCard from './BetaInviteCard'
 
 // Always fresh — admin signal data should never come from a stale cache.
 export const dynamic = 'force-dynamic'
@@ -78,6 +79,10 @@ export default async function AdminPage() {
           <p className="text-muted text-sm mt-0.5">Signed in as {admin.email}</p>
         </div>
       </div>
+
+      {/* Beta invite — create pre-confirmed accounts for trusted testers.
+          Bypasses SMTP entirely; you hand over the temp password directly. */}
+      <BetaInviteCard />
 
       {/* Aggregates */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
