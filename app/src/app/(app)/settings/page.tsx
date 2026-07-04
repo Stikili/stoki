@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Sparkles,
   Repeat,
+  Mail,
+  MessageCircle,
 } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
@@ -157,8 +159,35 @@ export default async function SettingsPage() {
         </a>
       </div>
 
+      {/* Support — two channels, side-by-side. WhatsApp bot is 24/7 self-serve;
+          email is for anything the bot can't handle. Keeps expectations clear
+          and stops "I emailed but no one replied" churn. */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+        <p className="text-xs uppercase tracking-widest text-muted">Support</p>
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href="/advisor"
+            className="rounded-xl px-3 py-3 flex flex-col items-center gap-1.5 active:bg-white/[0.04]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}
+          >
+            <MessageCircle size={18} style={{ color: '#00C896' }} />
+            <span className="text-[12px] font-semibold" style={{ color: 'var(--foreground)' }}>Ask Stoki</span>
+            <span className="text-[10px] text-muted text-center leading-tight">Instant · in-app + WhatsApp</span>
+          </a>
+          <a
+            href="mailto:hello@stokiapp.com?subject=Stoki%20support"
+            className="rounded-xl px-3 py-3 flex flex-col items-center gap-1.5 active:bg-white/[0.04]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}
+          >
+            <Mail size={18} style={{ color: '#60A5FA' }} />
+            <span className="text-[12px] font-semibold" style={{ color: 'var(--foreground)' }}>Email us</span>
+            <span className="text-[10px] text-muted text-center leading-tight">hello@stokiapp.com</span>
+          </a>
+        </div>
+      </div>
+
       <p className="text-muted text-[11px] text-center pt-2 inline-flex items-center justify-center gap-1.5 w-full">
-        <HelpCircle size={12} /> Need help? Send &ldquo;help&rdquo; to your stoki WhatsApp number.
+        <HelpCircle size={12} /> Or send &ldquo;help&rdquo; to your stoki WhatsApp number for 24/7 answers.
       </p>
     </div>
   )

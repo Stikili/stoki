@@ -18,7 +18,8 @@
  * testing. VERCEL_ENV is only set on Vercel-hosted runs; `=== 'production'`
  * specifically means "this is the live deploy", not "preview" or "dev".
  */
-export function register(): void {
+export async function register(): Promise<void> {
+  // 1) TLS-bypass guardrail (see above).
   if (process.env.VERCEL_ENV === 'production') {
     if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
       throw new Error(
@@ -30,4 +31,22 @@ export function register(): void {
       )
     }
   }
+
+  // 2) Sentry — load the right runtime config. Sentry itself silently
+  //    no-ops if NEXT_PUBLIC_SENTRY_DSN is unset, so this is safe on
+  //    local dev where the env var doesn't exist.
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./sentry.server.config')
+  } else if (process.env.NEXT_RUNTIME === 'edge') {
+    await import('./sentry.edge.config')
+  }
 }
+
+/**
+ * Next 16 request-error hook — fires whenever an App Router route
+ * throws during rendering / server actions / route handlers. Sentry's
+ * captureRequestError enriches the event with request context
+ * (route, method, headers) before shipping to the Sentry backend.
+ * Safe no-op if Sentry isn't initialised.
+ */
+export { captureRequestError as onRequestError } from '@sentry/nextjs'

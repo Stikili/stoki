@@ -595,6 +595,16 @@ function LoginPageInner() {
                   {" "}&amp;{" "}
                   <a href="/terms" className="underline" style={{ color: "var(--muted-dim)" }}>Terms of Service</a>
                 </p>
+                <p className="mt-2 text-[10.5px]" style={{ color: "rgba(74, 88, 120, 0.6)" }}>
+                  Trouble signing in?{" "}
+                  <a
+                    href="mailto:hello@stokiapp.com?subject=Stoki%20sign-in%20help"
+                    className="underline"
+                    style={{ color: "var(--muted-dim)" }}
+                  >
+                    hello@stokiapp.com
+                  </a>
+                </p>
               </div>
             </div>
           )}

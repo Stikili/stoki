@@ -118,7 +118,9 @@ Ask me anything in plain English. Try things like:
 📈 *"How is the economy?"*
 ❓ *"How do I do cash up?"* — I'll show you where
 
-Anything you can think of about your shop, just ask. Send a voice note if it's easier than typing.`
+Anything you can think of about your shop, just ask. Send a voice note if it's easier than typing.
+
+Stuck on something I can't help with? Email a human at *hello@stokiapp.com*.`
 
 export async function askBrain(
   supabase: SupabaseClient,

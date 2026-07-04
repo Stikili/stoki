@@ -34,7 +34,7 @@ export default function PrivacyPage() {
             stock, sales, credit book, invoicing, and an AI advisor.
           </p>
           <p className="mt-2">
-            Contact: <a href="mailto:hello@stoki.app" className="text-brand underline">hello@stoki.app</a>
+            Contact: <a href="mailto:hello@stokiapp.com" className="text-brand underline">hello@stokiapp.com</a>
           </p>
         </section>
 
@@ -115,7 +115,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="font-bold text-lg mb-2">8. Your rights under POPIA</h2>
-          <p>You have the following rights, exercisable free of charge by emailing <a href="mailto:hello@stoki.app" className="text-brand underline">hello@stoki.app</a>:</p>
+          <p>You have the following rights, exercisable free of charge by emailing <a href="mailto:hello@stokiapp.com" className="text-brand underline">hello@stokiapp.com</a>:</p>
           <ul className="list-disc ml-5 space-y-1 mt-2">
             <li><strong>Access:</strong> request a copy of the personal information we hold about you (s.23).</li>
             <li><strong>Correction:</strong> ask us to correct or update inaccurate information (s.24).</li>
@@ -164,7 +164,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-bold text-lg mb-2">13. Information Officer &amp; contact</h2>
           <p>
-            Our Information Officer can be reached at <a href="mailto:hello@stoki.app" className="text-brand underline">hello@stoki.app</a>.
+            Our Information Officer can be reached at <a href="mailto:hello@stokiapp.com" className="text-brand underline">hello@stokiapp.com</a>.
             If you are not satisfied with our response, you may lodge a complaint with the Information Regulator:
           </p>
           <ul className="list-none mt-2 space-y-1 text-[13px]" style={{ color: 'var(--muted)' }}>
