@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/admin-auth'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
-import { effectivePlan, isGrandfatherActive } from '@/lib/effective-plan'
+import { effectivePlan, isTrialActive } from '@/lib/effective-plan'
 import { toStore } from '@/infrastructure/supabase/mappers'
 import type { Store } from '@/domain/entities/store'
 import BetaInviteCard from './BetaInviteCard'
@@ -69,7 +69,7 @@ export default async function AdminPage() {
     acc[p] = (acc[p] ?? 0) + 1
     return acc
   }, {})
-  const trialingCount = stores.filter(s => isGrandfatherActive(s)).length
+  const trialingCount = stores.filter(s => isTrialActive(s)).length
 
   return (
     <div className="px-4 pt-6 pb-12 space-y-5 max-w-5xl mx-auto">
@@ -120,7 +120,7 @@ export default async function AdminPage() {
               )}
               {rows.map(r => {
                 const plan = r.store ? effectivePlan(r.store) : null
-                const inTrial = r.store ? isGrandfatherActive(r.store) : false
+                const inTrial = r.store ? isTrialActive(r.store) : false
                 return (
                   <tr key={r.userId} style={{ borderBottom: '1px solid var(--card-border)' }}>
                     <td className="px-4 py-2.5">

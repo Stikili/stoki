@@ -16,7 +16,7 @@ import {
 import { getServerData } from '@/lib/getServerData'
 import IconBadge, { type IconTone } from '@/components/IconBadge'
 import {
-  effectivePlan, isGrandfatherActive, grandfatherDaysRemaining,
+  effectivePlan, isTrialActive, trialDaysRemaining,
 } from '@/lib/effective-plan'
 import type { Plan } from '@/domain/entities/store'
 
@@ -36,7 +36,7 @@ import type { Plan } from '@/domain/entities/store'
 export default async function SettingsPage() {
   const { store, role } = await getServerData()
   const plan = effectivePlan(store)
-  const trialDays = isGrandfatherActive(store) ? grandfatherDaysRemaining(store) : 0
+  const trialDays = isTrialActive(store) ? trialDaysRemaining(store) : 0
 
   const sections: {
     href: string

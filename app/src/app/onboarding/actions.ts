@@ -9,6 +9,7 @@ import { ProductRepository } from '@/infrastructure/supabase/repositories/Produc
 import { setSelectedStoreId } from '@/lib/selectedStore'
 import { StoreCategory } from '@/domain/entities/store'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
+import { TRIAL_DAYS } from '@/lib/effective-plan'
 
 // Step 2: save name + category, return the storeId (no redirect — client handles next step)
 export async function saveStoreAction(
@@ -47,11 +48,13 @@ export async function saveStoreAction(
       return { storeId: '', locked: 'store.create.beyond_3', error: 'Up to 3 stores on Business — talk to us about Enterprise.' }
     }
     const newStore = await storeRepo.create(user.id, name, phone)
-    // First store gets a fresh 14-day Pro trial. Additional stores inherit
-    // the trial window from the user's first store so the experience stays
-    // consistent.
+    // First store gets a fresh TRIAL_DAYS-day Business-tier trial (see
+    // effective-plan.ts for why Business, not Pro). Additional stores
+    // inherit the trial window from the user's first store so the
+    // experience stays consistent — no accidental "second store gets a
+    // longer trial" exploit.
     const grandfatheredUntil = isFirstStore
-      ? new Date(Date.now() + 14 * 86_400_000).toISOString()
+      ? new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString()
       : (allStores[0]?.grandfatheredUntil ?? null)
     await storeRepo.update(newStore.id, { category, onboardingCompleted: false, grandfatheredUntil })
 

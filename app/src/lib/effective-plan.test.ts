@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   effectivePlan,
-  isGrandfatherActive,
-  grandfatherDaysRemaining,
+  isTrialActive,
+  trialDaysRemaining,
   planAtLeast,
   planRank,
+  TRIAL_DAYS,
 } from './effective-plan'
 import type { Plan } from '@/domain/entities/store'
 
@@ -12,47 +13,63 @@ const future = (days: number) => new Date(Date.now() + days * 86_400_000).toISOS
 const past   = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString()
 
 describe('effectivePlan', () => {
-  it('returns the stored plan when no grandfather is set', () => {
+  it('returns the stored plan when no trial is set', () => {
     expect(effectivePlan({ plan: 'free',     grandfatheredUntil: null })).toBe('free')
     expect(effectivePlan({ plan: 'pro',      grandfatheredUntil: null })).toBe('pro')
     expect(effectivePlan({ plan: 'business', grandfatheredUntil: null })).toBe('business')
   })
 
-  it('elevates a free plan to pro while grandfather is active', () => {
-    expect(effectivePlan({ plan: 'free', grandfatheredUntil: future(7) })).toBe('pro')
+  it('elevates a free plan to business while trial is active', () => {
+    // New pricing model: trial grants Business-tier access so users get
+    // to try payroll / broadcasts / multi-store before deciding.
+    expect(effectivePlan({ plan: 'free', grandfatheredUntil: future(7) })).toBe('business')
   })
 
-  it('returns stored plan after grandfather has expired', () => {
+  it('elevates a paid Pro plan to business while trial is active', () => {
+    // Pro user in trial should also see Business features — trial covers
+    // both paid tiers.
+    expect(effectivePlan({ plan: 'pro', grandfatheredUntil: future(7) })).toBe('business')
+  })
+
+  it('returns stored plan after trial has expired', () => {
     expect(effectivePlan({ plan: 'free', grandfatheredUntil: past(1) })).toBe('free')
   })
 
-  it('never downgrades an already-paid plan during grandfather', () => {
-    // A user on Business with an active grandfather window should stay
-    // Business — the grandfather is a free perk, not a downgrade.
+  it('never downgrades an already-Business plan during trial', () => {
     expect(effectivePlan({ plan: 'business', grandfatheredUntil: future(30) })).toBe('business')
   })
-})
 
-describe('isGrandfatherActive', () => {
-  it('true when grandfather is in the future', () => {
-    expect(isGrandfatherActive({ grandfatheredUntil: future(1) })).toBe(true)
-  })
-  it('false when grandfather is null', () => {
-    expect(isGrandfatherActive({ grandfatheredUntil: null })).toBe(false)
-  })
-  it('false when grandfather is in the past', () => {
-    expect(isGrandfatherActive({ grandfatheredUntil: past(1) })).toBe(false)
+  it('never downgrades an Enterprise plan during trial', () => {
+    expect(effectivePlan({ plan: 'enterprise', grandfatheredUntil: future(30) })).toBe('enterprise')
   })
 })
 
-describe('grandfatherDaysRemaining', () => {
+describe('isTrialActive', () => {
+  it('true when trial expiry is in the future', () => {
+    expect(isTrialActive({ grandfatheredUntil: future(1) })).toBe(true)
+  })
+  it('false when trial expiry is null', () => {
+    expect(isTrialActive({ grandfatheredUntil: null })).toBe(false)
+  })
+  it('false when trial expiry is in the past', () => {
+    expect(isTrialActive({ grandfatheredUntil: past(1) })).toBe(false)
+  })
+})
+
+describe('trialDaysRemaining', () => {
   it('rounds down to whole days', () => {
-    const days = grandfatherDaysRemaining({ grandfatheredUntil: future(3.4) })
+    const days = trialDaysRemaining({ grandfatheredUntil: future(3.4) })
     expect(days).toBe(3)
   })
   it('zero when inactive', () => {
-    expect(grandfatherDaysRemaining({ grandfatheredUntil: null })).toBe(0)
-    expect(grandfatherDaysRemaining({ grandfatheredUntil: past(1) })).toBe(0)
+    expect(trialDaysRemaining({ grandfatheredUntil: null })).toBe(0)
+    expect(trialDaysRemaining({ grandfatheredUntil: past(1) })).toBe(0)
+  })
+})
+
+describe('TRIAL_DAYS', () => {
+  it('is 90 days per the SVP-Product decision on 2026-07-05', () => {
+    expect(TRIAL_DAYS).toBe(90)
   })
 })
 

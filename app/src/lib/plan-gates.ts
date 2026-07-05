@@ -56,19 +56,23 @@ export const GATES: Record<GateId, Gate> = {
   'invoice.payments':          { minPlan: 'pro',      label: 'Invoice payment recording',  description: 'Record EFT / card / cash payments against open invoices.' },
 
   'team.invite.beyond_owner':  { minPlan: 'pro',      label: 'Add a teammate',             description: 'Bring on a cashier or manager so you don\'t run the till alone.' },
-  'team.invite.beyond_2':      { minPlan: 'business', label: 'Larger team (up to 10)',     description: 'Add managers and cashiers across multiple shifts.' },
+  'team.invite.beyond_2':      { minPlan: 'business', label: 'Larger team (up to 5)',      description: 'Add managers and cashiers across multiple shifts — up to 5 team members on Business.' },
 
-  'store.create.beyond_1':     { minPlan: 'business', label: 'Multiple stores',            description: 'Run more than one shop with aggregated reporting.' },
+  'store.create.beyond_1':     { minPlan: 'business', label: 'Multiple stores',            description: 'Run up to 3 shops with aggregated reporting on Business.' },
   'store.create.beyond_3':     { minPlan: 'enterprise', label: 'Unlimited stores',          description: 'Chain / franchise rollouts. Talk to us.' },
 
   'reports.bank_reconcile':    { minPlan: 'pro',      label: 'Bank reconciliation',        description: 'Match FNB / Nedbank / ABSA / Capitec / Standard CSVs to your invoices and expenses.' },
   'reports.cross_store':       { minPlan: 'business', label: 'Cross-store reports',        description: 'Roll up sales, stock, and P&L across every shop you own.' },
   'reports.accounting_export': { minPlan: 'pro',      label: 'Accounting exports',         description: 'Send to Xero / Sage / your accountant in one click.' },
 
-  'broadcast.send':            { minPlan: 'pro',      label: 'WhatsApp broadcasts',        description: 'Send Meta-templated marketing messages to opted-in customers.' },
+  // Broadcasts / payroll / assets are Business-tier: they're the tools a
+  // growing shop reaches for once the daily ops are working. Keeping them
+  // out of Pro protects the R99 price point as "you're becoming a proper
+  // business" rather than "you now run every ERP feature we ship".
+  'broadcast.send':            { minPlan: 'business', label: 'WhatsApp broadcasts',        description: 'Send Meta-templated marketing messages to opted-in customers.' },
+  'payroll.run':               { minPlan: 'business', label: 'Payroll (PAYE / UIF / SDL)', description: 'Calculate monthly PAYE, UIF and SDL across your team and export the EMP201 worksheet for SARS.' },
+  'assets.manage':             { minPlan: 'business', label: 'Fixed asset register',       description: 'Track fridges, vehicles, tills and equipment with monthly straight-line depreciation flowing into P&L.' },
 
-  'payroll.run':               { minPlan: 'pro',      label: 'Payroll (PAYE / UIF / SDL)', description: 'Calculate monthly PAYE, UIF and SDL across your team and export the EMP201 worksheet for SARS.' },
-  'assets.manage':             { minPlan: 'pro',      label: 'Fixed asset register',       description: 'Track fridges, vehicles, tills and equipment with monthly straight-line depreciation flowing into P&L.' },
   'payables.manage':           { minPlan: 'pro',      label: 'Supplier bills (payables)',  description: 'Track what you owe each supplier with current / 30 / 60 / 90+ day aging and recorded payments.' },
   'purchase_orders.create':    { minPlan: 'pro',      label: 'Purchase orders',            description: 'Place POs with suppliers, track expected delivery and goods received against each line.' },
 

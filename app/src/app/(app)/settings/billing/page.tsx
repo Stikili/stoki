@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft, Check, Lock, Sparkles } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
-import { effectivePlan, grandfatherDaysRemaining, isGrandfatherActive } from '@/lib/effective-plan'
+import { effectivePlan, trialDaysRemaining, isTrialActive, TRIAL_DAYS } from '@/lib/effective-plan'
 import { GATES, type GateId } from '@/lib/plan-gates'
 import type { Plan } from '@/domain/entities/store'
 import BillingActions, { CheckoutButton } from '@/components/settings/BillingActions'
@@ -29,7 +29,7 @@ const PRO_ADVISOR_GATES: readonly GateId[] = [
 export default async function BillingPage() {
   const { store } = await getServerData()
   const current = effectivePlan(store)
-  const grandfather = isGrandfatherActive(store) ? grandfatherDaysRemaining(store) : 0
+  const trialDays = isTrialActive(store) ? trialDaysRemaining(store) : 0
   const sub = subscriptionSummary(store.subscriptionStatus, store.subscriptionActiveUntil, store.subscriptionRetryCount)
 
   return (
@@ -73,18 +73,21 @@ export default async function BillingPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] mb-0.5" style={{ color: 'var(--muted-dim)' }}>
               Current plan
             </p>
-            <p className="font-bold" style={{ color: 'var(--foreground)' }}>{planLabel(current)}</p>
-            {grandfather > 0 ? (
+            <p className="font-bold" style={{ color: 'var(--foreground)' }}>
+              {planLabel(current)}
+              {trialDays > 0 && <span className="ml-2 pill pill-green text-[10px] py-0">Trial</span>}
+            </p>
+            {trialDays > 0 ? (
               <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-                You have <span style={{ color: '#00C896', fontWeight: 600 }}>{grandfather} day{grandfather === 1 ? '' : 's'}</span> of free Pro access remaining{store.plan === 'free' ? ' — your account stays on Free after that unless you upgrade' : ''}.
+                You have <span style={{ color: '#00C896', fontWeight: 600 }}>{trialDays} day{trialDays === 1 ? '' : 's'}</span> left on your free {TRIAL_DAYS}-day Business trial{store.plan === 'free' ? ' — your account drops to Free after that unless you pick a plan' : ''}.
               </p>
             ) : (
               <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
                 {current === 'free'
-                  ? 'Upgrade to unlock invoicing, multi-user, and premium AI advisor features.'
+                  ? 'Upgrade to unlock B2B invoicing, payables, bank reconciliation, and unlimited AI advisor.'
                   : current === 'pro'
-                    ? 'Pro perks active — invoicing, multi-user, unlimited advisor, bank reconcile.'
-                    : 'Business plan active — multi-store, larger team, cross-store reporting.'}
+                    ? 'Pro active — B2B invoicing, payables, bank reconciliation, unlimited advisor.'
+                    : 'Business active — payroll, fixed assets, multi-store, WhatsApp broadcasts.'}
               </p>
             )}
           </div>
@@ -99,44 +102,61 @@ export default async function BillingPage() {
       {/* Plan cards */}
       <div className="grid grid-cols-1 gap-3">
         <PlanCard
-          name="Free" subtitle="for the spaza on day one" price="R0"
-          current={current === 'free' && !grandfather}
+          name="Free" subtitle="for the spaza on day one" price="R0" priceSub="Forever"
+          current={current === 'free' && !trialDays}
           features={[
             '1 store, 1 user',
             'Unlimited products & sales',
             'Credit book + WhatsApp reminders',
-            '10 AI advisor questions / day',
-            'All auto-pushed alerts (margin, stockout, dead stock, fuel day…)',
-            'P&L + cash-up reports',
+            'Cash up, stocktake, prices, airtime, expenses',
+            '20 AI advisor questions / day',
+            'All auto-pushed alerts (low stock, expiry, dead stock, weather, fuel day…)',
+            'Weekly reports',
           ]}
         />
         <PlanCard
-          name="Pro" subtitle="for the trader running their own shop" price="R99 / month"
+          name="Pro" subtitle="going formal — SARS, B2B customers" price="R99 / month" priceSub="or R990/year — 2 months free"
           highlight current={current === 'pro'}
           features={[
             'Everything in Free',
-            '2 users (owner + cashier or manager)',
-            'B2B invoicing (SARS-compliant)',
+            '2 team members (owner + cashier or manager)',
+            'B2B invoicing (SARS tax invoices)',
+            'B2B customer book with payment terms',
+            'Supplier payables + aging',
+            'Purchase orders',
+            'Bank reconciliation (FNB / Standard / ABSA / Nedbank / Capitec CSVs)',
             'Unlimited AI advisor + 7 Pro insights unlocked',
-            'Bank reconciliation, stocktake',
-            'Accounting exports',
-            'WhatsApp broadcasts (50 messages / month)',
+            'Provisional tax estimator + cashflow forecast',
+            'Accounting exports (Xero / Sage)',
           ]}
           cta="Request Pro access"
         />
         <PlanCard
-          name="Business" subtitle="for shops growing into chains" price="R399 / month"
+          name="Business" subtitle="growing — employees, multi-shop" price="R249 / month" priceSub="or R2,490/year — 2 months free"
           current={current === 'business'}
           features={[
             'Everything in Pro',
-            'Up to 3 stores',
-            'Up to 10 users',
-            'Cross-store reports + cohort analytics',
-            'Higher WhatsApp broadcast limits (250 / month)',
-            'API access',
-            'Priority support',
+            'Payroll — PAYE / UIF / SDL + EMP201 export',
+            'Fixed asset register + monthly depreciation',
+            'WhatsApp broadcasts (Meta-templated marketing)',
+            'Up to 3 stores with cross-store reports',
+            'Up to 5 team members',
+            'Priority WhatsApp support (4-hour response, business hours)',
           ]}
           cta="Request Business access"
+        />
+        <PlanCard
+          name="Enterprise" subtitle="chains, franchises, 10+ shops" price="From R899 / month" priceSub="Contact sales"
+          current={current === 'enterprise'}
+          features={[
+            'Everything in Business',
+            'Unlimited stores + team members',
+            'Dedicated account manager',
+            'Custom onboarding + training for your team',
+            'SLA-backed uptime (99.5% target)',
+            'Priority feature requests',
+          ]}
+          cta="Talk to us"
         />
       </div>
 
@@ -176,7 +196,7 @@ export default async function BillingPage() {
       )}
 
       <p className="text-center text-xs mt-4" style={{ color: 'var(--muted-dim)' }}>
-        Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:hello@stoki.app" className="underline" style={{ color: 'var(--muted)' }}>hello@stoki.app</a>.
+        Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:hello@stokiapp.com" className="underline" style={{ color: 'var(--muted)' }}>hello@stokiapp.com</a>.
       </p>
     </div>
   )
@@ -248,11 +268,12 @@ function subscriptionSummary(
  * provider lands — keeps the upgrade path honest without faking a flow.
  */
 function PlanCard({
-  name, subtitle, price, features, highlight, current, cta,
+  name, subtitle, price, priceSub, features, highlight, current, cta,
 }: {
   name: string
   subtitle: string
   price: string
+  priceSub?: string
   features: string[]
   highlight?: boolean
   current?: boolean
@@ -277,6 +298,7 @@ function PlanCard({
         )}
       </div>
       <p className="font-bold text-2xl mt-3" style={{ color: 'var(--foreground)' }}>{price}</p>
+      {priceSub && <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-dim)' }}>{priceSub}</p>}
       <ul className="flex flex-col gap-2 my-4">
         {features.map((f, i) => (
           <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--muted)' }}>
@@ -294,7 +316,7 @@ function PlanCard({
         <CheckoutButton
           plan={name.toLowerCase() === 'pro' ? 'pro' : name.toLowerCase() === 'business' ? 'business' : 'pro'}
           label={cta}
-          mailto={`mailto:hello@stoki.app?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
+          mailto={`mailto:hello@stokiapp.com?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
         />
       )}
     </div>
