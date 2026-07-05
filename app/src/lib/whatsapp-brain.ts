@@ -120,7 +120,7 @@ Ask me anything in plain English. Try things like:
 
 Anything you can think of about your shop, just ask. Send a voice note if it's easier than typing.
 
-Stuck on something I can't help with? Email a human at *hello@stokiapp.com*.`
+Stuck on something I can't help with? Email a human at *support@stokiapp.com*.`
 
 export async function askBrain(
   supabase: SupabaseClient,

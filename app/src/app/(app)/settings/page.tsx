@@ -175,13 +175,13 @@ export default async function SettingsPage() {
             <span className="text-[10px] text-muted text-center leading-tight">Instant · in-app + WhatsApp</span>
           </a>
           <a
-            href="mailto:hello@stokiapp.com?subject=Stoki%20support"
+            href="mailto:support@stokiapp.com?subject=Stoki%20support"
             className="rounded-xl px-3 py-3 flex flex-col items-center gap-1.5 active:bg-white/[0.04]"
             style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}
           >
             <Mail size={18} style={{ color: '#60A5FA' }} />
             <span className="text-[12px] font-semibold" style={{ color: 'var(--foreground)' }}>Email us</span>
-            <span className="text-[10px] text-muted text-center leading-tight">hello@stokiapp.com</span>
+            <span className="text-[10px] text-muted text-center leading-tight">support@stokiapp.com</span>
           </a>
         </div>
       </div>

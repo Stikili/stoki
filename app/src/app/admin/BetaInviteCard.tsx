@@ -165,5 +165,5 @@ Temp password: ${tempPassword}
 
 Please change your password after signing in (Settings → Account & preferences).
 
-Any issues, reply here or email hello@stokiapp.com.`
+Any issues, reply here or email support@stokiapp.com.`
 }

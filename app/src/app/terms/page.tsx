@@ -157,7 +157,7 @@ export default function TermsPage() {
           <p>
             These terms are governed by the laws of the Republic of South Africa. The South
             African courts have non-exclusive jurisdiction over any dispute. We ask you to
-            contact us at <a href="mailto:hello@stokiapp.com" className="text-brand underline">hello@stokiapp.com</a>{' '}
+            contact us at <a href="mailto:support@stokiapp.com" className="text-brand underline">support@stokiapp.com</a>{' '}
             first so we can try to resolve things informally.
           </p>
         </section>
@@ -166,7 +166,7 @@ export default function TermsPage() {
           <h2 className="font-bold text-lg mb-2">15. Contact</h2>
           <p>
             Questions about these terms? Email us at{' '}
-            <a href="mailto:hello@stokiapp.com" className="text-brand underline">hello@stokiapp.com</a>.
+            <a href="mailto:support@stokiapp.com" className="text-brand underline">support@stokiapp.com</a>.
           </p>
         </section>
       </div>

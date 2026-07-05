@@ -196,7 +196,7 @@ export default async function BillingPage() {
       )}
 
       <p className="text-center text-xs mt-4" style={{ color: 'var(--muted-dim)' }}>
-        Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:hello@stokiapp.com" className="underline" style={{ color: 'var(--muted)' }}>hello@stokiapp.com</a>.
+        Need a custom plan for multiple branches, white-label, or SSO? Email <a href="mailto:support@stokiapp.com" className="underline" style={{ color: 'var(--muted)' }}>support@stokiapp.com</a>.
       </p>
     </div>
   )
@@ -316,7 +316,7 @@ function PlanCard({
         <CheckoutButton
           plan={name.toLowerCase() === 'pro' ? 'pro' : name.toLowerCase() === 'business' ? 'business' : 'pro'}
           label={cta}
-          mailto={`mailto:hello@stokiapp.com?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
+          mailto={`mailto:support@stokiapp.com?subject=${encodeURIComponent(`Upgrade to ${name}`)}&body=${encodeURIComponent(`Hi Stoki team,\n\nI'd like to upgrade to the ${name} plan. Please get back to me with payment details.\n\nThanks!`)}`}
         />
       )}
     </div>

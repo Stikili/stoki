@@ -27,7 +27,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Something went wrong</h1>
           <p style={{ fontSize: 14, color: '#7B8CA1', lineHeight: 1.5, marginBottom: 24 }}>
             We&apos;ve been notified and are looking into it. Try reloading — if it keeps happening, let us know at{' '}
-            <a href="mailto:hello@stokiapp.com?subject=Stoki%20error" style={{ color: '#00C896' }}>hello@stokiapp.com</a>.
+            <a href="mailto:support@stokiapp.com?subject=Stoki%20error" style={{ color: '#00C896' }}>support@stokiapp.com</a>.
           </p>
           <button
             onClick={() => window.location.reload()}

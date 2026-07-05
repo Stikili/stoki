@@ -250,7 +250,30 @@ function SlideCta() {
           {' '}&amp;{' '}
           <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
         </p>
-        <p className="mt-2 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
+
+        {/* Two labelled contact points: hello@ for prospects wanting to
+            introduce themselves or ask general questions, support@ for
+            technical or account help. Split so the right message lands
+            with the right person / SLA. */}
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+          <a
+            href="mailto:hello@stokiapp.com?subject=Hello%20Stoki"
+            className="inline-flex items-center gap-1.5 underline"
+            style={{ color: 'var(--muted)' }}
+          >
+            Say hello · <span className="font-medium">hello@stokiapp.com</span>
+          </a>
+          <span className="hidden sm:inline" style={{ color: 'var(--card-border)' }}>·</span>
+          <a
+            href="mailto:support@stokiapp.com?subject=Stoki%20support"
+            className="inline-flex items-center gap-1.5 underline"
+            style={{ color: 'var(--muted)' }}
+          >
+            Need help · <span className="font-medium">support@stokiapp.com</span>
+          </a>
+        </div>
+
+        <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
           Stoki (Pty) Ltd · Reg. K2026258855
         </p>
       </div>
