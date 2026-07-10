@@ -128,7 +128,7 @@ function SlideHero() {
           className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-xl mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          Your business assistant on WhatsApp or the web &mdash; selling, invoicing, paying staff, and answering questions like <em>&ldquo;who owes me?&rdquo;</em> and <em>&ldquo;can I afford to hire?&rdquo;</em> Grounded in your numbers and the South African economy.
+          Sells, invoices, pays staff, and answers <em>&ldquo;can I afford to hire?&rdquo;</em> &mdash; on WhatsApp or the web, grounded in the SA economy.
         </p>
         <div className="flex items-center justify-center">
           <Link
