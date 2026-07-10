@@ -113,22 +113,18 @@ function SlideHero() {
         >
           Built for South African shops &amp; SMMEs
         </p>
-        {/* Two-line headline: emotional lead in white, differentiator in
-            emerald. "Thinks alongside you" is the memorable phrase that
-            positions Stoki as an ally, not a tool — and covers spaza,
-            services, and formal SMMEs equally. */}
         <h1
           className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"
           style={{ color: 'var(--foreground)' }}
         >
-          You run the business.{' '}
-          <span style={{ color: '#00e0a0' }}>Stoki thinks alongside you.</span>
+          Run your business{' '}
+          <span style={{ color: '#00e0a0' }}>without the chaos.</span>
         </h1>
         <p
-          className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-xl mx-auto"
+          className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-md mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          Sells, invoices, pays staff, and answers <em>&ldquo;can I afford to hire?&rdquo;</em> &mdash; on WhatsApp or the web, grounded in the SA economy.
+          From your first sale to your next SARS submission &mdash; one app. With an AI that knows the SA economy. Works offline.
         </p>
         <div className="flex items-center justify-center">
           <Link
@@ -140,7 +136,7 @@ function SlideHero() {
           </Link>
         </div>
         <p className="text-[12px] mt-4" style={{ color: 'var(--muted-dim)' }}>
-          Free for your first store · No card required · 90-day Business trial
+          Free for your first store · No card required
         </p>
       </div>
     </section>
@@ -238,7 +234,7 @@ function SlideCta() {
             Ready when you are.
           </h2>
           <p className="text-[15px] mb-6" style={{ color: 'var(--muted)' }}>
-            In your first hour: record a sale, do a cash-up, ask Stoki what to reorder tomorrow.
+            In your first hour: record a sale, do a cash-up, see your 30-day forecast.
           </p>
           <Link
             href="/login?intent=register"
