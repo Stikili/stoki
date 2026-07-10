@@ -121,10 +121,10 @@ function SlideHero() {
           <span style={{ color: '#00e0a0' }}>without the chaos.</span>
         </h1>
         <p
-          className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-md mx-auto"
+          className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-2xl mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          From your first sale to your next SARS submission &mdash; one app. With an AI assistant that knows the SA economy and works offline.
+          Your AI assistant for South African business &mdash; even offline.
         </p>
         <div className="flex items-center justify-center">
           <Link
