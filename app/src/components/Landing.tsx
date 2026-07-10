@@ -124,7 +124,7 @@ function SlideHero() {
           className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-md mx-auto"
           style={{ color: 'var(--muted)' }}
         >
-          From your first sale to your next SARS submission &mdash; one app. With an AI that knows the SA economy. Works offline.
+          From your first sale to your next SARS submission &mdash; one app. With an AI assistant that knows the SA economy and works offline.
         </p>
         <div className="flex items-center justify-center">
           <Link
