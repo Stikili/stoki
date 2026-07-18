@@ -4,31 +4,36 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 /**
- * Global loading indicator.
+ * Global loading indicator — for NAVIGATION only.
  *
  * Shows an animated Stoki logo — three stacked rounded blocks pulsing in
- * sequence — after any in-app click that triggers a navigation or
- * form-action and hasn't resolved within 200ms. Fast interactions never
- * flash the spinner; slow ones surface an "I'm on it" signal so the user
- * doesn't wonder if the tap registered.
+ * sequence — immediately on any in-app navigation click and stays visible
+ * for at least MIN_DISPLAY_MS so cached routes don't flash. Route
+ * completion hides it (respecting the min-display floor); a bounded
+ * safety timeout catches any pathological non-completing case.
  *
  * Click detection covers:
  *   - Internal <a> tags (Next.js Links, BottomNav tabs, footer links)
- *   - <button type="submit"> or plain <button> inside a <form>
- *     (server-action submits, native form submits)
  *   - Anything with [data-loader-trigger] for opt-in on custom buttons
+ *     that trigger client-side navigation (e.g., router.push)
  *
- * Ignored:
- *   - external hrefs (mailto:, tel:, target=_blank, cross-origin)
- *   - hash-only anchors
- *   - same-URL clicks (re-selecting the current page)
- *   - modifier-key clicks (open-in-new-tab)
- *   - programmatic router.push — those callers should own their local
+ * Explicitly NOT covered:
+ *   - Form-submit buttons. Server actions that stay on the same page
+ *     never fire the pathname reset — the overlay would hang for the
+ *     full safety window. HTML5 validation-failed submits (empty
+ *     required field) would trigger the loader with no actual work.
+ *     Modal-scoped submits happen at z-indices we don't dominate.
+ *     Use React's `useFormStatus()` in a local <SubmitButton> for form
+ *     feedback — that's the right altitude for per-form pending state.
+ *   - External hrefs (mailto:, tel:, target=_blank, cross-origin)
+ *   - Hash-only anchors
+ *   - Same-URL clicks (re-selecting the current page)
+ *   - Modifier-key clicks (open-in-new-tab)
+ *   - Programmatic router.push — those callers should own their local
  *     `isPending` state; a global overlay is the wrong altitude
  *
- * Safety net: 6s auto-hide so a click that never resolves (e.g., a
- * server-action toast that stays on the same page) doesn't strand
- * the overlay indefinitely. Route changes reset immediately.
+ * z-index 400 so it renders above every modal / sheet / toast in the
+ * app (highest existing layer is Walkthrough at z-300).
  */
 // Show immediately on every qualifying click — no delay. The user wants
 // consistent visible feedback on every nav-bar / menu / tile / form
@@ -91,19 +96,26 @@ export default function GlobalLoader() {
       const raw = e.target as HTMLElement | null
       if (!raw) return
 
-      // Try common navigation triggers first.
-      const nav = raw.closest('a, [data-loader-trigger]') as HTMLElement | null
-      // Then form submit — including plain <button> inside a form
-      // (which submits by default in HTML) that lacks an explicit
-      // type attribute.
-      const btn = raw.closest('button') as HTMLButtonElement | null
-      // btn.type reflects the DOM attribute; TypeScript narrows to
-      // 'submit' | 'reset' | 'button'. HTML default is 'submit' inside a
-      // form, so `type === 'submit'` catches both explicit and implicit.
-      // The DOM property literally reports 'submit' when the attribute
-      // is absent AND the button is inside a form.
-      const submitsForm = btn ? btn.type === 'submit' && btn.form !== null : false
-      const target = nav ?? (submitsForm ? btn : null)
+      // Only NAVIGATION triggers arm the global loader:
+      //   - <a> internal links (Next.js Link, BottomNav tabs, etc.)
+      //   - explicit [data-loader-trigger] opt-in for programmatic paths
+      //
+      // Form-submit buttons (<button type="submit">) are intentionally
+      // NOT caught. Reasons:
+      //   1) SWEEP-1: HTML5 validation failure (empty required field)
+      //      fires the click without submitting → global loader
+      //      hangs for the full safety window over the invalid field.
+      //   2) BUG-005: same-page server actions (revalidatePath without
+      //      redirect) never change pathname → the loader can't
+      //      auto-hide, stranding the overlay for the full 6s safety.
+      //   3) SWEEP-2: many form submits happen inside modals/sheets
+      //      which sit at z-[60]-z-[110] — the loader was under those
+      //      layers anyway, so its "feedback" was invisible.
+      // For form actions, use React's own `useFormStatus()` inside a
+      // <SubmitButton> to render a per-button spinner. That's the
+      // right altitude for form feedback — local, tied to the actual
+      // pending state, not a global overlay guessing at completion.
+      const target = raw.closest('a, [data-loader-trigger]') as HTMLElement | null
       if (!target) return
 
       if (target instanceof HTMLAnchorElement) {
@@ -142,7 +154,7 @@ export default function GlobalLoader() {
 
   return (
     <div
-      className="fixed inset-0 z-[95] pointer-events-none flex items-center justify-center"
+      className="fixed inset-0 z-[400] pointer-events-none flex items-center justify-center"
       aria-live="polite"
       role="status"
       aria-label="Loading"
@@ -202,11 +214,26 @@ export default function GlobalLoader() {
           transform-origin: center;
           animation: stoki-loader-pulse 1.35s ease-in-out infinite;
         }
+        /*
+          Even 1/3-cycle stagger keeps the pulse reading as a continuous
+          wave rather than a stutter. 1350ms / 3 = 450ms per delay
+          slot — every block hits its peak while the next one is
+          rising, so the visual rhythm never sits still.
+        */
         .stoki-loader-block-top    { animation-delay: 0ms;   }
-        .stoki-loader-block-middle { animation-delay: 180ms; }
-        .stoki-loader-block-bottom { animation-delay: 360ms; }
+        .stoki-loader-block-middle { animation-delay: 450ms; }
+        .stoki-loader-block-bottom { animation-delay: 900ms; }
+        /*
+          Reduced-motion: scale BOTH the animation duration AND the
+          proportional delays so the pulse stays evenly spaced across
+          the longer cycle. Previously only the duration scaled, which
+          compressed all three pulses into the first ~900ms and left
+          the logo static for 2.7s — the "am I frozen?" bug.
+        */
         @media (prefers-reduced-motion: reduce) {
           .stoki-loader-block { animation-duration: 3.6s !important; }
+          .stoki-loader-block-middle { animation-delay: 1200ms !important; }
+          .stoki-loader-block-bottom { animation-delay: 2400ms !important; }
           .stoki-loader-card  { animation: none; }
         }
       `}</style>
