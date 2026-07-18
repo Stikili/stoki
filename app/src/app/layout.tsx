@@ -6,6 +6,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import GlobalLoader from "@/components/GlobalLoader";
+import { Analytics } from "@vercel/analytics/next";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -66,6 +67,12 @@ export default function RootLayout({
               <ServiceWorkerRegister />
               <GlobalLoader />
               {children}
+              {/* Vercel Web Analytics — page views, unique visitors, top
+                  pages, referrers, geo. Zero-config beyond this import;
+                  Vercel picks it up automatically on Pro tier deploys.
+                  No cookies, GDPR/POPIA-friendly. Ignored on preview
+                  deploys unless VERCEL_ENV=production. */}
+              <Analytics />
             </ToastProvider>
           </I18nProvider>
         </ThemeProvider>

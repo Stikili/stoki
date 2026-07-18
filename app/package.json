@@ -20,6 +20,7 @@
     "@sentry/nextjs": "^10.63.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
+    "@vercel/analytics": "^2.0.1",
     "html5-qrcode": "^2.3.8",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^1.7.0",
