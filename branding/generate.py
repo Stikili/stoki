@@ -335,7 +335,7 @@ def make_post_square(path: Path, size: int = 1080) -> None:
 
     # Headline
     headline_font = load_font(int(size * 0.056))
-    headline = "The AI business assistant for South African shops"
+    headline = "The AI business assistant for South African businesses"
     # Simple manual line-wrap (Pillow doesn't have one built-in)
     lines = _wrap_text(draw, headline, headline_font, int(size * 0.78))
     line_h = int(size * 0.075)
@@ -399,7 +399,7 @@ def make_post_link(path: Path, w: int = 1200, h: int = 627) -> None:
 
     # Big tagline underneath
     tagline_font = load_font(int(h * 0.075))
-    lines = _wrap_text(draw, "The AI business assistant for South African shops.", tagline_font, int(w * 0.88))
+    lines = _wrap_text(draw, "The AI business assistant for South African businesses.", tagline_font, int(w * 0.88))
     line_h = int(h * 0.1)
     start_y = int(h * 0.55)
     for i, line in enumerate(lines):

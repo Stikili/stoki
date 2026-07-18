@@ -77,7 +77,7 @@ Three stacked, rounded blocks offset to suggest an "S" silhouette:
 ```
 
 **Reads as:**
-- Inventory / stacks / a shop's stock (the "stoki" concept)
+- Stacks / stored value / a business's assets (the "stoki" concept)
 - An "S" from a distance (Stoki initial)
 - A ledger / balance (accounting)
 - Movement (offset stack suggests flow)
@@ -94,24 +94,25 @@ Three stacked, rounded blocks offset to suggest an "S" silhouette:
 
 ### Short (one-line, for the profile subtitle)
 
-> AI-powered business assistant for South African shops & SMMEs.
+> The AI-powered business assistant for South African SMMEs.
 
 ### Medium (2-3 sentences, for the About section preview)
 
-> Stoki is the AI-powered business assistant built for South African shops and SMMEs. From your first sale to your next SARS submission — one app that runs your till, tracks your money, and answers your questions in plain English. Works on WhatsApp or the web, even offline.
+> Stoki is the AI-powered business assistant for South African SMMEs — informal and formal, from a street trader with one product to a VAT-registered business with staff. From your first sale to your next SARS submission — one app that runs your operations, tracks your money, and answers your questions in plain English. Works on WhatsApp or the web, even offline.
 
 ### Long (full About section)
 
-> **Stoki** is the operating system for South African small businesses. We combine a retail till, credit book, invoicing, payroll, VAT reporting, and an AI advisor grounded in the SA economy — all in one app that works on WhatsApp or the web, even offline.
+> **Stoki** is the operating system for South African small businesses — formal and informal, from your first customer to your first employee. We combine sales / POS, credit book, invoicing, payroll, VAT reporting, and an AI advisor grounded in the SA economy — all in one app that works on WhatsApp or the web, even offline.
 >
-> **Built for:**
-> - Spaza shops, general dealers, food stalls
-> - Salons, mobile operators, tradespeople, small contractors
-> - Growing SMMEs with employees (formal, VAT-registered)
+> **Built for every kind of SA small business:**
+> - **Informal traders**: spaza shops, general dealers, food stalls, street vendors
+> - **Service businesses**: salons, transport operators, tradespeople, contractors, consultants, mobile operators
+> - **Formal SMMEs**: growing businesses with staff, VAT-registered, with an accountant
 >
 > **What makes us different:**
 > - **WhatsApp-native**: sell, invoice, ask questions in your own language — right from the app your customers already message you on
 > - **AI that knows the SA economy**: SARB rates, fuel prices, SARS deadlines, load-shedding, competitor tracking — every insight grounded in your numbers *and* the local market
+> - **Adapts to your voice**: pick how Stoki AI talks to you — kasi, plain English, professional, or full-accounting technical — one setting, whole app changes
 > - **Offline-first**: keep trading through load-shedding and dodgy Wi-Fi; sync when you're back online
 > - **Made in South Africa, for South Africa**: PAYE / UIF / SDL / VAT201 are first-class, not afterthoughts
 >
@@ -123,7 +124,7 @@ Three stacked, rounded blocks offset to suggest an "S" silhouette:
 
 Alternatives if you want to A/B test:
 - *"Your AI business assistant, made in South Africa."*
-- *"The whole shop, in one app."*
+- *"The whole business, in one app."*
 - *"From first sale to SARS — one app."*
 
 ---
@@ -138,12 +139,12 @@ Draft copy you can adapt. Use `linkedin-post-square.png` as the image (or replac
 >
 > It's the AI-powered business assistant I wish I'd had every time I've helped a small business owner untangle their books.
 >
-> Not another accounting app. Not another till. **The whole shop in one app** — sales, stock, credit, invoices, payroll, VAT, and an AI that actually knows the SA economy (fuel prices, SARB rates, SARS deadlines, load-shedding — all grounded in *your* numbers).
+> Not another accounting app. Not another till. **The whole business in one app** — sales, stock, credit, invoices, payroll, VAT, and an AI that actually knows the SA economy (fuel prices, SARB rates, SARS deadlines, load-shedding — all grounded in *your* numbers).
 >
 > Works on WhatsApp. Works on the web. Works offline.
 > Free for your first store. 120-day Business trial for everyone.
 >
-> If you run a shop, salon, food stall, or any small business in SA — I built this for you.
+> If you run any kind of small business in SA — informal or formal, trader or service or contractor — I built this for you.
 >
 > 👉 stokiapp.com
 
