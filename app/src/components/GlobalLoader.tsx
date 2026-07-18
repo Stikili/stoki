@@ -45,6 +45,14 @@ export default function GlobalLoader() {
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // ── TEMPORARY DEBUG (revert after loader is confirmed working) ──────
+  // Logs mount + every click intercepted + every state transition so we
+  // can see in the browser console exactly where the pipeline breaks.
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[GlobalLoader] MOUNTED. pathname:', pathname)
+  }, [pathname])
+
   // Cancel any pending timers + hide the spinner on route change.
   // Depends on `pathname` (stable string) only — no searchParams
   // instability to worry about.
@@ -60,6 +68,9 @@ export default function GlobalLoader() {
   // live so we don't get bitten by stale closure state.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
+      // eslint-disable-next-line no-console
+      console.log('[GlobalLoader] click event', { target: e.target, meta: e.metaKey, button: e.button })
+
       // Modifier-key clicks open in new tab/window — user isn't navigating
       // this tab, so no spinner.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -68,10 +79,16 @@ export default function GlobalLoader() {
       const target = (e.target as HTMLElement | null)?.closest(
         'a, button[type="submit"], [data-loader-trigger]',
       ) as HTMLElement | null
-      if (!target) return
+      if (!target) {
+        // eslint-disable-next-line no-console
+        console.log('[GlobalLoader] not a nav target, skip')
+        return
+      }
 
       if (target instanceof HTMLAnchorElement) {
         const rawHref = target.getAttribute('href')
+        // eslint-disable-next-line no-console
+        console.log('[GlobalLoader] anchor click', { rawHref, targetAttr: target.target })
         if (!rawHref) return
         if (target.target === '_blank') return
         if (rawHref.startsWith('#') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) return
@@ -85,10 +102,15 @@ export default function GlobalLoader() {
         }
       }
 
+      // eslint-disable-next-line no-console
+      console.log('[GlobalLoader] arming 200ms timer')
+
       // Qualifying click → arm the 200ms show timer. Chain the safety
       // auto-hide inside the show callback so both timers move as a unit.
       if (showTimerRef.current) clearTimeout(showTimerRef.current)
       showTimerRef.current = setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.log('[GlobalLoader] TIMER FIRED → setVisible(true)')
         setVisible(true)
         if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
         // 8s safety net — if nothing else hides the spinner (e.g., a
