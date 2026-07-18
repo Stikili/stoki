@@ -139,6 +139,21 @@ const HELP_TRIGGERS = new Set([
   "what can you do", 'what can you do?', 'what can i ask',
 ])
 
+/**
+ * True if the given user message will be answered by the deterministic
+ * HELP_MENU fast-path (no LLM invocation). Exported so the WhatsApp
+ * webhook can skip the daily-budget reservation for these calls —
+ * previously, sending "sawubona" 10 times burned a free-tier user's
+ * entire quota with zero token spend (BUG-001 from 2026-07-18 review).
+ *
+ * Mirrors the normalisation done inside askBrain so both call sites
+ * classify the same string the same way.
+ */
+export function isHelpMenuMessage(userMessage: string): boolean {
+  const normalised = userMessage.trim().toLowerCase().replace(/[!.…]+$/, '')
+  return HELP_TRIGGERS.has(normalised)
+}
+
 const HELP_MENU_TEXT = `Hi! I'm Stoki — your shop assistant 🟢
 
 Ask me anything in plain English. Try things like:

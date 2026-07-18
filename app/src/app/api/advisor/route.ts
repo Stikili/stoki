@@ -7,7 +7,7 @@ import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRep
 import { SaleRepository } from '@/infrastructure/supabase/repositories/SaleRepository'
 import { getCachedProducts, getCachedDebtors } from '@/lib/cached-queries'
 import { LLM_API_KEY, LLM_MODEL, LLM_MODEL_FAST } from '@/lib/llm-config'
-import { checkAdvisorBudget, checkGlobalAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
+import { checkAndReserveAdvisorSlot, checkGlobalAdvisorBudget } from '@/lib/ai-cost-meter'
 import { effectivePlan } from '@/lib/effective-plan'
 import { rateLimitByIp } from '@/lib/rate-limit'
 import { buildAllTools } from '@/lib/advisor/tools'
@@ -80,10 +80,16 @@ export async function POST(req: NextRequest) {
   if (!allStores.length) return NextResponse.json({ error: 'No store' }, { status: 404 })
   const store = allStores.find(s => s.id === storeId) ?? allStores[0]
 
+  // BUG-009 + BUG-010 fix: atomic check-and-reserve. Counter increments
+  // BEFORE the LLM call in a single Postgres round-trip, closing the
+  // burst-bypass race (previously N concurrent handlers all read the
+  // pre-increment count then all incremented after) AND removing the
+  // fire-and-forget `void recordAdvisorUse` at the end which was
+  // vulnerable to Vercel serverless termination.
   const plan = effectivePlan(store)
-  const budget = await checkAdvisorBudget(supabase, user.id, plan)
-  if (!budget.ok) {
-    return NextResponse.json({ message: budget.message, throttled: true })
+  const reservation = await checkAndReserveAdvisorSlot(supabase, user.id, plan)
+  if (!reservation.ok) {
+    return NextResponse.json({ message: reservation.message, throttled: true })
   }
 
   // Pre-call snapshot — same shape as the WhatsApp brain so the LLM has
@@ -245,8 +251,8 @@ Snapshot (no tool call needed):
 
   if (!finalText) finalText = "I couldn't put together an answer for that. Try rephrasing?"
 
-  // Increment per-user daily counter on success (fire-and-forget).
-  void recordAdvisorUse(supabase, user.id)
+  // Counter was already incremented atomically by checkAndReserveAdvisorSlot
+  // before the LLM call — no post-call recordAdvisorUse needed.
 
   // Persist this exchange for future conversation memory.
   if (lastClientMessage) {

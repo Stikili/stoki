@@ -75,16 +75,69 @@ export async function checkAdvisorBudget(
 }
 
 /**
- * Atomically increment today's count for `userId` via the
- * `increment_advisor_usage` RPC (migration 034). Closes the
- * read-modify-write race the previous upsert pattern had — a script
- * firing 10 concurrent advisor requests would all read count=0, all
- * upsert count=1, and slip past the daily limit before the JS counter
- * caught up.
+ * Atomic check-and-increment via the `check_and_increment_advisor_usage`
+ * RPC (migration 038). Closes BUG-009 from the 2026-07-18 code review:
+ * the previous pattern of `checkAdvisorBudget` (SELECT) then LLM call
+ * then `recordAdvisorUse` (INCREMENT) had a race window where N
+ * concurrent burst requests all passed the SELECT before any INCREMENT
+ * landed, silently bypassing the daily cap.
  *
- * Falls back to the previous read-modify-write pattern if the RPC
- * isn't available (e.g. migration not yet applied) so this stays a
- * non-breaking deployment.
+ * This RPC does INSERT-with-conditional-INCREMENT in one statement,
+ * with row-level locking on the (user_id, day) tuple — concurrent
+ * callers serialise and the (limit-1)th caller gets `allowed=false`
+ * with no LLM cost burned.
+ *
+ * Semantic change vs. the old check → LLM → record: the counter
+ * increments BEFORE the LLM call, so a failed LLM call still burns
+ * one quota unit. Accepted trade-off — the alternative is a
+ * bypassable cap.
+ *
+ * Falls back to the old pattern if the RPC isn't available (i.e.
+ * migration 038 not yet applied) so this stays non-breaking.
+ */
+export async function checkAndReserveAdvisorSlot(
+  supabase: SupabaseClient,
+  userId: string,
+  effectivePlan: Plan = 'free',
+): Promise<MeterDecision> {
+  const limit = advisorDailyLimit(effectivePlan)
+  const day = today()
+  try {
+    const { data, error } = await supabase.rpc('check_and_increment_advisor_usage', {
+      p_user_id: userId,
+      p_day: day,
+      p_limit: limit,
+    })
+    if (error) throw error
+    // Postgres RPC returns TABLE (allowed bool, used int) — Supabase
+    // gives us the first row.
+    const row = Array.isArray(data) ? data[0] : data
+    const allowed: boolean = row?.allowed ?? false
+    const used: number = row?.used ?? 0
+    if (!allowed) {
+      const message = effectivePlan === 'free'
+        ? `${limit} questions a day to chat with stoki — upgrade for unlimited. Resets at midnight.`
+        : `You've hit today's advisor limit (${limit} questions). Resets at midnight — contact us if you need more.`
+      return { ok: false, used, limit, message }
+    }
+    return { ok: true, used, limit }
+  } catch {
+    // RPC not deployed (migration 038 not applied) — fall back to the
+    // old check-then-record pattern. Race window returns but at least
+    // the daily cap is still enforced approximately.
+    const decision = await checkAdvisorBudget(supabase, userId, effectivePlan)
+    if (decision.ok) {
+      void recordAdvisorUse(supabase, userId)
+    }
+    return decision
+  }
+}
+
+/**
+ * @deprecated Prefer `checkAndReserveAdvisorSlot` — it's atomic and
+ * closes the check→LLM→record race. This function is kept for the
+ * fallback path inside checkAndReserveAdvisorSlot and any legacy
+ * callers that haven't been migrated.
  */
 export async function recordAdvisorUse(
   supabase: SupabaseClient,

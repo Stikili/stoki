@@ -9,9 +9,9 @@ import { recordSale } from '@/application/sales/recordSale'
 import { getProducts } from '@/application/inventory/getProducts'
 import { parseCommand, fuzzyMatch } from '@/lib/whatsapp-parser'
 import { sendWhatsAppText, validateMetaSignature, extractIncomingMessage } from '@/lib/whatsapp'
-import { askBrain } from '@/lib/whatsapp-brain'
+import { askBrain, isHelpMenuMessage } from '@/lib/whatsapp-brain'
 import { rateLimitByIp } from '@/lib/rate-limit'
-import { checkAdvisorBudget, checkGlobalAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
+import { checkAndReserveAdvisorSlot, checkGlobalAdvisorBudget } from '@/lib/ai-cost-meter'
 import { effectivePlan } from '@/lib/effective-plan'
 
 // Meta webhook verification handshake.
@@ -162,22 +162,31 @@ async function handleCommand(from: string, text: string): Promise<string | null>
       // WhatsApp message comes in by phone number, so we use the owner
       // (matched by stores.whatsapp_number) as the user-of-record.
       //
-      // Rate-limit guards BEFORE hitting the LLM — closes the loophole
-      // where WhatsApp abuse could bypass the advisor quota (the /api/advisor
-      // route enforces these; without this the WhatsApp path was
-      // effectively uncapped for LLM cost).
+      // BUG-001 fix: help-menu messages ("hi", "menu", "sawubona", ...)
+      // are answered by askBrain's deterministic fast-path with zero LLM
+      // cost. Skip the daily-budget reservation entirely for those so a
+      // returning user's "sawubona" doesn't burn a paid quota slot.
+      if (isHelpMenuMessage(text)) {
+        return askBrain(supabase, store, text, store.ownerId)
+      }
+
+      // BUG-009 + BUG-010 fix: use the atomic check-and-reserve RPC
+      // instead of the old check → LLM → record pattern. Increment
+      // happens BEFORE the LLM call in a single Postgres round-trip
+      // with row-level locking, so:
+      //   - Concurrent bursts can no longer bypass the daily cap
+      //     (previously all N handlers read the same pre-increment
+      //     count then all incremented after their LLM calls).
+      //   - Fire-and-forget `void recordAdvisorUse` is gone — no risk
+      //     of Vercel serverless termination dropping the increment.
       const globalBudget = await checkGlobalAdvisorBudget(supabase)
       if (!globalBudget.ok) return globalBudget.message ?? 'Stoki AI is taking a short break — try again later.'
 
       const plan = effectivePlan(store)
-      const userBudget = await checkAdvisorBudget(supabase, store.ownerId, plan)
-      if (!userBudget.ok) return userBudget.message ?? `You've hit today's Stoki AI limit — resets at midnight.`
+      const reservation = await checkAndReserveAdvisorSlot(supabase, store.ownerId, plan)
+      if (!reservation.ok) return reservation.message ?? `You've hit today's Stoki AI limit — resets at midnight.`
 
-      const reply = await askBrain(supabase, store, text, store.ownerId)
-      // Increment on success (fire-and-forget). Refusals still count —
-      // deliberate: quota burn discourages repeated off-topic prodding.
-      void recordAdvisorUse(supabase, store.ownerId)
-      return reply
+      return askBrain(supabase, store, text, store.ownerId)
     }
   }
 }
