@@ -11,6 +11,8 @@ import { parseCommand, fuzzyMatch } from '@/lib/whatsapp-parser'
 import { sendWhatsAppText, validateMetaSignature, extractIncomingMessage } from '@/lib/whatsapp'
 import { askBrain } from '@/lib/whatsapp-brain'
 import { rateLimitByIp } from '@/lib/rate-limit'
+import { checkAdvisorBudget, checkGlobalAdvisorBudget, recordAdvisorUse } from '@/lib/ai-cost-meter'
+import { effectivePlan } from '@/lib/effective-plan'
 
 // Meta webhook verification handshake.
 // Configured during webhook setup in Meta App Dashboard.
@@ -154,11 +156,28 @@ async function handleCommand(from: string, text: string): Promise<string | null>
       return `✅ Sold ${qty}× ${product.name} — R${total.toFixed(2)}\nStock left: ${product.qty - qty}`
     }
 
-    default:
+    default: {
       // Route conversational queries through Claude with full data access.
       // Pass the store owner's id as the conversation memory key — the
       // WhatsApp message comes in by phone number, so we use the owner
       // (matched by stores.whatsapp_number) as the user-of-record.
-      return askBrain(supabase, store, text, store.ownerId)
+      //
+      // Rate-limit guards BEFORE hitting the LLM — closes the loophole
+      // where WhatsApp abuse could bypass the advisor quota (the /api/advisor
+      // route enforces these; without this the WhatsApp path was
+      // effectively uncapped for LLM cost).
+      const globalBudget = await checkGlobalAdvisorBudget(supabase)
+      if (!globalBudget.ok) return globalBudget.message ?? 'Stoki AI is taking a short break — try again later.'
+
+      const plan = effectivePlan(store)
+      const userBudget = await checkAdvisorBudget(supabase, store.ownerId, plan)
+      if (!userBudget.ok) return userBudget.message ?? `You've hit today's Stoki AI limit — resets at midnight.`
+
+      const reply = await askBrain(supabase, store, text, store.ownerId)
+      // Increment on success (fire-and-forget). Refusals still count —
+      // deliberate: quota burn discourages repeated off-topic prodding.
+      void recordAdvisorUse(supabase, store.ownerId)
+      return reply
+    }
   }
 }
