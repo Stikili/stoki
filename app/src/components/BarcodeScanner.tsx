@@ -55,6 +55,17 @@ export default function BarcodeScanner({
           },
           () => {} // ignore per-frame decode errors
         )
+
+        // BUG-003 fix: if the component unmounted while we were awaiting
+        // `start()` (e.g. user tapped X or navigated away during the
+        // camera-permission prompt), the cleanup ran BEFORE start()
+        // resolved — its `stop()` rejected because state wasn't SCANNING
+        // yet, was swallowed, and the camera then stayed on when start()
+        // finally acquired the stream. Explicit re-check here catches
+        // that race and releases the camera cleanly.
+        if (!mounted) {
+          scanner.stop().catch(() => {})
+        }
       } catch {
         // Camera unavailable or permission denied — silently fall back to
         // manual entry. No error UI here; the manual input below is the
