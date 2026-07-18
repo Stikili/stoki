@@ -44,9 +44,24 @@ function GlobalLoaderInner() {
     setVisible(false)
   }, [pathname, searchParams])
 
+  // Safety auto-hide. If a click starts the loader but no route change
+  // ever completes (e.g., server action that stays on the same page,
+  // action that fails silently), the loader would otherwise hang.
+  // 12 seconds is longer than any legitimate page load and short enough
+  // that a stuck loader still eventually disappears.
+  useEffect(() => {
+    if (!visible) return
+    const safety = setTimeout(() => setVisible(false), 12_000)
+    return () => clearTimeout(safety)
+  }, [visible])
+
+  // Use capture-phase click listener so we see the event BEFORE any
+  // library (Next.js Link, form handlers, etc.) calls preventDefault
+  // as part of its own SPA-navigation flow. Without capture the event
+  // is `defaultPrevented=true` by the time we see it and we can't
+  // tell "cancelled navigation" from "SPA navigation intercepted".
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (e.defaultPrevented) return
       // Modifier-key clicks open in new tab / window — user isn't
       // navigating this tab, so no spinner.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -78,9 +93,9 @@ function GlobalLoaderInner() {
       timerRef.current = setTimeout(() => setVisible(true), 200)
     }
 
-    document.addEventListener('click', handleClick, { passive: true })
+    document.addEventListener('click', handleClick, { capture: true, passive: true })
     return () => {
-      document.removeEventListener('click', handleClick)
+      document.removeEventListener('click', handleClick, { capture: true } as EventListenerOptions)
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [pathname])
