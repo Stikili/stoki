@@ -11,6 +11,8 @@ import { haptic } from '@/lib/haptic'
 import Receipt from '@/components/Receipt'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import { matchProductBySku } from '@/lib/product-lookup'
+import AskAiButton from '@/components/AskAiButton'
+import { askAiAboutSale } from '@/lib/ask-ai-context'
 import { useI18n } from '@/lib/i18n'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useOfflineStore } from '@/lib/offline-store'
@@ -447,28 +449,43 @@ export default function SalesClient({
           ) : (
             <div className="flex flex-col gap-2">
               {historySales.map(sale => (
-                <div key={sale.id} className="card px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-white font-semibold text-sm">{sale.productName ?? 'Unknown'}</p>
-                    <p className="text-muted text-xs mt-0.5">
-                      {sale.qty} × {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}
-                      {sale.type === 'return' && <span className="text-danger ml-1">(return)</span>}
-                    </p>
+                <div key={sale.id} className="card px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-semibold text-sm truncate">{sale.productName ?? 'Unknown'}</p>
+                      <p className="text-muted text-xs mt-0.5">
+                        {sale.qty} × {fmtDate(sale.recordedAt)} {fmtTime(sale.recordedAt)}
+                        {sale.type === 'return' && <span className="text-danger ml-1">(return)</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <p className={`font-bold ${sale.type === 'return' ? 'text-danger' : 'text-brand'}`}>
+                        {sale.type === 'return' ? '-' : ''}R{(sale.priceAtSale * sale.qty).toFixed(2)}
+                      </p>
+                      {sale.type !== 'return' && sale.productId && (
+                        <button
+                          onClick={() => setReturning(sale)}
+                          className="text-[10px] font-semibold px-2 py-1 rounded-lg min-h-0"
+                          style={{ background: 'var(--pill-red-bg)', color: '#EF4444' }}
+                        >
+                          Return
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className={`font-bold ${sale.type === 'return' ? 'text-danger' : 'text-brand'}`}>
-                      {sale.type === 'return' ? '-' : ''}R{(sale.priceAtSale * sale.qty).toFixed(2)}
-                    </p>
-                    {sale.type !== 'return' && sale.productId && (
-                      <button
-                        onClick={() => setReturning(sale)}
-                        className="text-[10px] font-semibold px-2 py-1 rounded-lg min-h-0"
-                        style={{ background: 'var(--pill-red-bg)', color: '#EF4444' }}
-                      >
-                        Return
-                      </button>
-                    )}
-                  </div>
+                  {sale.type !== 'return' && (
+                    <div className="mt-2">
+                      <AskAiButton
+                        prompt={askAiAboutSale({
+                          productName: sale.productName ?? 'Unknown item',
+                          qty: sale.qty,
+                          pricePerUnit: sale.priceAtSale,
+                          totalAmount: sale.priceAtSale * sale.qty,
+                          recordedAt: sale.recordedAt,
+                        })}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

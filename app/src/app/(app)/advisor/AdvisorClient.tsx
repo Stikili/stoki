@@ -27,12 +27,20 @@ const MAX_CONTEXT = 40  // sent to API per turn
 
 const StokiIcon = ({ size = 22 }: { size?: number }) => <Logo size={size} color="white" />
 
-export default function AdvisorClient({ storeId, prefill = '' }: { storeId: string; prefill?: string }) {
+export default function AdvisorClient({ storeId, prefill = '', autoSend = false }: {
+  storeId: string
+  prefill?: string
+  /** When true AND prefill is non-empty, fire the message on first mount
+   *  instead of just filling the input. Used by "Ask AI" buttons on ledger
+   *  rows so the user lands on an in-flight answer, not a pre-filled input. */
+  autoSend?: boolean
+}) {
   const [messages, setMessages] = useState<Message[]>([INTRO])
   const [input, setInput] = useState(prefill)
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
   const initialised = useRef(false)
+  const autoSent = useRef(false)
 
   // Load history from localStorage on first mount.
   useEffect(() => {
@@ -60,6 +68,18 @@ export default function AdvisorClient({ storeId, prefill = '' }: { storeId: stri
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Auto-fire the prefilled prompt when navigated with ?send=1 (e.g. from
+  // an "Ask AI" button on a ledger row). Guarded so React strict-mode
+  // double-mount doesn't send twice.
+  useEffect(() => {
+    if (autoSent.current) return
+    if (!autoSend || !prefill.trim()) return
+    autoSent.current = true
+    send(prefill)
+    // Intentional: send/prefill/autoSend are captured at mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function clearHistory() {
     if (!confirm('Clear conversation history?')) return

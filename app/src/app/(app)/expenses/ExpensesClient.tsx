@@ -7,6 +7,8 @@ import { addExpenseAction, deleteExpenseAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { Plus, Wallet, Repeat } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
+import AskAiButton from '@/components/AskAiButton'
+import { askAiAboutExpense } from '@/lib/ask-ai-context'
 
 export default function ExpensesClient({ expenses, totalThisMonth }: { expenses: Expense[]; totalThisMonth: number }) {
   const { toast, toastUndo } = useToast()
@@ -57,14 +59,27 @@ export default function ExpensesClient({ expenses, totalThisMonth }: { expenses:
       ) : (
         <div className="flex flex-col gap-2">
           {expenses.map(e => (
-            <div key={e.id} className="card px-4 py-3 flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{e.description}</p>
-                <p className="text-muted text-xs mt-0.5">{catLabel(e.category)} · {new Date(e.recordedAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}</p>
+            <div key={e.id} className="card px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{e.description}</p>
+                  <p className="text-muted text-xs mt-0.5">{catLabel(e.category)} · {new Date(e.recordedAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <p className="text-orange-400 font-bold">R{e.amount.toFixed(2)}</p>
+                  <button onClick={() => handleDelete(e)} className="w-7 h-7 rounded-full flex items-center justify-center text-xs min-h-0" style={{ background: '#2D1518', color: '#EF4444' }}>×</button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-3">
-                <p className="text-orange-400 font-bold">R{e.amount.toFixed(2)}</p>
-                <button onClick={() => handleDelete(e)} className="w-7 h-7 rounded-full flex items-center justify-center text-xs min-h-0" style={{ background: '#2D1518', color: '#EF4444' }}>×</button>
+              <div className="mt-2">
+                <AskAiButton
+                  prompt={askAiAboutExpense({
+                    category: catLabel(e.category),
+                    description: e.description,
+                    amount: e.amount,
+                    recordedAt: e.recordedAt,
+                    isCapital: e.isCapital,
+                  })}
+                />
               </div>
             </div>
           ))}
