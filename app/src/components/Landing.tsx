@@ -275,7 +275,7 @@ function SlideCta() {
             Mail us
           </a>
           <a
-            href="https://www.linkedin.com/company/112506499"
+            href="https://www.linkedin.com/company/stokiapp"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium"
