@@ -307,6 +307,20 @@ function SlideCta() {
           </a>
         </div>
 
+        {/* Internal links to comparison pages. Text-link format (not
+            styled pills) is deliberate — Google's crawl-graph gives more
+            weight to anchor text than to icon-decorated CTAs, and this
+            line quietly tells the reader we're not afraid of being
+            compared to the market. */}
+        <p className="mt-5 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+          See how Stoki compares to{' '}
+          <Link href="/compare/stoki-vs-loyverse" className="underline" style={{ color: 'var(--muted)' }}>Loyverse</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-yoco" className="underline" style={{ color: 'var(--muted)' }}>Yoco</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-xero" className="underline" style={{ color: 'var(--muted)' }}>Xero</Link>
+        </p>
+
         <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
           Stoki (Pty) Ltd · Reg. K2026258855
         </p>
