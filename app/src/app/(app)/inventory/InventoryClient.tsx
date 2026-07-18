@@ -17,6 +17,7 @@ import {
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
+import BarcodeScanner from '@/components/BarcodeScanner'
 import { ScanBarcode, Plus, Search, Upload, Package } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useI18n } from '@/lib/i18n'
@@ -567,78 +568,3 @@ function ImportSheet({
   )
 }
 
-function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
-  const scannerRef = useRef<HTMLDivElement>(null)
-  const scannerInstance = useRef<import('html5-qrcode').Html5Qrcode | null>(null)
-  const [manualSku, setManualSku] = useState('')
-
-  useEffect(() => {
-    let mounted = true
-
-    async function start() {
-      const { Html5Qrcode } = await import('html5-qrcode')
-      if (!mounted || !scannerRef.current) return
-
-      const scanner = new Html5Qrcode('barcode-reader')
-      scannerInstance.current = scanner
-
-      try {
-        await scanner.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.0 },
-          (text) => {
-            scanner.stop().catch(() => {})
-            onScan(text)
-          },
-          () => {} // ignore errors during scanning
-        )
-      } catch {
-        // Camera not available — user can type manually
-      }
-    }
-
-    start()
-
-    return () => {
-      mounted = false
-      scannerInstance.current?.stop().catch(() => {})
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <div className="fixed inset-0 z-[70] flex flex-col" style={{ background: 'var(--background)' }}>
-      <div className="flex items-center justify-between p-4">
-        <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Scan Barcode</h2>
-        <button onClick={onClose} className="text-2xl w-10 h-10 flex items-center justify-center" style={{ color: 'var(--foreground)' }}>×</button>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <div id="barcode-reader" ref={scannerRef} className="w-full max-w-sm rounded-2xl overflow-hidden" />
-        <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>Point camera at any barcode</p>
-
-        {/* Manual fallback */}
-        <div className="w-full max-w-sm mt-6">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Or type SKU</p>
-          <div className="flex gap-2">
-            <input
-              value={manualSku}
-              onChange={e => setManualSku(e.target.value)}
-              placeholder="Enter barcode / SKU"
-              className="input flex-1"
-              onKeyDown={e => { if (e.key === 'Enter' && manualSku.trim()) { scannerInstance.current?.stop().catch(() => {}); onScan(manualSku.trim()) } }}
-            />
-            <button
-              onClick={() => { if (manualSku.trim()) { scannerInstance.current?.stop().catch(() => {}); onScan(manualSku.trim()) } }}
-              disabled={!manualSku.trim()}
-              className="btn-primary"
-              style={{ width: 'auto', padding: '14px 20px', opacity: manualSku.trim() ? 1 : 0.5 }}
-            >
-              Go
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}

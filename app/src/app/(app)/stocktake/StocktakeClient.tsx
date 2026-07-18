@@ -6,7 +6,8 @@ import { Stocktake, totalVarianceValue } from '@/domain/entities/stocktake'
 import { submitStocktakeAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
-import { Search, ClipboardCheck } from 'lucide-react'
+import BarcodeScanner from '@/components/BarcodeScanner'
+import { Search, ClipboardCheck, ScanBarcode } from 'lucide-react'
 
 export default function StocktakeClient({
   products,
@@ -21,6 +22,7 @@ export default function StocktakeClient({
   const [notes, setNotes] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const filtered = useMemo(() => {
@@ -54,6 +56,32 @@ export default function StocktakeClient({
 
   function setCount(productId: string, value: string) {
     setCounts((prev) => ({ ...prev, [productId]: value }))
+  }
+
+  /**
+   * Barcode scan during stocktake. Walks the shelves scanner-in-hand: each
+   * scan increments the product's counted qty by 1. Unknown SKU surfaces a
+   * toast without disrupting the flow — the user keeps scanning the next
+   * shelf item. Scanner stays closed between scans; user re-opens for the
+   * next item to preserve battery on long counts.
+   */
+  function handleScan(code: string) {
+    setShowScanner(false)
+    const trimmed = code.trim()
+    if (!trimmed) return
+    const match = products.find(p => (p.sku ?? '').toLowerCase() === trimmed.toLowerCase())
+    if (!match) {
+      toast(`No product with SKU "${trimmed}"`, 'error')
+      return
+    }
+    setCounts(prev => {
+      const currentRaw = prev[match.id] ?? ''
+      const currentN = parseInt(currentRaw)
+      const next = Number.isFinite(currentN) ? currentN + 1 : 1
+      return { ...prev, [match.id]: String(next) }
+    })
+    haptic(20)
+    toast(`${match.name} counted`, 'info')
   }
 
   function handleSubmit() {
@@ -105,16 +133,35 @@ export default function StocktakeClient({
         Count what&apos;s on your shelf. Type the actual quantity and we&apos;ll fix the system to match.
       </p>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="#7B8CA1" /></span>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search products or SKU…"
-          className="input"
-          style={{ paddingLeft: 40 }}
-        />
+      {/* Search + Scan. Scan is the workflow for shops with barcodes on
+          the shelf — walk the aisle, scan each item, its counted qty
+          increments by 1 automatically. Search remains for products
+          without barcodes. */}
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2"><Search size={16} color="#7B8CA1" /></span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products or SKU…"
+            className="input"
+            style={{ paddingLeft: 40 }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => { haptic(15); setShowScanner(true) }}
+          aria-label="Scan barcode to count"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl px-4 h-[52px] font-semibold text-sm flex-shrink-0"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--card-border)',
+            color: 'var(--foreground)',
+          }}
+        >
+          <ScanBarcode size={18} strokeWidth={1.8} />
+          <span>Scan</span>
+        </button>
       </div>
 
       {/* Pending summary */}
@@ -230,6 +277,18 @@ export default function StocktakeClient({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Barcode scanner — each scan increments the matched product's
+          counted qty by 1. Closes after each scan so the user re-opens
+          for the next item (deliberate: saves battery on long counts). */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleScan}
+          onClose={() => setShowScanner(false)}
+          title="Scan to count"
+          hint="Point camera at a shelf item — counted qty goes up by 1"
+        />
       )}
 
       {/* History sheet */}

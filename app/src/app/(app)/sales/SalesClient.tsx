@@ -2,13 +2,14 @@
 
 import { useState, useTransition, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, ScanBarcode } from 'lucide-react'
 import { ProductWithStatus, formatQty } from '@/domain/entities/product'
 import { Sale, PaymentMethod, PAYMENT_METHODS } from '@/domain/entities/sale'
 import { recordCartAction, recordReturnAction, getSalesByDateAction, type DispensedPin } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import Receipt from '@/components/Receipt'
+import BarcodeScanner from '@/components/BarcodeScanner'
 import { useI18n } from '@/lib/i18n'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useOfflineStore } from '@/lib/offline-store'
@@ -59,6 +60,7 @@ export default function SalesClient({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [productSearch, setProductSearch] = useState('')
   const [showManualEntry, setShowManualEntry] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   const today = toDateStr(new Date())
   const [fromDate, setFromDate] = useState(today)
@@ -82,6 +84,34 @@ export default function SalesClient({
     if (p.qty - (cartMap[p.id] ?? 0) <= 0) return
     haptic(30)
     setCart(prev => { const e = prev.find(i => i.product.id === p.id); return e ? prev.map(i => i.product.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { product: p, qty: 1 }] })
+  }
+
+  /**
+   * Barcode scan handler. Looks the scanned code up against product SKUs;
+   * matched product drops straight into the cart, unmatched code seeds the
+   * search box + surfaces a toast so the user can decide (add as new product
+   * from Inventory, or ring it up as a manual off-book item).
+   */
+  function handleScan(code: string) {
+    setShowScanner(false)
+    const trimmed = code.trim()
+    if (!trimmed) return
+    const match = products.find(p => (p.sku ?? '').toLowerCase() === trimmed.toLowerCase())
+    if (match) {
+      const remaining = match.qty - (cartMap[match.id] ?? 0)
+      if (remaining <= 0) {
+        toast(`${match.name} — out of stock`, 'error')
+        return
+      }
+      quickAdd(match)
+      toast(`Added ${match.name}`, 'info')
+    } else {
+      // Unknown barcode — surface it via the search input so the user sees
+      // the code and can decide what to do next (add as inventory,
+      // ring up manually).
+      setProductSearch(trimmed)
+      toast(`No product with SKU "${trimmed}" — search or add it`, 'error')
+    }
   }
 
   /**
@@ -284,17 +314,34 @@ export default function SalesClient({
             </div>
           )}
 
-          {/* Search */}
-          {products.filter(p => p.qty > 0).length > 5 && (
-            <div className="mb-3">
+          {/* Search + Scan.
+              Scan button is always visible (even below the 5-product
+              threshold that hides the search bar) — it's the fastest way
+              to add a known product to the cart. Search is the fallback. */}
+          <div className="mb-3 flex gap-2">
+            {products.filter(p => p.qty > 0).length > 5 && (
               <input
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 placeholder="Search products or SKU…"
-                className="input"
+                className="input flex-1"
               />
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={() => { haptic(15); setShowScanner(true) }}
+              aria-label="Scan barcode"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl px-4 h-[52px] font-semibold text-sm flex-shrink-0"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--card-border)',
+                color: 'var(--foreground)',
+              }}
+            >
+              <ScanBarcode size={18} strokeWidth={1.8} />
+              <span>Scan</span>
+            </button>
+          </div>
 
           {/* Product list */}
           {available.length === 0 ? (
@@ -545,6 +592,17 @@ export default function SalesClient({
         <ManualEntrySheet
           onClose={() => setShowManualEntry(false)}
           onAdd={addManualItem}
+        />
+      )}
+
+      {/* Barcode scanner overlay — matched product drops into the cart,
+          unmatched code seeds the search input via handleScan. */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleScan}
+          onClose={() => setShowScanner(false)}
+          title="Scan to add to cart"
+          hint="Point camera at a product barcode"
         />
       )}
     </>
