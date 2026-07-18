@@ -10,6 +10,7 @@ import { StoreRole } from '@/domain/entities/store-user'
 import { TAGS, invalidateDashboard } from '@/lib/cache-tags'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
 import { recordCancellation } from '@/lib/subscription'
+import { AiTone, isValidAiTone } from '@/domain/entities/ai-tone'
 
 export async function updateStoreAction(formData: FormData) {
   const { supabase, store } = await getServerData()
@@ -47,6 +48,26 @@ export async function updateStoreAction(formData: FormData) {
   revalidateTag(TAGS.stores, 'default')
   revalidatePath('/', 'layout')
   invalidateDashboard(store.id)
+}
+
+/**
+ * Update the per-store AI tone preference. The value is validated against
+ * the AiTone union — an invalid string is ignored (not an error, just a
+ * no-op) so a stale client can't push a corrupt tone into the DB.
+ *
+ * Revalidates every route that renders AI-generated content so the fresh
+ * tone kicks in immediately (dashboard shows advisor snippets, /advisor
+ * runs live, /whatsapp brain pulls store on each turn).
+ */
+export async function updateAiToneAction(_storeId: string, tone: AiTone): Promise<{ ok: boolean }> {
+  if (!isValidAiTone(tone)) return { ok: false }
+  const { supabase, store } = await getServerData()
+  const storeRepo = new StoreRepository(supabase)
+  await storeRepo.update(store.id, { aiTone: tone })
+  revalidateTag(TAGS.stores, 'default')
+  revalidatePath('/', 'layout')
+  invalidateDashboard(store.id)
+  return { ok: true }
 }
 
 /**

@@ -1,3 +1,5 @@
+import { AiTone } from './ai-tone'
+
 export type Plan = 'free' | 'pro' | 'business' | 'enterprise'
 export type StoreCategory = 'spaza' | 'general_dealer' | 'food_stall' | 'other'
 export type TaxpayerType = 'sole_prop' | 'sbc' | 'turnover_tax' | 'company'
@@ -43,6 +45,10 @@ export interface Store {
    *  visible. Default true biases toward simplicity for the spaza audience;
    *  SMME owners flip it off from Settings to see everything by default. */
   simpleView: boolean
+  /** Owner's AI voice preference. Every AI-generated string (advisor,
+   *  WhatsApp brain, monthly report, anomaly alerts, explain-line-item)
+   *  reads this and adapts. Default 'plain' keeps existing behaviour. */
+  aiTone: AiTone
   /** When set and in the future, the store has elevated (Pro) access
    *  regardless of `plan`. Used for two windows:
    *    - existing accounts at paywall rollout (90 days)

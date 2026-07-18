@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { IStoreRepository } from '@/domain/repositories/IStoreRepository'
 import { Store, StoreCategory, Plan, TaxpayerType } from '@/domain/entities/store'
+import { AiTone } from '@/domain/entities/ai-tone'
 import { toStore } from '../mappers'
 import { normalizeZAPhone } from '@/lib/whatsapp'
 
@@ -72,6 +73,7 @@ export class StoreRepository implements IStoreRepository {
     taxpayerType?: TaxpayerType
     hasEmployees?: boolean
     simpleView?: boolean
+    aiTone?: AiTone
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -97,6 +99,7 @@ export class StoreRepository implements IStoreRepository {
     if (patch.taxpayerType !== undefined) dbPatch.taxpayer_type = patch.taxpayerType
     if (patch.hasEmployees !== undefined) dbPatch.has_employees = patch.hasEmployees
     if (patch.simpleView !== undefined) dbPatch.simple_view = patch.simpleView
+    if (patch.aiTone !== undefined) dbPatch.ai_tone = patch.aiTone
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

@@ -13,6 +13,7 @@ import { buildAllTools } from '@/lib/advisor/tools'
 import { loadRecentMessages, appendExchange } from '@/lib/advisor/conversations'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { SCOPE_LOCK_BLOCK } from '@/lib/ai-scope-prompt'
+import { AiTone, toneInstruction } from '@/domain/entities/ai-tone'
 
 /**
  * Authoritative SA sources the bot is allowed to search + fetch from.
@@ -48,20 +49,28 @@ const WEB_SOURCE_ALLOWLIST = [
   'bloomberg.com',
 ]
 
-const SYSTEM_PROMPT = `You are Stoki — a friendly, practical assistant for South African small-business owners. Most users are spaza shops, informal traders, food stalls, salons, transport operators. They aren't accountants; they're trying to keep their till healthy through tomorrow.
+/**
+ * Build the WhatsApp brain's system prompt with the owner's chosen AI tone
+ * injected. The prompt was previously a static const; splitting it into a
+ * builder lets each store see the register they picked in /settings while
+ * keeping the rest of the prompt (scope, tools, how-to library) identical.
+ *
+ * Prompt-caching implication: the cache key now varies by tone. Four tones =
+ * up to four cached prompt bodies per rolling window. Cheap.
+ */
+function buildSystemPrompt(tone: AiTone): string {
+  return `You are Stoki — a friendly, practical assistant for South African small-business owners. Most users are spaza shops, informal traders, food stalls, salons, transport operators. They aren't accountants; they're trying to keep their till healthy through tomorrow.
 
 Your job: help them run their shop, explain HOW to use the Stoki app when asked, AND make sense of what's happening in the economy that affects their takings.
 
 ${SCOPE_LOCK_BLOCK}
 
+${toneInstruction(tone)}
 
-How to talk:
-- Like a knowledgeable friend, not a finance textbook. Skip corporate jargon.
-- Brief — 1 to 3 short sentences for most answers. Never lecture.
-- Plain English. Say "rates" not "monetary policy", "people have less to spend" not "disposable income tighter", "rand is weaker" not "FX depreciation".
+General voice:
 - Currency in rand (R), formatted with two decimals.
 - Comfortable with local goods (bread, mealie-meal, airtime, vetkoek, magwinya, simba) and SA business reality.
-- Connect every economic point back to their till. "Repo rate up 25 points" means nothing — "your customers have less money this month" means everything.
+- Connect every economic point back to their till. Regardless of tone, the reader should walk away with "so what does this mean for my shop?".
 
 When to use which tool:
 - For their own data ("today's profit", "who owes me", "what to reorder", "best seller") — pull from their store with get_*. NEVER search the web for store data.
@@ -94,6 +103,7 @@ Rules:
 - For "is fuel increasing?" — search aa.co.za or energy.gov.za for the next price change. Give the date, the rand-per-litre move, and what it means for supplier delivery costs.
 - ALWAYS cite the source URL when you used web_search or web_fetch.
 - If a question genuinely can't be answered with the data available, say so plainly.`
+}
 
 /**
  * First-contact / help-menu fast-path. Bypasses the LLM entirely for the
@@ -228,7 +238,7 @@ export async function askBrain(
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
     system: [
-      { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: buildSystemPrompt(store.aiTone), cache_control: { type: 'ephemeral' } },
     ],
     tools,
     messages: [

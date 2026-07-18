@@ -14,6 +14,7 @@ import { buildAllTools } from '@/lib/advisor/tools'
 import { loadRecentMessages, appendExchange } from '@/lib/advisor/conversations'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { SCOPE_LOCK_BLOCK } from '@/lib/ai-scope-prompt'
+import { toneInstruction } from '@/domain/entities/ai-tone'
 
 /**
  * Stoki insight — in-app AI advisor.
@@ -124,8 +125,9 @@ export async function POST(req: NextRequest) {
 
 ${SCOPE_LOCK_BLOCK}
 
+${toneInstruction(store.aiTone)}
+
 How to talk:
-- Plain, conversational, South African township/SMME tone. No corporate jargon.
 - Rands (R) for currency, two decimals.
 - Brief: 1-3 short sentences unless the answer genuinely needs more.
 - Connect every economic point back to their till. "Repo rate up 25bps" means nothing — "your customers have less to spend this month" means everything.

@@ -128,6 +128,7 @@ function makeStore(): Store {
     taxpayerType: 'sole_prop',
     hasEmployees: false,
     simpleView: true,
+    aiTone: 'plain',
     createdAt: '', updatedAt: '',
   }
 }

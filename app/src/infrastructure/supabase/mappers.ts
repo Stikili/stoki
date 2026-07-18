@@ -4,6 +4,7 @@
  */
 
 import { Store } from '@/domain/entities/store'
+import { isValidAiTone, DEFAULT_AI_TONE } from '@/domain/entities/ai-tone'
 import { Product } from '@/domain/entities/product'
 import { Sale } from '@/domain/entities/sale'
 import { Debtor } from '@/domain/entities/debtor'
@@ -51,6 +52,7 @@ export function toStore(row: any): Store {
     taxpayerType: row.taxpayer_type ?? 'sole_prop',
     hasEmployees: row.has_employees ?? false,
     simpleView: row.simple_view ?? true,
+    aiTone: isValidAiTone(row.ai_tone) ? row.ai_tone : DEFAULT_AI_TONE,
     grandfatheredUntil: row.grandfathered_until ?? null,
     subscriptionStatus: row.subscription_status ?? 'none',
     subscriptionActiveUntil: row.subscription_active_until ?? null,

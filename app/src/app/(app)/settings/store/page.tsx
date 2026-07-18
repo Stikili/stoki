@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getServerData } from '@/lib/getServerData'
 import StoreDetailsCard from '@/components/settings/StoreDetailsCard'
+import AiToneCard from '@/components/settings/AiToneCard'
 
 export default async function StoreSettingsPage() {
   const { store, allStores } = await getServerData()
@@ -13,6 +14,7 @@ export default async function StoreSettingsPage() {
       </Link>
       <h1 className="text-xl font-bold text-white">Store details</h1>
       <StoreDetailsCard store={store} canDelete={allStores.length > 1} />
+      <AiToneCard storeId={store.id} currentTone={store.aiTone} />
     </div>
   )
 }
