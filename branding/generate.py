@@ -212,6 +212,103 @@ def make_cover(path: Path, w: int = 1584, h: int = 396) -> None:
     img.save(path)
     print(f"  [ok] {path.name}  ({w}×{h})")
 
+def make_cover_wordmark_only(path: Path, w: int = 1584, h: int = 396) -> None:
+    """
+    Alternative LinkedIn company-page cover — big centred wordmark +
+    tagline, no logo mark. Cleaner / more editorial. Use when the
+    logo already appears prominently as the profile avatar and the
+    banner feels redundant.
+    """
+    img = Image.new("RGBA", (w, h), BRAND_INK + (255,))
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    odraw = ImageDraw.Draw(overlay, "RGBA")
+
+    # Two soft emerald glows — one right, one lower-left — for depth
+    # without stealing focus from the centred wordmark.
+    for i, radius in enumerate(range(360, 0, -20)):
+        alpha = max(0, 24 - i * 2)
+        odraw.ellipse(
+            [w * 0.90 - radius, h * 0.5 - radius, w * 0.90 + radius, h * 0.5 + radius],
+            fill=BRAND_EMERALD + (alpha,),
+        )
+    for i, radius in enumerate(range(240, 0, -20)):
+        alpha = max(0, 18 - i * 2)
+        odraw.ellipse(
+            [w * 0.08 - radius, h * 0.85 - radius, w * 0.08 + radius, h * 0.85 + radius],
+            fill=BRAND_EMERALD + (alpha,),
+        )
+    img = Image.alpha_composite(img, overlay)
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    # Stack layout: wordmark → underline → tagline → strip.
+    # Each element measured with its own bbox, then positioned by
+    # accumulating a `cursor_y` down the canvas. Guarantees no overlap.
+    def measure(text: str, font) -> tuple[int, int, int]:
+        """Return (width, height, top_offset) using Pillow's textbbox."""
+        b = draw.textbbox((0, 0), text, font=font)
+        return b[2] - b[0], b[3] - b[1], b[1]
+
+    title = "stoki"
+    title_font_size = int(h * 0.30)   # was 0.42 — too tall, ate the tagline
+    title_font = load_font(title_font_size)
+    tw, th, ttop = measure(title, title_font)
+
+    tagline = "Run your business without the chaos."
+    tagline_font = load_font(int(h * 0.078))
+    ttw, tth, ttop2 = measure(tagline, tagline_font)
+
+    strip = "AI-powered business assistant  ·  made in South Africa"
+    strip_font = load_font(int(h * 0.045))
+    stw, sth, stop = measure(strip, strip_font)
+
+    underline_h = max(4, int(h * 0.014))
+    underline_w = int(tw * 0.32)
+    gap_after_title    = int(h * 0.025)
+    gap_after_underline = int(h * 0.055)
+    gap_after_tagline   = int(h * 0.045)
+
+    total_stack_h = th + gap_after_title + underline_h + gap_after_underline \
+                    + tth + gap_after_tagline + sth
+    start_y = (h - total_stack_h) // 2  # vertical centre
+
+    # Wordmark
+    cursor_y = start_y
+    draw.text(
+        (w / 2 - tw / 2, cursor_y - ttop),  # subtract ttop so text top hits cursor_y
+        title,
+        fill=BRAND_WHITE + (255,),
+        font=title_font,
+    )
+    cursor_y += th + gap_after_title
+
+    # Emerald underline
+    draw.rounded_rectangle(
+        [w / 2 - underline_w / 2, cursor_y, w / 2 + underline_w / 2, cursor_y + underline_h],
+        radius=underline_h / 2,
+        fill=BRAND_EMERALD + (255,),
+    )
+    cursor_y += underline_h + gap_after_underline
+
+    # Tagline
+    draw.text(
+        (w / 2 - ttw / 2, cursor_y - ttop2),
+        tagline,
+        fill=BRAND_MUTED + (255,),
+        font=tagline_font,
+    )
+    cursor_y += tth + gap_after_tagline
+
+    # Strip
+    draw.text(
+        (w / 2 - stw / 2, cursor_y - stop),
+        strip,
+        fill=(120, 140, 170, 255),
+        font=strip_font,
+    )
+
+    img.save(path)
+    print(f"  [ok] {path.name}  ({w}x{h})")
+
 def make_post_square(path: Path, size: int = 1080) -> None:
     """
     Square feed-post template. Big wordmark centred, headline above,
@@ -350,6 +447,7 @@ if __name__ == "__main__":
     make_avatar_dark(OUT / "linkedin-avatar-dark.png")
     make_avatar_emerald(OUT / "linkedin-avatar-emerald.png")
     make_cover(OUT / "linkedin-cover.png")
+    make_cover_wordmark_only(OUT / "linkedin-cover-wordmark-only.png")
     make_post_square(OUT / "linkedin-post-square.png")
     make_post_link(OUT / "linkedin-post-link.png")
     make_high_res_mark(OUT / "mark-emerald-transparent.png", BRAND_EMERALD, transparent_bg=True)
