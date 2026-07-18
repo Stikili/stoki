@@ -1,69 +1,67 @@
 'use client'
 
-import { useEffect, useRef, useState, Suspense } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 /**
  * Global loading indicator.
  *
- * Shows an animated spinning ring — with a soft backdrop card — after any
- * in-app click that triggers a navigation and hasn't resolved within
- * 200ms. Fast navigations never flash the spinner; slow ones (data-heavy
- * pages, weak connection, cold Vercel function) get an "I'm on it"
- * signal so the user doesn't wonder if the tap registered.
+ * Shows an animated emerald spinning ring — with a soft backdrop card —
+ * after any in-app click that triggers a navigation and hasn't resolved
+ * within 200ms. Fast navigations never flash the spinner; slow ones
+ * surface an "I'm on it" signal so the user doesn't wonder if the tap
+ * registered.
  *
- * Detection: a delegated click listener watches for same-origin
- * navigation triggers (internal `<a>` tags + `<button type="submit">`
- * inside a form). Starts a 200ms timer on qualifying clicks. On the
- * next `pathname`/`searchParams` change (route completed), the timer is
- * cancelled and the spinner hidden.
+ * ─── Design notes on the third attempt ────────────────────────────────
  *
- * Deliberately not covered:
- *   - external links (mailto:, tel:, target=_blank, cross-origin)
- *   - programmatic `router.push()` calls — those callers can await
- *     their own transition; if a global spinner is desired for a
- *     specific programmatic path, wrap it in a `useTransition` with a
- *     local spinner.
+ * v1 (d792b19): used e.defaultPrevented check → killed EVERY Next.js
+ *   Link click, because Link calls preventDefault to intercept the
+ *   navigation.
  *
- * The spinner overlay is `pointer-events: none` so it never blocks
- * further interaction (the user can still click, scroll, dismiss).
+ * v2 (1c00b63): switched to capture-phase + removed defaultPrevented
+ *   check. Also wrapped in Suspense (because useSearchParams requires
+ *   it). This still didn't fire visibly, because:
+ *
+ *     a) `useSearchParams()` returns a new ReadonlyURLSearchParams
+ *        reference on every render, so the pathname/searchParams effect
+ *        fired every render, clearing the timer before 200ms elapsed.
+ *     b) Suspense could unmount+remount the component mid-transition,
+ *        wiping local state.
+ *     c) Re-attaching the click listener on every pathname change added
+ *        a race window when the listener was momentarily missing.
+ *
+ * v3 (this): drop useSearchParams entirely — read window.location
+ *   inside the handler where we need it. Attach the listener ONCE for
+ *   the component's lifetime. Depend the reset effect on `pathname`
+ *   only (a stable string). No Suspense boundary needed.
+ * ──────────────────────────────────────────────────────────────────────
  */
-
-function GlobalLoaderInner() {
+export default function GlobalLoader() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [visible, setVisible] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Two timers — one for the 200ms show delay, one for the safety
+  // auto-hide. Stored in refs so they survive across renders and can
+  // be cleared cleanly on route change / unmount.
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Route completed → cancel any pending timer + hide the spinner.
+  // Cancel any pending timers + hide the spinner on route change.
+  // Depends on `pathname` (stable string) only — no searchParams
+  // instability to worry about.
   useEffect(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
+    if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null }
+    if (safetyTimerRef.current) { clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null }
     setVisible(false)
-  }, [pathname, searchParams])
+  }, [pathname])
 
-  // Safety auto-hide. If a click starts the loader but no route change
-  // ever completes (e.g., server action that stays on the same page,
-  // action that fails silently), the loader would otherwise hang.
-  // 12 seconds is longer than any legitimate page load and short enough
-  // that a stuck loader still eventually disappears.
-  useEffect(() => {
-    if (!visible) return
-    const safety = setTimeout(() => setVisible(false), 12_000)
-    return () => clearTimeout(safety)
-  }, [visible])
-
-  // Use capture-phase click listener so we see the event BEFORE any
-  // library (Next.js Link, form handlers, etc.) calls preventDefault
-  // as part of its own SPA-navigation flow. Without capture the event
-  // is `defaultPrevented=true` by the time we see it and we can't
-  // tell "cancelled navigation" from "SPA navigation intercepted".
+  // Click listener — attached ONCE for the component's lifetime. Uses
+  // capture phase so we see the event before Next.js Link's handler
+  // calls preventDefault. All same-URL comparisons read window.location
+  // live so we don't get bitten by stale closure state.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      // Modifier-key clicks open in new tab / window — user isn't
-      // navigating this tab, so no spinner.
+      // Modifier-key clicks open in new tab/window — user isn't navigating
+      // this tab, so no spinner.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       if (e.button !== 0) return
 
@@ -81,24 +79,32 @@ function GlobalLoaderInner() {
           const url = new URL(target.href, window.location.href)
           if (url.origin !== window.location.origin) return
           // Same-URL click (re-selecting current page) — no spinner.
-          const currentSearch = window.location.search
-          if (url.pathname === pathname && url.search === currentSearch) return
+          if (url.pathname === window.location.pathname && url.search === window.location.search) return
         } catch {
           return
         }
       }
 
-      // Qualifying click → set a 200ms timer.
-      if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => setVisible(true), 200)
+      // Qualifying click → arm the 200ms show timer. Chain the safety
+      // auto-hide inside the show callback so both timers move as a unit.
+      if (showTimerRef.current) clearTimeout(showTimerRef.current)
+      showTimerRef.current = setTimeout(() => {
+        setVisible(true)
+        if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
+        // 8s safety net — if nothing else hides the spinner (e.g., a
+        // server-action submit that stays on the same page), it goes
+        // away after 8s rather than hanging.
+        safetyTimerRef.current = setTimeout(() => setVisible(false), 8000)
+      }, 200)
     }
 
     document.addEventListener('click', handleClick, { capture: true, passive: true })
     return () => {
       document.removeEventListener('click', handleClick, { capture: true } as EventListenerOptions)
-      if (timerRef.current) clearTimeout(timerRef.current)
+      if (showTimerRef.current) clearTimeout(showTimerRef.current)
+      if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
     }
-  }, [pathname])
+  }, []) // Attach once. No deps.
 
   if (!visible) return null
 
@@ -109,8 +115,6 @@ function GlobalLoaderInner() {
       role="status"
       aria-label="Loading"
     >
-      {/* Backdrop card — subtle, non-blocking. Uses a translucent dark
-          fill and blur so it reads on both dark and light backgrounds. */}
       <div
         className="stoki-loader-card rounded-2xl px-5 py-4 inline-flex items-center gap-3"
         style={{
@@ -120,9 +124,6 @@ function GlobalLoaderInner() {
           boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
         }}
       >
-        {/* Spinning ring — pure CSS keyframes so it works in every
-            browser without any JS animation lib. Emerald accent + faint
-            grey base for the classic "arc chasing itself" look. */}
         <span
           className="stoki-loader-ring"
           aria-hidden
@@ -148,12 +149,6 @@ function GlobalLoaderInner() {
         </span>
       </div>
 
-      {/*
-        Inline keyframes so this component is fully self-contained — no
-        Tailwind config change, no globals.css addition required. Safe
-        to include: identical @keyframes across many mounts is a no-op
-        after the first insertion.
-      */}
       <style>{`
         @keyframes stoki-loader-spin {
           to { transform: rotate(360deg); }
@@ -175,18 +170,5 @@ function GlobalLoaderInner() {
         }
       `}</style>
     </div>
-  )
-}
-
-/**
- * Exported wrapper. `useSearchParams` must be inside a Suspense
- * boundary in the App Router — otherwise the surrounding tree opts
- * into client-side navigation for the whole route.
- */
-export default function GlobalLoader() {
-  return (
-    <Suspense fallback={null}>
-      <GlobalLoaderInner />
-    </Suspense>
   )
 }
