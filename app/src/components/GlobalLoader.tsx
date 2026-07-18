@@ -30,14 +30,15 @@ import { usePathname } from 'next/navigation'
  * server-action toast that stays on the same page) doesn't strand
  * the overlay indefinitely. Route changes reset immediately.
  */
-// 100ms = the perception threshold for "instant". Below this the loader
-// would flash unnecessarily on almost-instant navigations. Above ~150ms
-// the user starts wondering if their tap registered.
-const SHOW_DELAY_MS = 100
+// Show immediately on every qualifying click — no delay. The user wants
+// consistent visible feedback on every nav-bar / menu / tile / form
+// interaction, even when the destination is a cached route that loads
+// sub-100ms and would otherwise never show a spinner.
+const SHOW_DELAY_MS = 0
 
-// Once the loader shows, keep it up for at least this long — even if the
-// navigation completes 20ms later. Stops jarring "flash → gone" moments
-// and gives the animation time to breathe.
+// Minimum on-screen time once the loader shows. Prevents jarring flash
+// on cached / instant navigations. 350ms is long enough for one full
+// beat of the Stoki-logo pulse to register as intentional.
 const MIN_DISPLAY_MS = 350
 
 // Bounded fallback: hide the loader if nothing else has (e.g., a
