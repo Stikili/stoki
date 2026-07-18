@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import Receipt from '@/components/Receipt'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { matchProductBySku } from '@/lib/product-lookup'
 import { useI18n } from '@/lib/i18n'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useOfflineStore } from '@/lib/offline-store'
@@ -87,31 +88,47 @@ export default function SalesClient({
   }
 
   /**
-   * Barcode scan handler. Looks the scanned code up against product SKUs;
-   * matched product drops straight into the cart, unmatched code seeds the
-   * search box + surfaces a toast so the user can decide (add as new product
-   * from Inventory, or ring it up as a manual off-book item).
+   * Barcode scan handler. Looks the scanned code up against product SKUs
+   * via the shared matchProductBySku helper (case-insensitive, trimmed).
+   * Matched product drops into the cart. Unknown / ambiguous codes get
+   * a toast — no more search-trap for small shops.
+   *
+   * Closes BUG-002 (setProductSearch on unknown scan hid the product
+   * grid for shops with <=5 products, with no way to clear it since
+   * the search input only renders above the 5-product threshold) and
+   * BUG-007 (silent wrong-product on duplicate SKU: two products
+   * sharing a SKU used to auto-select the first, ringing up the wrong
+   * price with no warning).
    */
   function handleScan(code: string) {
     setShowScanner(false)
-    const trimmed = code.trim()
-    if (!trimmed) return
-    const match = products.find(p => (p.sku ?? '').toLowerCase() === trimmed.toLowerCase())
-    if (match) {
-      const remaining = match.qty - (cartMap[match.id] ?? 0)
-      if (remaining <= 0) {
-        toast(`${match.name} — out of stock`, 'error')
-        return
-      }
-      quickAdd(match)
-      toast(`Added ${match.name}`, 'info')
-    } else {
-      // Unknown barcode — surface it via the search input so the user sees
-      // the code and can decide what to do next (add as inventory,
-      // ring up manually).
-      setProductSearch(trimmed)
-      toast(`No product with SKU "${trimmed}" — search or add it`, 'error')
+    const { match, ambiguous, normalisedCode } = matchProductBySku(products, code)
+
+    if (!normalisedCode) return
+
+    if (!match) {
+      // Unknown barcode. Do NOT seed productSearch — the search input
+      // isn't rendered below 6 products, so seeding it would hide the
+      // entire product grid with no way to clear it (BUG-002).
+      toast(`No product with SKU "${code.trim()}" — add it in Inventory first`, 'error')
+      return
     }
+
+    if (ambiguous) {
+      // Multiple products share this SKU — refuse to auto-add rather
+      // than silently ring up the first-inserted at its price
+      // (BUG-007). Cashier can add the intended product manually.
+      toast(`Multiple products share SKU "${code.trim()}" — add manually`, 'error')
+      return
+    }
+
+    const remaining = match.qty - (cartMap[match.id] ?? 0)
+    if (remaining <= 0) {
+      toast(`${match.name} — out of stock`, 'error')
+      return
+    }
+    quickAdd(match)
+    toast(`Added ${match.name}`, 'info')
   }
 
   /**

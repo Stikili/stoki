@@ -18,6 +18,7 @@ import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import VoiceInput from '@/components/VoiceInput'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { matchProductBySku } from '@/lib/product-lookup'
 import { ScanBarcode, Plus, Search, Upload, Package } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useI18n } from '@/lib/i18n'
@@ -154,7 +155,21 @@ export default function InventoryClient({
     })
   }
 
-  function onBarcodeScan(code: string) { setShowScanner(false); setSearch(code); const m = products.find(p => p.sku === code); toast(m ? `Found: ${m.name}` : `No SKU "${code}"`, m ? 'info' : 'error') }
+  // Uses the shared matchProductBySku helper for case-insensitive,
+  // trim-tolerant lookup — same behaviour as Sales/Stocktake scanning.
+  // Previously this used case-sensitive `p.sku === code` so mixed-case
+  // SKUs ('ABC-123') scanned fine in Sales but silently missed here
+  // (BUG-015 from the 2026-07-18 code review).
+  function onBarcodeScan(code: string) {
+    setShowScanner(false)
+    setSearch(code)
+    const { match, ambiguous } = matchProductBySku(products, code)
+    if (ambiguous) {
+      toast(`Multiple products share SKU "${code}" — review inventory`, 'error')
+      return
+    }
+    toast(match ? `Found: ${match.name}` : `No SKU "${code}"`, match ? 'info' : 'error')
+  }
 
   return (
     <>

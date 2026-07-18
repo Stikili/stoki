@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { ProductWithStatus } from '@/domain/entities/product'
+import { ProductWithStatus, qtyStep } from '@/domain/entities/product'
 import { Stocktake, totalVarianceValue } from '@/domain/entities/stocktake'
 import { submitStocktakeAction } from './actions'
 import { useToast } from '@/components/Toast'
 import { haptic } from '@/lib/haptic'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { matchProductBySku } from '@/lib/product-lookup'
 import { Search, ClipboardCheck, ScanBarcode } from 'lucide-react'
 
 export default function StocktakeClient({
@@ -40,7 +41,7 @@ export default function StocktakeClient({
     let varianceValue = 0
     for (const [productId, raw] of Object.entries(counts)) {
       if (raw === '' || raw === undefined) continue
-      const counted = parseInt(raw)
+      const counted = parseFloat(raw)
       if (!Number.isFinite(counted)) continue
       const product = products.find((p) => p.id === productId)
       if (!product) continue
@@ -59,25 +60,35 @@ export default function StocktakeClient({
   }
 
   /**
-   * Barcode scan during stocktake. Walks the shelves scanner-in-hand: each
-   * scan increments the product's counted qty by 1. Unknown SKU surfaces a
-   * toast without disrupting the flow — the user keeps scanning the next
-   * shelf item. Scanner stays closed between scans; user re-opens for the
-   * next item to preserve battery on long counts.
+   * Barcode scan during stocktake. Walks the shelves scanner-in-hand:
+   * each scan increments the product's counted qty by 1 unit (piece,
+   * kg, litre — whatever the product's `unitLabel` is). Unknown SKU
+   * surfaces a toast without disrupting the flow. Ambiguous SKU
+   * (multiple products) refuses to auto-increment — cashier picks
+   * manually.
+   *
+   * Uses parseFloat (not parseInt) so a weighable product's decimal
+   * count (e.g. 2.5kg already typed) survives the scan-increment
+   * instead of being silently truncated to 2 then bumped to 3
+   * (BUG-006 from the 2026-07-18 code review).
    */
   function handleScan(code: string) {
     setShowScanner(false)
-    const trimmed = code.trim()
-    if (!trimmed) return
-    const match = products.find(p => (p.sku ?? '').toLowerCase() === trimmed.toLowerCase())
+    const { match, ambiguous, normalisedCode } = matchProductBySku(products, code)
+    if (!normalisedCode) return
     if (!match) {
-      toast(`No product with SKU "${trimmed}"`, 'error')
+      toast(`No product with SKU "${code.trim()}"`, 'error')
+      return
+    }
+    if (ambiguous) {
+      toast(`Multiple products share SKU "${code.trim()}" — count manually`, 'error')
       return
     }
     setCounts(prev => {
       const currentRaw = prev[match.id] ?? ''
-      const currentN = parseInt(currentRaw)
+      const currentN = parseFloat(currentRaw)
       const next = Number.isFinite(currentN) ? currentN + 1 : 1
+      // Preserve decimal precision for weighables — parseFloat("2.5") + 1 = 3.5.
       return { ...prev, [match.id]: String(next) }
     })
     haptic(20)
@@ -88,7 +99,7 @@ export default function StocktakeClient({
     const payload: Record<string, number> = {}
     for (const [productId, raw] of Object.entries(counts)) {
       if (raw === '' || raw === undefined) continue
-      const n = parseInt(raw)
+      const n = parseFloat(raw)
       if (Number.isFinite(n) && n >= 0) payload[productId] = n
     }
     if (Object.keys(payload).length === 0) {
@@ -192,7 +203,7 @@ export default function StocktakeClient({
         <div className="flex flex-col gap-2">
           {filtered.map((p) => {
             const raw = counts[p.id] ?? ''
-            const counted = raw === '' ? null : parseInt(raw)
+            const counted = raw === '' ? null : parseFloat(raw)
             const variance = counted !== null && Number.isFinite(counted) ? counted - p.qty : 0
             return (
               <div key={p.id} className="card p-4">
@@ -208,7 +219,8 @@ export default function StocktakeClient({
                   <input
                     type="number"
                     min="0"
-                    inputMode="numeric"
+                    step={qtyStep(p)}
+                    inputMode={p.isWeighable && p.unitLabel !== 'each' ? 'decimal' : 'numeric'}
                     value={raw}
                     onChange={(e) => setCount(p.id, e.target.value)}
                     placeholder={String(p.qty)}
