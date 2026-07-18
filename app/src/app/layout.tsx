@@ -93,10 +93,23 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  // Populate GOOGLE_SITE_VERIFICATION in Vercel env after claiming
-  // stokiapp.com in Google Search Console. Absent env → key omitted.
-  ...(process.env.GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+  // Populate GOOGLE_SITE_VERIFICATION / BING_SITE_VERIFICATION in Vercel
+  // env after claiming stokiapp.com in each provider's console. Absent
+  // envs → keys omitted; verification block only rendered when at least
+  // one provider is configured.
+  ...(process.env.GOOGLE_SITE_VERIFICATION || process.env.BING_SITE_VERIFICATION
+    ? {
+        verification: {
+          ...(process.env.GOOGLE_SITE_VERIFICATION
+            ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+            : {}),
+          // Bing (msvalidate.01) lives under `verification.other`. Same
+          // slot works for Yandex if you ever add SA-diaspora reach.
+          ...(process.env.BING_SITE_VERIFICATION
+            ? { other: { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } }
+            : {}),
+        },
+      }
     : {}),
   icons: {
     icon: [
