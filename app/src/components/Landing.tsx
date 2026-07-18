@@ -193,7 +193,7 @@ function SlideFeatures() {
         {/* Proof strip — capability anchors, not user counts. Defensible
             against what's actually shipped in the product. */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <ProofChip label="5 SA banks"        hint="bank rec via CSV" />
+          <ProofChip label="5 SA banks"        hint="native bank feed"          soon />
           <ProofChip label="PAYE · UIF · SDL"  hint="EMP201 export" />
           <ProofChip label="30-day forecast"   hint="cash you'll have" />
           <ProofChip label="Works offline"     hint="load-shedding ready" />
@@ -203,15 +203,29 @@ function SlideFeatures() {
   )
 }
 
-function ProofChip({ label, hint }: { label: string; hint: string }) {
+function ProofChip({ label, hint, soon = false }: { label: string; hint: string; soon?: boolean }) {
   return (
     <div
-      className="rounded-xl px-3 py-2.5 text-center"
+      className="rounded-xl px-3 py-2.5 text-center relative"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--card-border)',
       }}
     >
+      {/* "Soon" badge for capability chips that are on the roadmap but not
+          yet shipped. Corner-pinned so it doesn't fight the label typography. */}
+      {soon && (
+        <span
+          className="absolute -top-1.5 -right-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-[2px] rounded-md"
+          style={{
+            background: '#00C896',
+            color: '#0A0E17',
+            letterSpacing: '0.06em',
+          }}
+        >
+          Soon
+        </span>
+      )}
       <p className="text-[12px] font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>
         {label}
       </p>
