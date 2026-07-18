@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/Toast";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import GlobalLoader from "@/components/GlobalLoader";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -63,6 +64,7 @@ export default function RootLayout({
           <I18nProvider>
             <ToastProvider>
               <ServiceWorkerRegister />
+              <GlobalLoader />
               {children}
             </ToastProvider>
           </I18nProvider>
