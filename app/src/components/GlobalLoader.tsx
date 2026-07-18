@@ -30,17 +30,52 @@ import { usePathname } from 'next/navigation'
  * server-action toast that stays on the same page) doesn't strand
  * the overlay indefinitely. Route changes reset immediately.
  */
+// 100ms = the perception threshold for "instant". Below this the loader
+// would flash unnecessarily on almost-instant navigations. Above ~150ms
+// the user starts wondering if their tap registered.
+const SHOW_DELAY_MS = 100
+
+// Once the loader shows, keep it up for at least this long — even if the
+// navigation completes 20ms later. Stops jarring "flash → gone" moments
+// and gives the animation time to breathe.
+const MIN_DISPLAY_MS = 350
+
+// Bounded fallback: hide the loader if nothing else has (e.g., a
+// same-page server action). Short enough that a stuck spinner still
+// eventually disappears.
+const SAFETY_HIDE_MS = 6000
+
 export default function GlobalLoader() {
   const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // When we set visible=true we stamp the timestamp; the pathname reset
+  // effect uses this to enforce the minimum display duration so the
+  // spinner doesn't flash-and-vanish on fast navigations.
+  const shownAtRef = useRef<number>(0)
 
-  // Cancel any pending timers + hide the spinner on route change.
+  // Cancel any pending timers + hide the spinner on route change, but
+  // respect the MIN_DISPLAY_MS floor if the loader is currently visible.
   useEffect(() => {
     if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null }
     if (safetyTimerRef.current) { clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null }
-    setVisible(false)
+
+    if (!visible) {
+      // Nothing showing — nothing to defer.
+      return
+    }
+    const elapsed = Date.now() - shownAtRef.current
+    const remaining = MIN_DISPLAY_MS - elapsed
+    if (remaining <= 0) {
+      setVisible(false)
+    } else {
+      const t = setTimeout(() => setVisible(false), remaining)
+      return () => clearTimeout(t)
+    }
+    // We only want this to run on route change — visible-flip is handled
+    // inside the show/hide flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
 
   // Click listener — attached ONCE for the component's lifetime. Uses
@@ -84,15 +119,14 @@ export default function GlobalLoader() {
         }
       }
 
-      // Qualifying interaction → arm the 200ms show timer.
+      // Qualifying interaction → arm the show timer.
       if (showTimerRef.current) clearTimeout(showTimerRef.current)
       showTimerRef.current = setTimeout(() => {
+        shownAtRef.current = Date.now()
         setVisible(true)
         if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
-        // 6s safety net — covers legitimate slow loads without stranding
-        // the overlay on form actions that stay on the same page.
-        safetyTimerRef.current = setTimeout(() => setVisible(false), 6000)
-      }, 200)
+        safetyTimerRef.current = setTimeout(() => setVisible(false), SAFETY_HIDE_MS)
+      }, SHOW_DELAY_MS)
     }
 
     document.addEventListener('click', handleClick, { capture: true, passive: true })
