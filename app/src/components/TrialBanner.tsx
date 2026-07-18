@@ -6,7 +6,7 @@ import { trialDaysRemaining, isTrialActive, TRIAL_DAYS } from '@/lib/effective-p
 /**
  * Trial-countdown banner shown on the dashboard.
  *
- * Sits quiet for most of the 90-day trial and only surfaces in the final
+ * Sits quiet for most of the trial (TRIAL_DAYS) and only surfaces in the final
  * week (day 83+) — the goal is conversion at the moment of highest intent,
  * not nagging from day one. Two urgency levels:
  *
@@ -20,7 +20,7 @@ import { trialDaysRemaining, isTrialActive, TRIAL_DAYS } from '@/lib/effective-p
 export default function TrialBanner({ store }: { store: Store }) {
   if (!isTrialActive(store)) return null
   const days = trialDaysRemaining(store)
-  // Warn window: last 7 days of the 90-day trial. Anything earlier is
+  // Warn window: last 7 days of the trial (TRIAL_DAYS). Anything earlier is
   // silent — we don't nag users who are just settling in.
   if (days > 7) return null
 

@@ -5,12 +5,16 @@ import type { Plan, Store } from '@/domain/entities/store'
  * creation via onboarding/saveStoreAction, and to any store that has
  * `grandfatheredUntil` set (the trial expiry timestamp).
  *
- * SVP-Product decision (2026-07-05): 90 days. Longer than industry
- * norm (14/30/60) but calibrated for the SA SMME audience where trust
- * is built over months, not days. Revisit downward if trial-to-paid
- * conversion at day 90 sits under 8%.
+ * Decision history:
+ *   2026-07-05: 90 days — calibrated for the SA SMME audience where
+ *     trust is built over months, not days.
+ *   2026-07-18: extended to 120 days — SVP-Product call to give beta
+ *     cohort more runway before any conversion pressure kicks in, and
+ *     to align with SARS quarterly VAT cycles (VAT201 for the trial
+ *     store falls WITHIN the trial for most signup dates).
+ * Revisit downward if trial-to-paid conversion at day 120 sits under 8%.
  */
-export const TRIAL_DAYS = 90
+export const TRIAL_DAYS = 120
 
 /**
  * Resolve the effective plan for a store at request time.

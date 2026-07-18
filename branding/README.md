@@ -141,7 +141,7 @@ Draft copy you can adapt. Use `linkedin-post-square.png` as the image (or replac
 > Not another accounting app. Not another till. **The whole shop in one app** — sales, stock, credit, invoices, payroll, VAT, and an AI that actually knows the SA economy (fuel prices, SARB rates, SARS deadlines, load-shedding — all grounded in *your* numbers).
 >
 > Works on WhatsApp. Works on the web. Works offline.
-> Free for your first store. 90-day Business trial for everyone.
+> Free for your first store. 120-day Business trial for everyone.
 >
 > If you run a shop, salon, food stall, or any small business in SA — I built this for you.
 >

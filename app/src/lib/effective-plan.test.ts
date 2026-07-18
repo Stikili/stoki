@@ -68,8 +68,8 @@ describe('trialDaysRemaining', () => {
 })
 
 describe('TRIAL_DAYS', () => {
-  it('is 90 days per the SVP-Product decision on 2026-07-05', () => {
-    expect(TRIAL_DAYS).toBe(90)
+  it('is 120 days per the SVP-Product decision on 2026-07-18', () => {
+    expect(TRIAL_DAYS).toBe(120)
   })
 })
 
