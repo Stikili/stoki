@@ -6,6 +6,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import GlobalLoader from "@/components/GlobalLoader";
+import StructuredData from "@/components/StructuredData";
 import { Analytics } from "@vercel/analytics/next";
 
 const dmSans = DM_Sans({
@@ -30,10 +31,73 @@ const outfit = Outfit({
   display: "swap",
 });
 
+const SITE_URL = "https://stokiapp.com"
+const SITE_NAME = "Stoki"
+const OG_DESCRIPTION = "The AI-powered business assistant for South African SMMEs. Sales, stock, credit book, VAT201, payroll, and an AI advisor grounded in the SA economy — one app, on WhatsApp or the web, even offline."
+
 export const metadata: Metadata = {
-  title: "stoki — Run your business.",
-  description: "The operating system for South African SMMEs. Stock, sales, credit book, and AI advisor in one app.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    // Route-level metadata can now do `title: "Pricing"` and get
+    // "Pricing | stoki — Run your business." for free.
+    default: "stoki — Run your business.",
+    template: "%s | stoki",
+  },
+  description: OG_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: "Stoki", url: SITE_URL }],
+  creator: "Stoki",
+  publisher: "Stoki",
+  keywords: [
+    "SA SMME software", "small business South Africa", "AI business assistant",
+    "spaza shop app", "POS South Africa", "credit book app",
+    "VAT201 South Africa", "PAYE UIF SDL calculator",
+    "WhatsApp business app SA", "offline POS load-shedding",
+    "SARB rate SMME", "SARS deadlines small business",
+    "Loyverse alternative", "Yoco alternative", "Stub Africa alternative",
+    "informal trader app", "spaza shop software",
+  ],
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_ZA",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: "stoki — The AI business assistant for South African SMMEs",
+    description: OG_DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 627,
+        alt: "Stoki — The AI business assistant for South African businesses",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "stoki — The AI business assistant for South African SMMEs",
+    description: OG_DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  // Populate GOOGLE_SITE_VERIFICATION in Vercel env after claiming
+  // stokiapp.com in Google Search Console. Absent env → key omitted.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -41,6 +105,7 @@ export const metadata: Metadata = {
     ],
     apple: "/icons/icon-192.png",
   },
+  category: "business",
 };
 
 export const viewport: Viewport = {
@@ -59,6 +124,7 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} ${spaceGrotesk.variable} ${outfit.variable} h-full`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('stoki_theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}` }} />
+        <StructuredData />
       </head>
       <body className="min-h-full flex flex-col antialiased" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
         <ThemeProvider>
