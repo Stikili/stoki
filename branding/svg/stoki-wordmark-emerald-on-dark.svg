@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-label="Stoki">
+  <title>Stoki wordmark — emerald + white on dark</title>
+  <!-- Mark (scaled to 64 within 96 tall = 66% of height) -->
+  <g transform="translate(16, 16)">
+    <rect x="20" y="10" width="32" height="12" rx="3" fill="#00C896"/>
+    <rect x="12" y="26" width="32" height="12" rx="3" fill="#00C896" opacity="0.78"/>
+    <rect x="20" y="42" width="32" height="12" rx="3" fill="#00C896"/>
+  </g>
+  <!-- Wordmark: "stoki" in DM Sans / Inter-esque geometric sans -->
+  <text
+    x="96"
+    y="66"
+    font-family="'DM Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif"
+    font-size="52"
+    font-weight="700"
+    letter-spacing="-1.5"
+    fill="#FFFFFF"
+  >stoki</text>
+</svg>
