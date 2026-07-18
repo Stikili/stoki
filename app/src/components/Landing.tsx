@@ -251,25 +251,45 @@ function SlideCta() {
           <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
         </p>
 
-        {/* Two labelled contact points: hello@ for prospects wanting to
-            introduce themselves or ask general questions, support@ for
-            technical or account help. Split so the right message lands
-            with the right person / SLA. */}
-        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+        {/* Two footer CTAs — Mail us (hello@ as the friendly first-touch
+            for prospects) + Follow us (LinkedIn company page). Simple
+            side-by-side pills so tap targets are big enough on mobile
+            and neither dominates. support@ still lives in-app (Settings
+            support card, login footer, error pages) for signed-in users
+            who need help — the landing footer is for prospects. */}
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
           <a
             href="mailto:hello@stokiapp.com?subject=Hello%20Stoki"
-            className="inline-flex items-center gap-1.5 underline"
-            style={{ color: 'var(--muted)' }}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--card-border)',
+              color: 'var(--muted)',
+            }}
           >
-            Say hello · <span className="font-medium">hello@stokiapp.com</span>
+            {/* Inline mail glyph — no icon-lib import. */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Mail us
           </a>
-          <span className="hidden sm:inline" style={{ color: 'var(--card-border)' }}>·</span>
           <a
-            href="mailto:support@stokiapp.com?subject=Stoki%20support"
-            className="inline-flex items-center gap-1.5 underline"
-            style={{ color: 'var(--muted)' }}
+            href="https://www.linkedin.com/company/112506499"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--card-border)',
+              color: 'var(--muted)',
+            }}
           >
-            Need help · <span className="font-medium">support@stokiapp.com</span>
+            {/* Inline LinkedIn "in" glyph. */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zm7.5 0h4.37v1.92h.06c.61-1.16 2.1-2.38 4.32-2.38 4.62 0 5.48 3.04 5.48 7v7.46h-4.56V15.5c0-1.72-.03-3.94-2.4-3.94-2.4 0-2.77 1.88-2.77 3.82V22h-4.5V8z"/>
+            </svg>
+            Follow us
           </a>
         </div>
 
