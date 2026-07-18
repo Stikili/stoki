@@ -6,56 +6,37 @@ import { usePathname } from 'next/navigation'
 /**
  * Global loading indicator.
  *
- * Shows an animated emerald spinning ring — with a soft backdrop card —
- * after any in-app click that triggers a navigation and hasn't resolved
- * within 200ms. Fast navigations never flash the spinner; slow ones
- * surface an "I'm on it" signal so the user doesn't wonder if the tap
- * registered.
+ * Shows an animated Stoki logo — three stacked rounded blocks pulsing in
+ * sequence — after any in-app click that triggers a navigation or
+ * form-action and hasn't resolved within 200ms. Fast interactions never
+ * flash the spinner; slow ones surface an "I'm on it" signal so the user
+ * doesn't wonder if the tap registered.
  *
- * ─── Design notes on the third attempt ────────────────────────────────
+ * Click detection covers:
+ *   - Internal <a> tags (Next.js Links, BottomNav tabs, footer links)
+ *   - <button type="submit"> or plain <button> inside a <form>
+ *     (server-action submits, native form submits)
+ *   - Anything with [data-loader-trigger] for opt-in on custom buttons
  *
- * v1 (d792b19): used e.defaultPrevented check → killed EVERY Next.js
- *   Link click, because Link calls preventDefault to intercept the
- *   navigation.
+ * Ignored:
+ *   - external hrefs (mailto:, tel:, target=_blank, cross-origin)
+ *   - hash-only anchors
+ *   - same-URL clicks (re-selecting the current page)
+ *   - modifier-key clicks (open-in-new-tab)
+ *   - programmatic router.push — those callers should own their local
+ *     `isPending` state; a global overlay is the wrong altitude
  *
- * v2 (1c00b63): switched to capture-phase + removed defaultPrevented
- *   check. Also wrapped in Suspense (because useSearchParams requires
- *   it). This still didn't fire visibly, because:
- *
- *     a) `useSearchParams()` returns a new ReadonlyURLSearchParams
- *        reference on every render, so the pathname/searchParams effect
- *        fired every render, clearing the timer before 200ms elapsed.
- *     b) Suspense could unmount+remount the component mid-transition,
- *        wiping local state.
- *     c) Re-attaching the click listener on every pathname change added
- *        a race window when the listener was momentarily missing.
- *
- * v3 (this): drop useSearchParams entirely — read window.location
- *   inside the handler where we need it. Attach the listener ONCE for
- *   the component's lifetime. Depend the reset effect on `pathname`
- *   only (a stable string). No Suspense boundary needed.
- * ──────────────────────────────────────────────────────────────────────
+ * Safety net: 6s auto-hide so a click that never resolves (e.g., a
+ * server-action toast that stays on the same page) doesn't strand
+ * the overlay indefinitely. Route changes reset immediately.
  */
 export default function GlobalLoader() {
   const pathname = usePathname()
   const [visible, setVisible] = useState(false)
-  // Two timers — one for the 200ms show delay, one for the safety
-  // auto-hide. Stored in refs so they survive across renders and can
-  // be cleared cleanly on route change / unmount.
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── TEMPORARY DEBUG (revert after loader is confirmed working) ──────
-  // Logs mount + every click intercepted + every state transition so we
-  // can see in the browser console exactly where the pipeline breaks.
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[GlobalLoader] MOUNTED. pathname:', pathname)
-  }, [pathname])
-
   // Cancel any pending timers + hide the spinner on route change.
-  // Depends on `pathname` (stable string) only — no searchParams
-  // instability to worry about.
   useEffect(() => {
     if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null }
     if (safetyTimerRef.current) { clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null }
@@ -68,55 +49,49 @@ export default function GlobalLoader() {
   // live so we don't get bitten by stale closure state.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      // eslint-disable-next-line no-console
-      console.log('[GlobalLoader] click event', { target: e.target, meta: e.metaKey, button: e.button })
-
-      // Modifier-key clicks open in new tab/window — user isn't navigating
-      // this tab, so no spinner.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       if (e.button !== 0) return
 
-      const target = (e.target as HTMLElement | null)?.closest(
-        'a, button[type="submit"], [data-loader-trigger]',
-      ) as HTMLElement | null
-      if (!target) {
-        // eslint-disable-next-line no-console
-        console.log('[GlobalLoader] not a nav target, skip')
-        return
-      }
+      const raw = e.target as HTMLElement | null
+      if (!raw) return
+
+      // Try common navigation triggers first.
+      const nav = raw.closest('a, [data-loader-trigger]') as HTMLElement | null
+      // Then form submit — including plain <button> inside a form
+      // (which submits by default in HTML) that lacks an explicit
+      // type attribute.
+      const btn = raw.closest('button') as HTMLButtonElement | null
+      // btn.type reflects the DOM attribute; TypeScript narrows to
+      // 'submit' | 'reset' | 'button'. HTML default is 'submit' inside a
+      // form, so `type === 'submit'` catches both explicit and implicit.
+      // The DOM property literally reports 'submit' when the attribute
+      // is absent AND the button is inside a form.
+      const submitsForm = btn ? btn.type === 'submit' && btn.form !== null : false
+      const target = nav ?? (submitsForm ? btn : null)
+      if (!target) return
 
       if (target instanceof HTMLAnchorElement) {
         const rawHref = target.getAttribute('href')
-        // eslint-disable-next-line no-console
-        console.log('[GlobalLoader] anchor click', { rawHref, targetAttr: target.target })
         if (!rawHref) return
         if (target.target === '_blank') return
         if (rawHref.startsWith('#') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) return
         try {
           const url = new URL(target.href, window.location.href)
           if (url.origin !== window.location.origin) return
-          // Same-URL click (re-selecting current page) — no spinner.
           if (url.pathname === window.location.pathname && url.search === window.location.search) return
         } catch {
           return
         }
       }
 
-      // eslint-disable-next-line no-console
-      console.log('[GlobalLoader] arming 200ms timer')
-
-      // Qualifying click → arm the 200ms show timer. Chain the safety
-      // auto-hide inside the show callback so both timers move as a unit.
+      // Qualifying interaction → arm the 200ms show timer.
       if (showTimerRef.current) clearTimeout(showTimerRef.current)
       showTimerRef.current = setTimeout(() => {
-        // eslint-disable-next-line no-console
-        console.log('[GlobalLoader] TIMER FIRED → setVisible(true)')
         setVisible(true)
         if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
-        // 8s safety net — if nothing else hides the spinner (e.g., a
-        // server-action submit that stays on the same page), it goes
-        // away after 8s rather than hanging.
-        safetyTimerRef.current = setTimeout(() => setVisible(false), 8000)
+        // 6s safety net — covers legitimate slow loads without stranding
+        // the overlay on form actions that stay on the same page.
+        safetyTimerRef.current = setTimeout(() => setVisible(false), 6000)
       }, 200)
     }
 
@@ -126,7 +101,7 @@ export default function GlobalLoader() {
       if (showTimerRef.current) clearTimeout(showTimerRef.current)
       if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current)
     }
-  }, []) // Attach once. No deps.
+  }, []) // Attach once.
 
   if (!visible) return null
 
@@ -138,59 +113,102 @@ export default function GlobalLoader() {
       aria-label="Loading"
     >
       <div
-        className="stoki-loader-card rounded-2xl px-5 py-4 inline-flex items-center gap-3"
+        className="stoki-loader-card inline-flex flex-col items-center"
         style={{
-          background: 'rgba(8, 15, 26, 0.72)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
+          background: 'rgba(8, 15, 26, 0.78)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.42)',
         }}
       >
-        <span
-          className="stoki-loader-ring"
-          aria-hidden
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            border: '2.5px solid rgba(255, 255, 255, 0.15)',
-            borderTopColor: '#00C896',
-            animation: 'stoki-loader-spin 720ms linear infinite',
-            display: 'inline-block',
-          }}
-        />
-        <span
-          style={{
-            color: 'white',
-            fontSize: 13,
-            fontWeight: 500,
-            letterSpacing: '0.01em',
-          }}
-        >
-          Loading…
-        </span>
+        <AnimatedStokiLogo />
+        <span className="stoki-loader-label">Loading</span>
       </div>
 
       <style>{`
-        @keyframes stoki-loader-spin {
-          to { transform: rotate(360deg); }
+        @keyframes stoki-loader-pulse {
+          0%, 60%, 100% { opacity: 0.28; transform: scaleX(1); }
+          30% { opacity: 1; transform: scaleX(1.06); }
         }
         @keyframes stoki-loader-fade-in {
-          from { opacity: 0; transform: translateY(4px); }
+          from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0);   }
         }
+        /*
+          Card + logo + label all scale with the viewport via clamp().
+          clamp(min, preferred, max) — the preferred is a viewport-relative
+          value so the loader is proportionally sized on every device:
+            iPhone SE (375px):  ~40px logo, small card
+            iPhone 15 Pro (390px): ~42px logo
+            iPad portrait (768px): ~56px logo, roomier card
+            Desktop (1440px):  cap at 72px logo, generous card
+          Prevents the "postage stamp on a 27-inch monitor" problem AND the
+          "cramped tap target on a tiny phone" problem.
+        */
         .stoki-loader-card {
-          animation: stoki-loader-fade-in 140ms ease-out;
+          border-radius: clamp(1rem, 2.4vw, 1.5rem);
+          padding: clamp(1rem, 2.5vw, 1.5rem) clamp(1.25rem, 3.5vw, 2rem);
+          gap: clamp(0.6rem, 1.2vw, 0.9rem);
+          animation: stoki-loader-fade-in 160ms ease-out;
         }
+        .stoki-loader-logo {
+          width:  clamp(36px, 6.5vw, 72px);
+          height: clamp(36px, 6.5vw, 72px);
+        }
+        .stoki-loader-label {
+          color: rgba(255, 255, 255, 0.88);
+          font-size: clamp(10px, 1vw, 13px);
+          font-weight: 500;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+        .stoki-loader-block {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: stoki-loader-pulse 1.35s ease-in-out infinite;
+        }
+        .stoki-loader-block-top    { animation-delay: 0ms;   }
+        .stoki-loader-block-middle { animation-delay: 180ms; }
+        .stoki-loader-block-bottom { animation-delay: 360ms; }
         @media (prefers-reduced-motion: reduce) {
-          .stoki-loader-ring {
-            animation-duration: 2.4s !important;
-          }
-          .stoki-loader-card {
-            animation: none;
-          }
+          .stoki-loader-block { animation-duration: 3.6s !important; }
+          .stoki-loader-card  { animation: none; }
         }
       `}</style>
     </div>
+  )
+}
+
+/**
+ * Animated Stoki mark — three stacked rounded blocks pulsing in
+ * sequence top → middle → bottom. Mirrors the static `Logo` component's
+ * geometry so it reads as "Stoki loading", not "generic spinner".
+ */
+function AnimatedStokiLogo() {
+  return (
+    <svg
+      className="stoki-loader-logo"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-hidden
+    >
+      <rect
+        className="stoki-loader-block stoki-loader-block-top"
+        x="20" y="10" width="32" height="12" rx="3"
+        fill="#00C896"
+      />
+      <rect
+        className="stoki-loader-block stoki-loader-block-middle"
+        x="12" y="26" width="32" height="12" rx="3"
+        fill="#00C896"
+      />
+      <rect
+        className="stoki-loader-block stoki-loader-block-bottom"
+        x="20" y="42" width="32" height="12" rx="3"
+        fill="#00C896"
+      />
+    </svg>
   )
 }
