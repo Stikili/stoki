@@ -169,13 +169,13 @@ export default function AdvisorClient({ storeId, prefill = '' }: { storeId: stri
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 items-center pb-4 flex-shrink-0">
+      <div className="flex gap-2 items-center pt-1 flex-shrink-0">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send(input)}
-          placeholder="Ask anything about your business…"
+          placeholder="Ask about your business, tax, or the SA economy…"
           disabled={isPending}
           className="input flex-1"
           style={{ opacity: isPending ? 0.6 : 1 }}
@@ -190,6 +190,17 @@ export default function AdvisorClient({ storeId, prefill = '' }: { storeId: stri
           <Send size={18} color={input.trim() && !isPending ? 'white' : '#5A6B80'} />
         </button>
       </div>
+
+      {/* Scope hint — sets expectations before the user asks something
+          off-topic. Mirrors the scope-lock in the system prompt so users
+          understand the refusal if one lands. Kept subtle and short so it
+          doesn't shout on every dashboard-heavy screen. */}
+      <p
+        className="text-center text-[10.5px] mt-1.5 pb-3 flex-shrink-0"
+        style={{ color: 'var(--muted-dim)' }}
+      >
+        Stoki AI helps with <span style={{ color: 'var(--muted)' }}>business, markets, economics, finance &amp; lending</span>. For anything else — try a Google search.
+      </p>
     </div>
   )
 }
