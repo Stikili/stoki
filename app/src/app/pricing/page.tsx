@@ -1,19 +1,20 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import WaitlistForm from './WaitlistForm'
 
 /**
  * Public pricing page.
  *
- * State today: Free tier is live and fully described (sign-up CTA).
- * Pro / Business tiers show real ZAR pricing anchors but are gated
- * behind a "Join waitlist" flow because Ozow billing integration is
- * stashed until merchant credentials arrive. Enterprise is a mailto.
+ * State today: every non-Enterprise tier is signup-able. Sign-up
+ * creates a Free account plus a 120-day full-Business trial, so a
+ * visitor who picks Pro or Business gets immediate access to every
+ * paid feature; billing simply hasn't landed yet. When Ozow ships,
+ * the same tier CTAs stay (labels flip from "Start free trial" to
+ * "Subscribe R99/mo" etc.) and the in-app upgrade flow lights up.
  *
- * When Ozow lands, the tier cards flip from waitlist to real
- * checkout — one edit to this file, no schema changes required.
- * The waitlist emails collected in the interim become the launch
- * outreach list.
+ * The waitlist infrastructure (WaitlistForm, /api/waitlist,
+ * migration 040) is kept in the codebase so we can turn on
+ * capture for any future gated launch (bank feeds, new features)
+ * without rebuilding the plumbing.
  */
 
 const SITE = 'https://stokiapp.com'
@@ -22,20 +23,20 @@ const PAGE_URL = `${SITE}/pricing`
 export const metadata: Metadata = {
   title: 'Pricing — free forever for your first store',
   description:
-    "Stoki pricing for South African SMMEs. Free forever tier. Pro R99/month, Business R249/month, Enterprise from R899/month — launching alongside our SA payment integration. Join the waitlist.",
+    "Stoki pricing for South African SMMEs. Free forever tier. Pro R99/month, Business R249/month, Enterprise from R899/month. Every new account gets 120 days of full Business features free.",
   alternates: { canonical: PAGE_URL },
   openGraph: {
     type: 'website',
     url: PAGE_URL,
     title: 'Stoki pricing — free forever for your first store',
     description:
-      'Free tier for SA SMMEs. Pro R99/mo, Business R249/mo, Enterprise from R899/mo — join the waitlist for launch.',
+      'Free tier for SA SMMEs. Pro R99/mo, Business R249/mo, Enterprise from R899/mo. Every new account starts with a 120-day Business-tier trial.',
     images: [{ url: '/og-image.png', width: 1200, height: 627 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Stoki pricing — free forever for your first store',
-    description: 'Free tier live. Pro (R99) / Business (R249) — join the waitlist.',
+    description: 'Free tier live. Pro (R99) / Business (R249) — sign up and get 120 days of Business features free.',
     images: ['/og-image.png'],
   },
 }
@@ -64,25 +65,25 @@ const jsonLd = {
       name: 'Pro',
       price: '99',
       priceCurrency: 'ZAR',
-      availability: 'https://schema.org/PreOrder',
-      url: PAGE_URL,
-      description: 'R99/month. B2B invoicing, payables, bank reconciliation, unlimited AI advisor + 7 Pro insights, accounting exports. Launching alongside SA payment integration.',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE}/register`,
+      description: 'R99/month. B2B invoicing, payables, bank reconciliation, unlimited AI advisor + 7 Pro insights, accounting exports. Start with a 120-day full-Business trial on sign-up.',
     },
     {
       '@type': 'Offer',
       name: 'Business',
       price: '249',
       priceCurrency: 'ZAR',
-      availability: 'https://schema.org/PreOrder',
-      url: PAGE_URL,
-      description: 'R249/month. Everything in Pro plus payroll (PAYE/UIF/SDL/EMP201), multi-store (up to 3), team (up to 5), WhatsApp broadcasts, fixed assets.',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE}/register`,
+      description: 'R249/month. Everything in Pro plus payroll (PAYE/UIF/SDL/EMP201), multi-store (up to 3), team (up to 5), WhatsApp broadcasts, fixed assets. Start with a 120-day trial on sign-up.',
     },
     {
       '@type': 'Offer',
       name: 'Enterprise',
       price: '899',
       priceCurrency: 'ZAR',
-      availability: 'https://schema.org/PreOrder',
+      availability: 'https://schema.org/InStock',
       url: 'mailto:hello@stokiapp.com',
       description: 'From R899/month. Unlimited stores + team, dedicated account manager, SLA-backed uptime.',
     },
@@ -112,8 +113,8 @@ export default function PricingPage() {
             Free forever for your first store.
           </h1>
           <p className="text-base sm:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: 'var(--muted)' }}>
-            Pro and Business tiers launching alongside our SA payment integration.
-            Join the waitlist — we&apos;ll email you the moment they&apos;re live.
+            Every new account starts with 120 days of full Business features — no card required.
+            Paid tiers billing incrementally, starting with our SA payment integration.
           </p>
         </header>
 
@@ -146,7 +147,8 @@ export default function PricingPage() {
             statusBadge="live"
           />
 
-          {/* Pro — waitlist */}
+          {/* Pro — signup-able (via 120-day Business trial). Billing
+              lights up incrementally as Ozow lands. */}
           <TierCard
             name="Pro"
             subtitle="going formal — SARS, B2B customers"
@@ -166,12 +168,10 @@ export default function PricingPage() {
               'Provisional tax estimator + cashflow forecast',
               'Accounting exports (Xero / Sage)',
             ]}
-            waitlistPlan="pro"
-            waitlistLabel="Pro"
-            statusBadge="soon"
+            cta={{ label: 'Start free trial', href: '/register', kind: 'primary' }}
           />
 
-          {/* Business — waitlist */}
+          {/* Business — signup-able (via 120-day trial). */}
           <TierCard
             name="Business"
             subtitle="growing — with employees or multiple locations"
@@ -188,9 +188,7 @@ export default function PricingPage() {
               'Up to 5 team members',
               'Priority WhatsApp support (4-hour, business hours)',
             ]}
-            waitlistPlan="business"
-            waitlistLabel="Business"
-            statusBadge="soon"
+            cta={{ label: 'Start free trial', href: '/register', kind: 'primary' }}
           />
 
           {/* Enterprise — contact. Price shown as "Contact us" rather
@@ -274,15 +272,13 @@ interface TierCardProps {
   headline: string
   features: string[]
   cta?: { label: string; href: string; kind: 'primary' | 'ghost' }
-  waitlistPlan?: 'pro' | 'business' | 'enterprise'
-  waitlistLabel?: string
   statusBadge?: 'live' | 'soon'
 }
 
-function TierCard({ name, subtitle, price, priceNote, priceAnnual, headline, features, cta, waitlistPlan, waitlistLabel, statusBadge }: TierCardProps) {
+function TierCard({ name, subtitle, price, priceNote, priceAnnual, headline, features, cta, statusBadge }: TierCardProps) {
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 flex flex-col relative min-w-0 overflow-hidden"
+      className="rounded-2xl p-5 sm:p-6 flex flex-col relative min-w-0"
       style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--card-border)',
@@ -339,10 +335,6 @@ function TierCard({ name, subtitle, price, priceNote, priceAnnual, headline, fea
           {cta.label}
         </Link>
       )}
-
-      {waitlistPlan && waitlistLabel && (
-        <WaitlistForm plan={waitlistPlan} planLabel={waitlistLabel} />
-      )}
     </div>
   )
 }
@@ -353,8 +345,8 @@ const PRICING_FAQS: Array<{ q: string; a: string }> = [
     a: 'Yes. No time limit, no card required, no auto-conversion. Your first store keeps all listed Free-tier features indefinitely. We only ask for payment when you invite a teammate (Pro), open a second store (Business), or unlock advanced features like payroll, invoicing, or the 7 Pro AI insights.',
   },
   {
-    q: 'Why can I not buy Pro or Business today?',
-    a: "We're integrating a South African payment provider (Ozow) to bill in ZAR without forex fees. The paid tiers unlock the moment integration lands — expected within weeks. Joining the waitlist means we email you the moment it's live, and early joiners get first access to any launch pricing.",
+    q: 'Can I use Pro or Business features today?',
+    a: "Yes. Every new account starts with a 120-day full-Business trial — every feature unlocked, no card required. You can test the entire product for four months. Billing is landing incrementally alongside our SA payment integration; when it goes live, upgrading is a one-click flow inside the app.",
   },
   {
     q: 'Do you charge in USD?',
