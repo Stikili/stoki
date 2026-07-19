@@ -129,6 +129,8 @@ function makeStore(): Store {
     hasEmployees: false,
     simpleView: true,
     aiTone: 'plain',
+    investedCapital: null,
+    investedCapitalUpdatedAt: null,
     createdAt: '', updatedAt: '',
   }
 }

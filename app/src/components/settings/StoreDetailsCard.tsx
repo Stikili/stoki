@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Store } from '@/domain/entities/store'
 import { updateStoreAction, deleteStoreAction } from '@/app/(app)/settings/actions'
-import { MapPin, LocateFixed, Wallet } from 'lucide-react'
+import { MapPin, LocateFixed, Wallet, TrendingUp } from 'lucide-react'
 
 const cardStyle = {
   background: 'var(--card-bg)',
@@ -84,18 +84,18 @@ export default function StoreDetailsCard({
 
   return (
     <div className="rounded-2xl p-4" style={cardStyle}>
-      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Store details</p>
-      <p className="text-muted text-sm mb-4">Update your store name, phone, address, and WhatsApp number.</p>
+      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Business details</p>
+      <p className="text-muted text-sm mb-4">Update your business name, phone, address, and WhatsApp number.</p>
       {storeSaved && (
         <div
           className="rounded-xl px-4 py-3 text-sm font-semibold mb-3"
           style={{ background: '#143328', color: '#00C896', border: '1px solid #1E4D3F' }}
         >
-          ✓ Store updated
+          ✓ Business updated
         </div>
       )}
       <form action={handleUpdateStore} className="flex flex-col gap-3">
-        <input name="name" defaultValue={store.name} placeholder="Store name *" required style={inputStyle} />
+        <input name="name" defaultValue={store.name} placeholder="Business name *" required style={inputStyle} />
         <input name="phone" type="tel" defaultValue={store.phone ?? ''} placeholder="Store phone (optional)" style={inputStyle} />
         <div>
           <input name="location" defaultValue={store.location ?? ''} placeholder="Area / suburb (e.g. Soweto, Khayelitsha)" style={inputStyle} />
@@ -120,7 +120,7 @@ export default function StoreDetailsCard({
             <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Shop location</p>
           </div>
           <p className="text-muted text-xs mb-3">
-            Powers weather alerts and the new-competitor-nearby alert. We never share your location with anyone — it stays in your store record.
+            Powers weather alerts and the new-competitor-nearby alert. We never share your location with anyone — it stays in your business record.
           </p>
           <div className="flex flex-col gap-2">
             <button
@@ -190,6 +190,35 @@ export default function StoreDetailsCard({
           )}
         </div>
 
+        {/* Invested capital — feeds ROIC (return on invested capital)
+            calculation in the AI advisor + monthly report. Optional —
+            NULL means the ROIC feature silently skips this business.
+            0 is legitimate (inherited / bootstrapped businesses). */}
+        <div className="rounded-xl p-3" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <TrendingUp size={14} style={{ color: 'var(--muted)' }} />
+            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Invested capital</p>
+          </div>
+          <p className="text-muted text-xs mb-3">
+            The total rand amount you&apos;ve put into this business — startup costs, stock, equipment, cash you left in. Powers the &quot;am I earning my desired return?&quot; check in Stoki AI and your monthly summary. Leave blank if you&apos;d rather not track it.
+          </p>
+          <input
+            name="investedCapital"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            defaultValue={store.investedCapital != null ? String(store.investedCapital) : ''}
+            placeholder="e.g. 25000.00"
+            style={{ ...inputStyle, padding: '10px 12px', fontSize: '14px' }}
+          />
+          {store.investedCapitalUpdatedAt && (
+            <p className="text-muted text-[11px] mt-1.5 ml-1">
+              Last updated {new Date(store.investedCapitalUpdatedAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={isPending}
@@ -207,7 +236,7 @@ export default function StoreDetailsCard({
           className="w-full mt-3 rounded-xl py-3 font-semibold text-sm"
           style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', opacity: isPending ? 0.5 : 1 }}
         >
-          Delete this store
+          Delete this business
         </button>
       )}
     </div>

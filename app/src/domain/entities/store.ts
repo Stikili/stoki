@@ -49,6 +49,16 @@ export interface Store {
    *  WhatsApp brain, monthly report, anomaly alerts, explain-line-item)
    *  reads this and adapts. Default 'plain' keeps existing behaviour. */
   aiTone: AiTone
+  /** Rands the owner put in to start / grow this business. Feeds the
+   *  ROIC (return on invested capital) calculation in the AI advisor +
+   *  monthly report. NULL = not tracked (owner skipped on onboarding).
+   *  0 is legitimate (inherited / no-cash starts); negative is rejected
+   *  by the DB CHECK constraint. */
+  investedCapital: number | null
+  /** When invested_capital was last set / edited. Feeds a "last updated
+   *  N months ago" hint in the settings UI so owners refresh the number
+   *  after a big cash injection or write-down. */
+  investedCapitalUpdatedAt: string | null
   /** When set and in the future, the store has elevated (Pro) access
    *  regardless of `plan`. Used for two windows:
    *    - existing accounts at paywall rollout (90 days)

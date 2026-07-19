@@ -74,6 +74,7 @@ export class StoreRepository implements IStoreRepository {
     hasEmployees?: boolean
     simpleView?: boolean
     aiTone?: AiTone
+    investedCapital?: number | null
   }): Promise<Store> {
     const dbPatch: Record<string, unknown> = {}
     if (patch.name !== undefined) dbPatch.name = patch.name
@@ -100,6 +101,13 @@ export class StoreRepository implements IStoreRepository {
     if (patch.hasEmployees !== undefined) dbPatch.has_employees = patch.hasEmployees
     if (patch.simpleView !== undefined) dbPatch.simple_view = patch.simpleView
     if (patch.aiTone !== undefined) dbPatch.ai_tone = patch.aiTone
+    // investedCapital gets paired with a fresh updated_at stamp so the UI
+    // can show "last updated 3 months ago" without a second column write.
+    // Explicit null resets both (owner wanted to un-track it).
+    if (patch.investedCapital !== undefined) {
+      dbPatch.invested_capital = patch.investedCapital
+      dbPatch.invested_capital_updated_at = patch.investedCapital === null ? null : new Date().toISOString()
+    }
     const { data, error } = await this.db
       .from('stores')
       .update(dbPatch)

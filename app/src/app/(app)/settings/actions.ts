@@ -35,6 +35,13 @@ export async function updateStoreAction(formData: FormData) {
   const cashBalance = cashRaw === '' ? null : Number(cashRaw)
   const validCash = cashBalance === null || (Number.isFinite(cashBalance) && cashBalance >= 0)
 
+  // Optional invested capital — feeds ROIC in the AI advisor + monthly
+  // report. Empty = not tracked; explicit 0 = "inherited / bootstrapped"
+  // (still a meaningful signal, though ROIC then has no denominator).
+  const investedRaw = (formData.get('investedCapital') as string | null)?.trim() ?? ''
+  const investedCapital = investedRaw === '' ? null : Number(investedRaw)
+  const validInvested = investedCapital === null || (Number.isFinite(investedCapital) && investedCapital >= 0)
+
   if (!name) return
 
   const storeRepo = new StoreRepository(supabase)
@@ -43,6 +50,7 @@ export async function updateStoreAction(formData: FormData) {
     ...(validLat ? { lat } : {}),
     ...(validLng ? { lng } : {}),
     ...(validCash ? { cashBalance } : {}),
+    ...(validInvested ? { investedCapital } : {}),
   })
 
   revalidateTag(TAGS.stores, 'default')

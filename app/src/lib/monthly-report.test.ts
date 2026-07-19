@@ -168,6 +168,7 @@ describe('buildSummaryPrompt', () => {
     storeName: 'Kagiso Kwikstop',
     storeCategory: 'spaza shop',
     storeLocation: 'Kagiso',
+    investedCapital: null,
     prevMonth: { name: 'January', start: new Date(), end: new Date() },
     monthBefore: { name: 'December', start: new Date(), end: new Date() },
     revenue: { current: 12000, prev: 10000, delta: 2000, deltaPct: 20 },
@@ -224,6 +225,37 @@ describe('buildSummaryPrompt', () => {
     expect(system).toContain('"technical"')
     // Same data lines regardless of tone
     expect(user).toContain('R12000.00')
+  })
+
+  it('omits ROIC line when investedCapital is null (not tracked)', () => {
+    const { user } = buildSummaryPrompt({ ...baseStats, investedCapital: null }, 'plain')
+    expect(user).not.toMatch(/Invested capital/)
+    expect(user).not.toMatch(/annualised/)
+  })
+
+  it('omits ROIC line when investedCapital is exactly 0 (division by zero guard)', () => {
+    const { user } = buildSummaryPrompt({ ...baseStats, investedCapital: 0 }, 'plain')
+    expect(user).not.toMatch(/Invested capital/)
+  })
+
+  it('renders ROIC line when investedCapital > 0 with annualised % and rand value', () => {
+    const stats = { ...baseStats, investedCapital: 50_000 }
+    const { user } = buildSummaryPrompt(stats, 'plain')
+    // 50k invested; net = 8500; annualised = 8500*12/50000*100 = 204%
+    expect(user).toMatch(/Invested capital: R50000\.00/)
+    expect(user).toMatch(/204\.0% per year/)
+  })
+
+  it('includes a phrase-hint for the LLM when ROIC is set, so it says "for every R100…" not "ROIC"', () => {
+    const { user } = buildSummaryPrompt({ ...baseStats, investedCapital: 25_000 }, 'plain')
+    expect(user).toMatch(/for every R100/)
+    expect(user).toMatch(/Don't say "ROIC"/)
+  })
+
+  it('the phrase-hint is omitted when investedCapital is null so the prompt stays lean', () => {
+    const { user } = buildSummaryPrompt({ ...baseStats, investedCapital: null }, 'plain')
+    expect(user).not.toMatch(/for every R100/)
+    expect(user).not.toMatch(/Don't say "ROIC"/)
   })
 })
 

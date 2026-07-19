@@ -171,6 +171,74 @@ export function buildAllTools(ctx: ToolContext) {
     },
   }))
 
+  // ── Read: return on invested capital ───────────────────────────────────
+  tools.push(betaZodTool({
+    name: 'get_return_on_invested_capital',
+    description:
+      "The single question every owner cares about: 'am I earning my desired return?'. " +
+      "Computes annualised ROIC (return on invested capital) from the last 12 months of " +
+      "net profit vs the invested-capital number the owner recorded. Also returns payback " +
+      "period in months. When the owner hasn't set invested capital yet, returns tracked=false " +
+      "with a hint the LLM should surface so the owner can add it in Settings → Business " +
+      "details. Combine with get_market_context for an opportunity-cost comparison vs SARB " +
+      "repo / fixed-deposit rates.",
+    inputSchema: z.object({}),
+    run: async () => {
+      if (store.investedCapital === null) {
+        return JSON.stringify({
+          tracked: false,
+          hint:
+            "Invested capital is not tracked yet. To answer 'am I earning my desired return?', " +
+            "the owner needs to set the total rand amount they've put into this business — " +
+            "Settings → Business details → Invested capital. Suggest this as a next step.",
+        })
+      }
+      // Trailing 12 months of revenue vs expenses. Net = revenue - expenses.
+      const now = new Date()
+      const twelveMonthsAgo = new Date(now)
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+
+      const [salesSummary, expenseTotal] = await Promise.all([
+        saleRepo.summarise(store.id, twelveMonthsAgo, now),
+        expenseRepo.sumByPeriod(store.id, twelveMonthsAgo, now),
+      ])
+      const revenueTtm = salesSummary.totalRevenue
+      const netProfitTtm = revenueTtm - expenseTotal
+
+      const capital = store.investedCapital
+      // Payback in months = capital ÷ average monthly net profit. Guard
+      // against divide-by-zero (loss-making business — payback undefined).
+      const monthlyNetProfit = netProfitTtm / 12
+      const paybackMonths = monthlyNetProfit > 0
+        ? capital / monthlyNetProfit
+        : null
+
+      // Annualised ROIC. Handles capital=0 (inherited business — return
+      // is undefined, the concept breaks down without invested capital).
+      const roicPct = capital > 0
+        ? (netProfitTtm / capital) * 100
+        : null
+
+      return JSON.stringify({
+        tracked: true,
+        invested_capital_rand: round2(capital),
+        invested_capital_updated_at: store.investedCapitalUpdatedAt,
+        trailing_12_months: {
+          revenue_rand: round2(revenueTtm),
+          expenses_rand: round2(expenseTotal),
+          net_profit_rand: round2(netProfitTtm),
+        },
+        roic_annualised_pct: roicPct !== null ? round2(roicPct) : null,
+        payback_months: paybackMonths !== null ? round2(paybackMonths) : null,
+        note_for_llm:
+          "For an honest read, compare roic_annualised_pct to the current SARB repo " +
+          "rate (call get_market_context) and to typical SA fixed-deposit returns (~8-9%). " +
+          "If ROIC exceeds those, the business is earning the risk premium. If it's below, " +
+          "the money would have earned more sitting in the bank — a real conversation to have.",
+      })
+    },
+  }))
+
   // ── Read: insight (13 F-A blocks behind one tool) ──────────────────────
   tools.push(betaZodTool({
     name: 'get_business_insight',

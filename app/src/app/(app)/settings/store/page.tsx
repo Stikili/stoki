@@ -12,7 +12,7 @@ export default async function StoreSettingsPage() {
       <Link href="/settings" className="inline-flex items-center gap-1.5 text-muted text-sm">
         <ArrowLeft size={14} /> Settings
       </Link>
-      <h1 className="text-xl font-bold text-white">Store details</h1>
+      <h1 className="text-xl font-bold text-white">Business details</h1>
       <StoreDetailsCard store={store} canDelete={allStores.length > 1} />
       <AiToneCard storeId={store.id} currentTone={store.aiTone} />
     </div>

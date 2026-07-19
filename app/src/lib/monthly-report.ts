@@ -31,6 +31,9 @@ export interface MonthlyStats {
   storeName: string
   storeCategory: string
   storeLocation: string | null
+  /** Owner's invested capital, if tracked. Feeds the ROIC line in the
+   *  summary prompt when set. NULL = owner hasn't opted in. */
+  investedCapital: number | null
   prevMonth: MonthWindow
   monthBefore: MonthWindow
   revenue: {
@@ -125,13 +128,16 @@ export async function computeMonthlyStats(
 
   const { data: storeRow } = await supabase
     .from('stores')
-    .select('name, category, location')
+    .select('name, category, location, invested_capital')
     .eq('id', storeId)
     .single()
-  const storeName = (storeRow?.name as string) ?? 'Your store'
+  const storeName = (storeRow?.name as string) ?? 'Your business'
   const storeCategoryKey = (storeRow?.category as string | null) ?? 'other'
   const storeCategoryLabel = categoryLabel(storeCategoryKey)
   const storeLocation = (storeRow?.location as string | null) ?? null
+  const investedCapital = storeRow?.invested_capital !== null && storeRow?.invested_capital !== undefined
+    ? Number(storeRow.invested_capital)
+    : null
 
   // Pull both month ranges of sales in a single query (min of the two
   // starts, max of the two ends) — cuts one round-trip. Bucket in memory.
@@ -181,6 +187,7 @@ export async function computeMonthlyStats(
     storeName,
     storeCategory: storeCategoryLabel,
     storeLocation,
+    investedCapital,
     prevMonth,
     monthBefore,
     revenue: {
@@ -313,8 +320,19 @@ Rules — non-negotiable:
   if (stats.debtors.owingCount > 0) {
     parts.push(`- Customers on credit: ${stats.debtors.owingCount} still owing R${stats.debtors.outstanding.toFixed(2)}`)
   }
+  // ROIC line — only rendered when the owner has told us their invested
+  // capital (Settings → Business details → Invested capital). Annualise
+  // by projecting the month's net × 12 against total capital in. Purely
+  // illustrative: the LLM is prompted to phrase it plainly.
+  if (stats.investedCapital !== null && stats.investedCapital > 0) {
+    const annualisedRoicPct = ((stats.net.current * 12) / stats.investedCapital) * 100
+    parts.push(`- Invested capital: R${stats.investedCapital.toFixed(2)} · this month's return if annualised: ${annualisedRoicPct.toFixed(1)}% per year`)
+  }
   parts.push('')
   parts.push(`Write the ${stats.prevMonth.name} recap in the ${tone} tone. 4-6 sentences.`)
+  if (stats.investedCapital !== null && stats.investedCapital > 0) {
+    parts.push(`When you mention the return-on-invested-capital number, phrase it plainly — e.g. "for every R100 you put into the business, you're earning back R${(((stats.net.current * 12) / stats.investedCapital) * 100).toFixed(2)} per year at this pace". Don't say "ROIC" or "annualised" unless the tone is technical.`)
+  }
 
   return { system, user: parts.join('\n') }
 }

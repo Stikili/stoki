@@ -53,6 +53,8 @@ export function toStore(row: any): Store {
     hasEmployees: row.has_employees ?? false,
     simpleView: row.simple_view ?? true,
     aiTone: isValidAiTone(row.ai_tone) ? row.ai_tone : DEFAULT_AI_TONE,
+    investedCapital: row.invested_capital !== null && row.invested_capital !== undefined ? Number(row.invested_capital) : null,
+    investedCapitalUpdatedAt: row.invested_capital_updated_at ?? null,
     grandfatheredUntil: row.grandfathered_until ?? null,
     subscriptionStatus: row.subscription_status ?? 'none',
     subscriptionActiveUntil: row.subscription_active_until ?? null,
