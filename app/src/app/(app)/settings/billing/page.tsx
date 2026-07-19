@@ -102,7 +102,7 @@ export default async function BillingPage() {
       {/* Plan cards */}
       <div className="grid grid-cols-1 gap-3">
         <PlanCard
-          name="Free" subtitle="for the spaza on day one" price="R0" priceSub="Forever"
+          name="Free" subtitle="for your day-one small business" price="R0" priceSub="Forever"
           current={current === 'free' && !trialDays}
           features={[
             '1 store, 1 user',
@@ -132,7 +132,7 @@ export default async function BillingPage() {
           cta="Request Pro access"
         />
         <PlanCard
-          name="Business" subtitle="growing — employees, multi-shop" price="R249 / month" priceSub="or R2,490/year — 2 months free"
+          name="Business" subtitle="growing — with employees or multiple locations" price="R249 / month" priceSub="or R2,490/year — 2 months free"
           current={current === 'business'}
           features={[
             'Everything in Pro',
@@ -146,7 +146,7 @@ export default async function BillingPage() {
           cta="Request Business access"
         />
         <PlanCard
-          name="Enterprise" subtitle="chains, franchises, 10+ shops" price="From R899 / month" priceSub="Contact sales"
+          name="Enterprise" subtitle="chains, franchises, 10+ locations" price="From R899 / month" priceSub="Contact sales"
           current={current === 'enterprise'}
           features={[
             'Everything in Business',

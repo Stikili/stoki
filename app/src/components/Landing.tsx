@@ -111,7 +111,7 @@ function SlideHero() {
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
           style={{ color: 'var(--muted-dim)' }}
         >
-          Built for South African shops &amp; SMMEs
+          Built for South African small businesses
         </p>
         <h1
           className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"

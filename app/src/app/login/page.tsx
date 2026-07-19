@@ -429,7 +429,7 @@ function LoginPageInner() {
   const subtitle =
     mode === "phone"
       ? phoneStep === "otp" ? `We texted a 6-digit code to ${normalisedPhone}` : "We'll text you a one-time code."
-      : intent === "register" ? "Start running your shop with stoki" : "Sign in to your stoki account"
+      : intent === "register" ? "Start running your business with stoki" : "Sign in to your stoki account"
 
   const isOtpStep = mode === "phone" && phoneStep === "otp"
 

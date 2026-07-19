@@ -127,7 +127,7 @@ export default function PricingPage() {
           {/* Free — live */}
           <TierCard
             name="Free"
-            subtitle="for the spaza on day one"
+            subtitle="for your day-one small business"
             price="R0"
             priceNote="forever"
             headline="Everything you need to start"
@@ -174,7 +174,7 @@ export default function PricingPage() {
           {/* Business — waitlist */}
           <TierCard
             name="Business"
-            subtitle="growing — employees, multi-shop"
+            subtitle="growing — with employees or multiple locations"
             price="R249"
             priceNote="/month"
             priceAnnual="R2,490/year — 2 months free"
@@ -196,7 +196,7 @@ export default function PricingPage() {
           {/* Enterprise — contact */}
           <TierCard
             name="Enterprise"
-            subtitle="chains, franchises, 10+ shops"
+            subtitle="chains, franchises, 10+ locations"
             price="From R899"
             priceNote="/month"
             priceAnnual="Contact sales for custom pricing"
