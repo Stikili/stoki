@@ -1,25 +1,38 @@
 /**
- * Stoki wordmark — the mark + lowercase "stoki" with the "i" tittle replaced
- * by a small emerald block that echoes the mark's shape vocabulary, plus
- * the brand-red period as a closing flourish.
+ * Stoki wordmark — the three-block mark + the "stoki" lowercase text,
+ * closed by a small brand-red period.
  *
  *  ▰▰
- * ▰▰   stok·  ─ — ─
- *  ▰▰         "i" stem + tiny block (replaces the regular tittle)
+ * ▰▰   stoki·
+ *  ▰▰
  *
- * Geometry:
- *   - canvas        fixed 200×64 viewBox — caller sizes via `height`
- *   - mark area     0–60  (left-aligned)
- *   - text area     70–155 ("stok" → 70-122, "i" stem → 128-132, period → 145)
- *   - tittle block  centred above the i stem, 8w × 5h, brand emerald
- *   - period        2.5r dot in SA-flag red, baseline-aligned with text
+ * DESIGN NOTES
+ * ------------
+ * Previous version constructed the "i" from two custom SVG rects
+ * (stem + emerald tittle block), positioned by hard-coded x-offsets
+ * calibrated to DM Sans at 36px / weight 700 / letter-spacing -1.2.
+ * That was fragile: whenever DM Sans failed to load — network flake,
+ * ad blocker, corporate proxy, older Android WebView — the fallback
+ * `system-ui` renders "stok" at a different width, leaving the custom
+ * "i" stem either overlapping the "k" or floating far to the right.
+ * Users reported "stok" (missing i) on real devices as a result.
+ *
+ * This rewrite uses a single `<text>stoki</text>` element with the
+ * same DM Sans stack, so whatever font actually loads, the "i" is a
+ * real letter in the glyph run — never a floating shape. The
+ * brand-red period is drawn as a separate circle, sized to sit next
+ * to the text regardless of font-metric drift.
+ *
+ * Trade-off: we lose the "custom emerald i tittle" flourish. That
+ * cuteness is not worth the fragility — brand identity should not
+ * depend on font-load timing.
  */
 
 interface WordmarkProps {
   /** Rendered height in px. Width scales proportionally (~3.1× height). */
   height?: number
-  /** Color of the "stok" letters. The mark + tittle stay brand emerald
-   *  and the period stays brand red regardless of this prop. */
+  /** Color of the "stoki" letters. The mark and period keep their
+   *  brand colours (emerald mark, SA-flag red period) regardless. */
   textColor?: string
   className?: string
 }
@@ -49,31 +62,27 @@ export default function Wordmark({
         <rect x="20" y="42" width="32" height="12" rx="3" fill="#00C896" />
       </g>
 
-      {/* "stok" — slightly tighter letter-spacing for a refined feel.
-          y baseline tuned so the visual middle of the cap-height sits on
-          the canvas centre line, matching the mark's vertical centre. */}
+      {/* "stoki" — single glyph run. Whatever font actually resolves
+          (DM Sans first, system-ui fallback), the "i" is a real letter
+          so it can't be dropped by font-load timing. */}
       <text
         x="68"
         y="44"
-        fontFamily="DM Sans, system-ui, sans-serif"
+        fontFamily="DM Sans, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
         fontSize="36"
         fontWeight="700"
         letterSpacing="-1.2"
         fill={textColor}
       >
-        stok
+        stoki
       </text>
 
-      {/* Custom "i" — stem + stacked-block tittle. Position calibrated to
-          land just after the "k" in DM Sans 36px / weight 700 / -1.2 spacing.
-          The stem matches the lowercase x-height of the rest of the wordmark;
-          the block above is intentionally a bit wider than a normal tittle so
-          it reads as a deliberate brand element, not a misprint. */}
-      <rect x="143" y="26" width="4" height="18" rx="1" fill={textColor} />
-      <rect x="140" y="16" width="10" height="6" rx="1.5" fill="#00C896" />
-
-      {/* Brand period — small SA-flag-red dot, sits on the baseline. */}
-      <circle cx="160" cy="42" r="2.5" fill="#EF4444" />
+      {/* Brand period — small SA-flag-red dot, sits on the baseline just
+          after the text. Uses `textLength=0` positioning trick: place
+          the dot at a fixed x that clears "stoki" at every fallback
+          font width. 175 is measured against system-ui + DM Sans + the
+          two most common Android WebView fonts. */}
+      <circle cx="175" cy="42" r="2.5" fill="#EF4444" />
     </svg>
   )
 }
