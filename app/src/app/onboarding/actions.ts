@@ -87,6 +87,11 @@ export async function saveStoreDetailsAction(
   storeId: string,
   raw: {
     lat?: string; lng?: string; cashBalance?: string;
+    /** Invested capital in ZAR (as string, from the onboarding text
+     *  input). Empty / whitespace = "not set", parsed as NULL. Negative
+     *  is rejected by the DB CHECK constraint. Feeds ROIC in the AI
+     *  advisor + monthly report. */
+    investedCapital?: string;
     /** "Are you VAT-registered?" answered during onboarding. Writes through
      *  to store.vat_registered so the existing VAT plumbing kicks in
      *  without the owner needing to dig into /settings/vat. */
@@ -114,15 +119,18 @@ export async function saveStoreDetailsAction(
   const lat = raw.lat?.trim() ? Number(raw.lat) : null
   const lng = raw.lng?.trim() ? Number(raw.lng) : null
   const cashBalance = raw.cashBalance?.trim() ? Number(raw.cashBalance) : null
+  const investedCapital = raw.investedCapital?.trim() ? Number(raw.investedCapital) : null
 
   const validLat = lat === null || (Number.isFinite(lat) && lat >= -90 && lat <= 90)
   const validLng = lng === null || (Number.isFinite(lng) && lng >= -180 && lng <= 180)
   const validCash = cashBalance === null || (Number.isFinite(cashBalance) && cashBalance >= 0)
+  const validInvested = investedCapital === null || (Number.isFinite(investedCapital) && investedCapital >= 0)
 
   await storeRepo.update(storeId, {
     ...(validLat ? { lat } : {}),
     ...(validLng ? { lng } : {}),
     ...(validCash ? { cashBalance } : {}),
+    ...(validInvested ? { investedCapital } : {}),
     ...(raw.vatRegistered !== undefined ? { vatRegistered: raw.vatRegistered } : {}),
     // stores.has_employees (migration 032) is per-store — multi-store owners
     // can have payroll on one shop but not another. Dashboard tile-gating

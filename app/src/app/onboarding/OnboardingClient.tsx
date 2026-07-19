@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react'
-import { ArrowLeft, ArrowRight, LocateFixed, MapPin, Wallet, Receipt, Users2, LayoutGrid } from 'lucide-react'
+import { ArrowLeft, ArrowRight, LocateFixed, MapPin, Wallet, Receipt, Users2, LayoutGrid, TrendingUp } from 'lucide-react'
 import { saveStoreAction, saveStoreDetailsAction, completeOnboardingAction } from './actions'
 import { StoreCategory } from '@/domain/entities/store'
 import Wordmark from '@/components/Wordmark'
 
-// Seven swipeable panels. Each renders inside a fixed-height viewport
+// Eight swipeable panels. Each renders inside a fixed-height viewport
 // (100dvh minus the sticky top + bottom chrome) so nothing scrolls on
 // mobile. Granular sub-steps replace the old monolithic "details" page —
 // each one is a single decision, sized for an iPhone SE viewport.
-const STEPS = ['type', 'name', 'location', 'cash', 'business', 'usage', 'pack'] as const
+// 'capital' sits after 'cash' since they're both financial-context
+// questions — feels natural to answer them in the same beat.
+const STEPS = ['type', 'name', 'location', 'cash', 'capital', 'business', 'usage', 'pack'] as const
 type StepKey = typeof STEPS[number]
 
 const CATEGORIES: { value: StoreCategory; label: string; emoji: string; desc: string }[] = [
@@ -44,6 +46,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
   const [cashBalance, setCashBalance] = useState('')
+  const [investedCapital, setInvestedCapital] = useState('')
   const [gpsBusy, setGpsBusy] = useState(false)
   const [gpsError, setGpsError] = useState<string | null>(null)
 
@@ -81,7 +84,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
     if (!storeId) return
     startTransition(async () => {
       await saveStoreDetailsAction(storeId, {
-        lat, lng, cashBalance,
+        lat, lng, cashBalance, investedCapital,
         vatRegistered, hasEmployees,
         simpleView: usageStyle !== 'full',
       })
@@ -413,7 +416,37 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
             <p className="text-muted text-[11px] mt-3 text-center">Swipe to skip — you can add this later in Settings.</p>
           </Panel>
 
-          {/* Panel 5 — about your business (VAT + employees). */}
+          {/* Panel 5 — invested capital (feeds ROIC). Persona-friendly
+              framing: "money you put in to start this business" rather
+              than the finance term. Skippable — most Free-tier owners
+              won't answer on day one; those who do get the ROIC line
+              on their monthly summary and the "am I earning my desired
+              return?" answer from the AI advisor. */}
+          <Panel width={deckWidth}>
+            <PanelHeader
+              title="Money you put in"
+              subtitle="Startup costs, first stock, equipment, cash you left in the business. Powers the &quot;am I earning what I hoped?&quot; question in Stoki AI."
+            />
+            <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp size={14} style={{ color: 'var(--muted)' }} />
+                <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Total invested (optional)</p>
+              </div>
+              <input
+                type="number" inputMode="decimal" min="0" step="0.01"
+                placeholder="e.g. 25000.00"
+                value={investedCapital} onChange={(e) => setInvestedCapital(e.target.value)}
+                className="input" data-no-swipe
+                style={{ padding: '12px 14px', fontSize: '15px' }}
+              />
+              <p className="text-muted text-[11px] mt-2">
+                Not sure? Add roughly what feels right — you can refine this in Settings any time.
+              </p>
+            </div>
+            <p className="text-muted text-[11px] mt-3 text-center">Swipe to skip — you can add this later in Settings.</p>
+          </Panel>
+
+          {/* Panel 6 — about your business (VAT + employees). */}
           <Panel width={deckWidth}>
             <PanelHeader
               title="About your business"
@@ -448,7 +481,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
             </div>
           </Panel>
 
-          {/* Panel 6 — dashboard density. */}
+          {/* Panel 7 — dashboard density. */}
           <Panel width={deckWidth}>
             <PanelHeader
               title="I mostly want to…"
@@ -497,7 +530,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
             </div>
           </Panel>
 
-          {/* Panel 7 — starter pack. Final step, no forward swipe — the
+          {/* Panel 8 — starter pack. Final step, no forward swipe — the
               two action buttons take the user into the app. */}
           <Panel width={deckWidth}>
             <PanelHeader
