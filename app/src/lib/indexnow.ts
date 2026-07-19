@@ -116,6 +116,7 @@ export async function submitToIndexNow(urls: string[]): Promise<SubmitResult> {
 export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/`,
   `https://${CANONICAL_HOST}/login`,
+  `https://${CANONICAL_HOST}/register`,
   `https://${CANONICAL_HOST}/pricing`,
   `https://${CANONICAL_HOST}/privacy`,
   `https://${CANONICAL_HOST}/terms`,

@@ -354,7 +354,7 @@ export default function Page() {
           </ul>
           <p className="text-base leading-relaxed mt-3" style={{ color: 'var(--muted)' }}>
             Free forever for your first store — including VAT201.{' '}
-            <Link href="/login?intent=register" className="underline font-semibold" style={{ color: '#00C896' }}>
+            <Link href="/register" className="underline font-semibold" style={{ color: '#00C896' }}>
               Get started at stokiapp.com
             </Link>
           </p>

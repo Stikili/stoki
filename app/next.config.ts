@@ -12,6 +12,24 @@ const repoRoot = path.resolve(__dirname, "..");
 const nextConfig: NextConfig = {
   turbopack: { root: repoRoot },
   outputFileTracingRoot: repoRoot,
+
+  /**
+   * URL rewrites — transparent server-side rewrites (NOT redirects).
+   * The URL bar stays on the rewritten path; the backend renders the
+   * destination. Different from `redirects()` which flips the URL.
+   *
+   * /register → /login?intent=register — gives us a canonical /register
+   * URL for backlinks, marketing CTAs, Vercel Analytics granularity,
+   * and users who type it in the URL bar. The register flow renders
+   * from the existing login page but the browser bar stays "/register"
+   * throughout the sign-up, which is cleaner UX than the previous
+   * "click Sign up free → land on /login" jarring switch.
+   */
+  async rewrites() {
+    return [
+      { source: '/register', destination: '/login?intent=register' },
+    ]
+  },
 };
 
 /**

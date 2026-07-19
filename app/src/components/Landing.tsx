@@ -128,7 +128,7 @@ function SlideHero() {
         </p>
         <div className="flex items-center justify-center">
           <Link
-            href="/login?intent=register"
+            href="/register"
             className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px]"
           >
             <span className="relative z-10">Sign up free</span>
@@ -366,6 +366,14 @@ function SlideCta() {
           <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>
             See pricing →
           </Link>
+        </p>
+
+        {/* Trust signal — location + country only. No named-founder
+            attribution: the owner has requested to remain anonymous.
+            "Made in Cape Town for South Africa" is the strongest signal
+            we can send without naming any individual. */}
+        <p className="mt-5 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+          Made in Cape Town for South Africa · 🇿🇦
         </p>
 
         <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>

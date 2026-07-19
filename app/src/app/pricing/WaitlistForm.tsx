@@ -71,17 +71,21 @@ export default function WaitlistForm({ plan, planLabel }: {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 min-w-0 w-full">
+      {/* Stacked-only layout inside the tier card. The card grid is
+          narrow enough at lg (4 cols ~280px each) that side-by-side
+          input+button pushes past the column width and horizontally
+          overflows the page. Vertical stack fits every viewport. */}
+      <div className="flex flex-col gap-2 min-w-0 w-full">
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@yourbusiness.co.za"
+          placeholder="you@business.co.za"
           required
           autoComplete="email"
           disabled={state === 'submitting'}
-          className="flex-1 rounded-xl px-4 py-2.5 text-sm"
+          className="rounded-xl px-4 py-2.5 text-sm min-w-0 w-full"
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--card-border)',
@@ -93,7 +97,7 @@ export default function WaitlistForm({ plan, planLabel }: {
         <button
           type="submit"
           disabled={!email.trim() || state === 'submitting'}
-          className="rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap"
+          className="rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap w-full"
           style={{
             background: '#00C896',
             color: '#0A0E17',

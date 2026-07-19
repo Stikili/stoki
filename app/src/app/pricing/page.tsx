@@ -56,7 +56,7 @@ const jsonLd = {
       price: '0',
       priceCurrency: 'ZAR',
       availability: 'https://schema.org/InStock',
-      url: `${SITE}/login?intent=register`,
+      url: `${SITE}/register`,
       description: 'Free forever for your first store. POS, inventory, credit book, VAT201 export, 20 AI advisor questions/day.',
     },
     {
@@ -142,7 +142,7 @@ export default function PricingPage() {
               'VAT201 export',
               'Offline PWA',
             ]}
-            cta={{ label: 'Sign up free', href: '/login?intent=register', kind: 'primary' }}
+            cta={{ label: 'Sign up free', href: '/register', kind: 'primary' }}
             statusBadge="live"
           />
 
@@ -193,14 +193,18 @@ export default function PricingPage() {
             statusBadge="soon"
           />
 
-          {/* Enterprise — contact */}
+          {/* Enterprise — contact. Price shown as "Contact us" rather
+              than a monthly number because Enterprise pricing is
+              genuinely custom (volume-based). The floor (~R899/mo) is
+              still in the JSON-LD Offer so SEO / Knowledge-Panel
+              consumers get a reference anchor. */}
           <TierCard
             name="Enterprise"
             subtitle="chains, franchises, 10+ locations"
-            price="From R899"
-            priceNote="/month"
-            priceAnnual="Contact sales for custom pricing"
-            headline="Multi-shop chains"
+            price="Contact us"
+            priceNote=""
+            priceAnnual="Custom pricing from R899/month"
+            headline="Multi-location chains"
             features={[
               'Everything in Business',
               'Unlimited stores + team members',
@@ -278,7 +282,7 @@ interface TierCardProps {
 function TierCard({ name, subtitle, price, priceNote, priceAnnual, headline, features, cta, waitlistPlan, waitlistLabel, statusBadge }: TierCardProps) {
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 flex flex-col relative"
+      className="rounded-2xl p-5 sm:p-6 flex flex-col relative min-w-0 overflow-hidden"
       style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--card-border)',

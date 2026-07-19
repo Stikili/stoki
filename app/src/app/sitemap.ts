@@ -29,6 +29,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     {
+      // /register rewrites internally to /login?intent=register but is
+      // the canonical sign-up URL for backlinks, ads, and SEO — "sign up
+      // for stoki" queries land here rather than a login page.
+      url: `${base}/register`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
       url: `${base}/pricing`,
       lastModified: now,
       changeFrequency: 'weekly',
