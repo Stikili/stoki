@@ -114,9 +114,9 @@ export async function POST(req: NextRequest) {
     spaza: 'spaza shop',
     general_dealer: 'general dealer',
     food_stall: 'food stall',
-    other: 'shop',
+    other: 'business',
   }
-  const storeType = categoryLabels[store.category ?? 'other'] ?? 'shop'
+  const storeType = categoryLabels[store.category ?? 'other'] ?? 'business'
   const locationContext = store.location
     ? `Location: ${store.location}, South Africa.`
     : 'Location: South Africa (area not specified).'

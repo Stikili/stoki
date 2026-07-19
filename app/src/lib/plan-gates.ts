@@ -81,7 +81,7 @@ export const GATES: Record<GateId, Gate> = {
   'advisor.supplier_scorecard':{ minPlan: 'pro',      label: 'Supplier scorecard',         description: 'Rank suppliers on price consistency, delivery, and trend.' },
   'advisor.peer_benchmarking': { minPlan: 'pro',      label: 'Peer benchmarking',          description: 'Anonymously compare your performance to similar shops.' },
   'advisor.group_buying':      { minPlan: 'pro',      label: 'Group buying coordinator',   description: 'Pool restock orders with nearby shops to hit wholesale tiers.' },
-  'advisor.business_valuation':{ minPlan: 'pro',      label: 'Business valuation guide',   description: 'Know what your shop is worth if you ever want to sell.' },
+  'advisor.business_valuation':{ minPlan: 'pro',      label: 'Business valuation guide',   description: 'Know what your business is worth if you ever want to sell.' },
   'advisor.funding_navigator': { minPlan: 'pro',      label: 'Funding navigator',          description: 'SEFA / NYDA / NEF / commercial — what fits you, with application links.' },
 }
 

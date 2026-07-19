@@ -136,7 +136,7 @@ export function detectAnomalies(
  * message in the owner's tone. Pure function — caller wires the LLM.
  */
 export function buildAnomalyPrompt(a: Anomaly, tone: AiTone): { system: string; user: string } {
-  const system = `You are Stoki's anomaly explainer. You get ONE anomaly and turn it into a short WhatsApp-friendly message for the shop owner.
+  const system = `You are Stoki's anomaly explainer. You get ONE anomaly and turn it into a short WhatsApp-friendly message for the business owner.
 
 TONE — the owner picked "${tone}":
 - casual: kasi vibe, "howzit boss", allowed sparingly; no jargon.

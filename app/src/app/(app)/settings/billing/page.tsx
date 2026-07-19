@@ -171,7 +171,7 @@ export default async function BillingPage() {
             <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>What you unlock on Pro</p>
           </div>
           <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
-            Seven AI advisor insights only Pro users get. Tap each to see what it does for your shop.
+            Seven AI advisor insights only Pro users get. Tap each to see what it does for your business.
           </p>
           <ul className="flex flex-col gap-3">
             {PRO_ADVISOR_GATES.map(gateId => {

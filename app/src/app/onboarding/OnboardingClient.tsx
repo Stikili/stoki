@@ -291,8 +291,8 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
               category buttons always fit one viewport on a short phone. */}
           <Panel width={deckWidth}>
             <PanelHeader
-              title={isNew ? 'New store' : 'What kind of shop?'}
-              subtitle={isNew ? 'Set up another shop on your account.' : 'Track sales, manage credit, and run your shop smarter.'}
+              title={isNew ? 'New store' : 'What kind of business?'}
+              subtitle={isNew ? 'Add another store to your account.' : 'Track sales, manage credit, and run your business smarter.'}
             />
             <div className="flex flex-col gap-2 flex-1 min-h-0">
               {CATEGORIES.map((cat) => (
@@ -353,7 +353,7 @@ export default function OnboardingClient({ isNew }: { isNew: boolean }) {
           {/* Panel 3 — location (GPS). */}
           <Panel width={deckWidth}>
             <PanelHeader
-              title="Where is your shop?"
+              title="Where is your business?"
               subtitle="Powers weather and new-competitor alerts. Optional — never shared."
             />
             <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}>

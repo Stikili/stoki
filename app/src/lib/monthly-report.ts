@@ -264,9 +264,9 @@ function categoryLabel(key: string): string {
     spaza: 'spaza shop',
     general_dealer: 'general dealer',
     food_stall: 'food stall',
-    other: 'shop',
+    other: 'business',
   }
-  return labels[key] ?? 'shop'
+  return labels[key] ?? 'business'
 }
 
 /**

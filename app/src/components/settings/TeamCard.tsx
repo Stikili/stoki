@@ -42,7 +42,7 @@ export default function TeamCard({
     startTransition(async () => {
       const result = await inviteMemberAction(fd)
       if (result.ok) {
-        setFeedback({ kind: 'ok', msg: 'Member added — they\'ll see the store on next login' })
+        setFeedback({ kind: 'ok', msg: 'Member added — they\'ll see the business on next login' })
         setShowInvite(false)
       } else if (result.locked) {
         // Server-side gate fired — close the sheet and route the user to
@@ -139,7 +139,7 @@ export default function TeamCard({
             <div className="w-12 h-1 rounded-full bg-white/10 mx-auto mb-6" />
             <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--foreground)' }}>Invite Team Member</h2>
             <p className="text-muted text-sm mb-5">
-              They&apos;ll get a magic-link email if they&apos;re not on Stoki yet, or be added to your store immediately if they are.
+              They&apos;ll get a magic-link email if they&apos;re not on Stoki yet, or be added to your team immediately if they are.
             </p>
             <form action={handleInvite} className="flex flex-col gap-3">
               <input name="email" type="email" placeholder="Email *" required autoFocus className="input" />
