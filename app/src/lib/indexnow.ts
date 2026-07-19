@@ -121,4 +121,7 @@ export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/compare/stoki-vs-loyverse`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-yoco`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-xero`,
+  `https://${CANONICAL_HOST}/compare/stoki-vs-sage`,
+  `https://${CANONICAL_HOST}/compare/stoki-vs-ikhokha`,
+  `https://${CANONICAL_HOST}/guides/how-to-submit-vat201-south-africa`,
 ]

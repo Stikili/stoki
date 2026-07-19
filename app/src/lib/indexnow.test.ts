@@ -12,11 +12,14 @@ describe('IndexNow key + canonical URLs', () => {
     }
   })
 
-  it('covers landing, login, privacy, terms, and every comparison page', () => {
+  it('covers landing, login, privacy, terms, every comparison page, and the VAT201 guide', () => {
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-loyverse')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-yoco')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-xero')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-sage')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-ikhokha')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/guides/how-to-submit-vat201-south-africa')
   })
 })
 

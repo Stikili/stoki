@@ -60,5 +60,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${base}/compare/stoki-vs-sage`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${base}/compare/stoki-vs-ikhokha`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    // Guides — long-tail educational SEO. High priority since each guide
+    // targets a distinct high-volume SA search intent.
+    {
+      url: `${base}/guides/how-to-submit-vat201-south-africa`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
   ]
 }

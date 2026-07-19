@@ -351,6 +351,16 @@ function SlideCta() {
           <Link href="/compare/stoki-vs-yoco" className="underline" style={{ color: 'var(--muted)' }}>Yoco</Link>
           {' · '}
           <Link href="/compare/stoki-vs-xero" className="underline" style={{ color: 'var(--muted)' }}>Xero</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-sage" className="underline" style={{ color: 'var(--muted)' }}>Sage</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-ikhokha" className="underline" style={{ color: 'var(--muted)' }}>iKhokha</Link>
+        </p>
+        <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+          Guides:{' '}
+          <Link href="/guides/how-to-submit-vat201-south-africa" className="underline" style={{ color: 'var(--muted)' }}>
+            How to submit VAT201 in South Africa
+          </Link>
         </p>
 
         <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
