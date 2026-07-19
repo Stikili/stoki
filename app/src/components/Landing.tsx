@@ -362,6 +362,11 @@ function SlideCta() {
             How to submit VAT201 in South Africa
           </Link>
         </p>
+        <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+          <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>
+            See pricing →
+          </Link>
+        </p>
 
         <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
           Stoki (Pty) Ltd · Reg. K2026258855
