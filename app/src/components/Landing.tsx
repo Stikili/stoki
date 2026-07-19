@@ -193,17 +193,33 @@ function SlideFeatures() {
         {/* Proof strip — capability anchors, not user counts. Defensible
             against what's actually shipped in the product. */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <ProofChip label="5 SA banks"        hint="native bank feed"          soon />
-          <ProofChip label="PAYE · UIF · SDL"  hint="EMP201 export" />
-          <ProofChip label="30-day forecast"   hint="cash you'll have" />
-          <ProofChip label="Works offline"     hint="load-shedding ready" />
+          <ProofChip label="5 SA banks"        hint="native bank feed"       status="soon" />
+          <ProofChip label="PAYE · UIF · SDL"  hint="EMP201 export"          status="live" />
+          <ProofChip label="30-day forecast"   hint="cash you'll have"       status="live" />
+          <ProofChip label="Works offline"     hint="when Wi-Fi doesn't"     status="live" />
         </div>
       </div>
     </section>
   )
 }
 
-function ProofChip({ label, hint, soon = false }: { label: string; hint: string; soon?: boolean }) {
+type ChipStatus = 'live' | 'soon'
+
+/**
+ * Feature-anchor chip with an explicit status badge in every state.
+ *
+ * `soon` is bright emerald (draws the eye — this is what's coming);
+ * `live` is a subtle green dot + text (confirms it's shipped without
+ * shouting). Making every chip carry ONE explicit status kills the
+ * ambiguity that used to exist when only Soon chips were badged —
+ * scanning readers could no longer tell whether an un-badged chip
+ * meant "live" or "not yet".
+ */
+function ProofChip({ label, hint, status = 'live' }: {
+  label: string
+  hint: string
+  status?: ChipStatus
+}) {
   return (
     <div
       className="rounded-xl px-3 py-2.5 text-center relative"
@@ -212,9 +228,7 @@ function ProofChip({ label, hint, soon = false }: { label: string; hint: string;
         border: '1px solid var(--card-border)',
       }}
     >
-      {/* "Soon" badge for capability chips that are on the roadmap but not
-          yet shipped. Corner-pinned so it doesn't fight the label typography. */}
-      {soon && (
+      {status === 'soon' && (
         <span
           className="absolute -top-1.5 -right-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-[2px] rounded-md"
           style={{
@@ -224,6 +238,24 @@ function ProofChip({ label, hint, soon = false }: { label: string; hint: string;
           }}
         >
           Soon
+        </span>
+      )}
+      {status === 'live' && (
+        <span
+          className="absolute -top-1.5 -right-1.5 inline-flex items-center gap-0.5 text-[8.5px] font-semibold uppercase tracking-wider px-1.5 py-[2px] rounded-md"
+          style={{
+            background: 'rgba(0, 200, 150, 0.12)',
+            color: '#00C896',
+            border: '1px solid rgba(0, 200, 150, 0.3)',
+            letterSpacing: '0.08em',
+          }}
+        >
+          <span
+            aria-hidden
+            className="inline-block w-1 h-1 rounded-full"
+            style={{ background: '#00C896' }}
+          />
+          Live
         </span>
       )}
       <p className="text-[12px] font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>
