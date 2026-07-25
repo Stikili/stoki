@@ -10,19 +10,36 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
-- **2026-07-19** — LinkedIn post #1 (Loyverse comparison) published from `linkedin.com/company/stokiapp`
-- **2026-07-19** — `/features` marketing page — commit `ee79288`
-- **2026-07-19** — `/about` marketing page (anonymised) — commit `ee79288`
-- **2026-07-19** — POPIA data export flow (`/api/account/export` + Settings card) — commit `ee79288`
-- **2026-07-19** — Server-action role-gating audit (15 files, shared `role-guards` helper, 14 tests) — commit `e01beae`
-- **2026-07-19** — Fastify `/api` workspace — verified already deleted
-- **2026-07-19** — Pricing page render fixes ("Contact us" for Enterprise, Live badge clipping) — commit `dd06bfd`
-- **2026-07-19** — `/register` canonical route + anonymised trust signal — commit `1471797`
-- **2026-07-19** — Onboarding invested-capital step (Panel 5) — commit `e550fd1`
-- **2026-07-18** — Invested capital + ROIC feature — commit `b518fd5`
-- **2026-07-18** — P1 + P2 language coherence sweep — commits `7cfa1dd`, `2ccba04`
-- **2026-07-18** — Pricing page + waitlist backend — commit `8adbac5`
-- **2026-07-18** — Sage + iKhokha comparisons + VAT201 guide — commit `f6f98cc`
+**2026-07-19 (evening batch):**
+- `/status` public trust-signal page — commit `477a3b0`
+- `app/not-found.tsx` — branded 404 with 3 next-step CTAs — `477a3b0`
+- `app/error.tsx` — branded 500 with Sentry-captured digest + reset — `477a3b0`
+- `/compare/stoki-vs-simplepay` — 5th comparison page — `477a3b0`
+- `/compare/stoki-vs-zoho-books` — 6th comparison — `71d38a7`
+- `/compare/stoki-vs-quickbooks` — 7th comparison — `71d38a7`
+- `/admin` delete-user button (with typed-DELETE confirmation) — `71d38a7`
+- `/admin` send-password-reset button — `71d38a7`
+- Receipt weighables: "1.500 kg Rice" not "1.500× Rice" — shared `formatReceiptQtyLabel` across JSX + text + escpos bytes — `477a3b0`
+- CSV product import: `parseFloat` for qty + optional `unit_label` column + 6 new tests — `477a3b0`
+- IndexNow relative-path fix: `normaliseCanonicalUrl` accepts full URLs OR `/paths` OR www subdomain — `477a3b0`
+- Language rebalance: **spaza + SMME restored** as crucial persona anchors after user directive; landing badge + Free tier subtitle both restored — `477a3b0`
+
+**2026-07-19 (afternoon):**
+- LinkedIn post #1 (Loyverse comparison) published from `linkedin.com/company/stokiapp`
+- `/features` marketing page (60+ features, ItemList JSON-LD) — `ee79288`
+- `/about` marketing page (anonymised) — `ee79288`
+- POPIA data export flow (`/api/account/export` + Settings card) — `ee79288`
+- Server-action role-gating audit (15 files, shared `role-guards` helper, 14 tests) — `e01beae`
+- Fastify `/api` workspace — verified already deleted
+- Pricing page render fixes ("Contact us" for Enterprise, Live badge clipping) — `dd06bfd`
+- `/register` canonical route + anonymised trust signal — `1471797`
+- Onboarding invested-capital step (Panel 5) — `e550fd1`
+
+**2026-07-18:**
+- Invested capital + ROIC feature — `b518fd5`
+- P1 + P2 language coherence sweep — `7cfa1dd`, `2ccba04`
+- Pricing page + waitlist backend — `8adbac5`
+- Sage + iKhokha comparisons + VAT201 guide — `f6f98cc`
 
 ---
 
@@ -30,7 +47,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Target | Notes |
 |---|---|---|---|
-| 1 | **Ozow payment integration** | ~2026-08-19 | User-decided defer 2026-07-19. Runbook in memory `project_payment_provider.md`. 120-day Business trial covers immediate feature access until then. |
+| 1 | **Ozow payment integration** | ~2026-08-19 | User-decided defer. Runbook in memory `project_payment_provider.md`. 120-day Business trial covers immediate access. |
 
 ---
 
@@ -38,9 +55,12 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Blocker |
 |---|---|---|
-| 2 | **WhatsApp monthly-report Meta template** | Register `stoki_monthly_report` in Meta Business Manager (1-2 business day approval); set `META_MONTHLY_REPORT_TEMPLATE` env var. Then monthly report delivers via WhatsApp too (currently in-app alert + web push only). |
-| 3 | **Native SA bank feeds (FNB / Capitec / Standard / ABSA / Nedbank)** | Post-Ozow (~mid-August + ~1 month). Landing chip already says "Soon". |
-| 4 | **Phone OTP login** | Twilio not wired in Supabase. Feature-flagged off via `PHONE_OTP_ENABLED = false` in `login/page.tsx`; ~1h to re-enable once Twilio account exists. Runbook in memory `project_phone_otp_deferred.md`. |
+| 2 | **WhatsApp monthly-report Meta template** | Register `stoki_monthly_report` in Meta Business Manager (1-2 day approval) |
+| 3 | **Native SA bank feeds (5 banks)** | Post-Ozow (~mid-August + ~1 month) |
+| 4 | **Phone OTP login** | Twilio not wired in Supabase (feature-flagged off) |
+| 5 | **Sentry alerting rules** | Configured in Sentry UI (not codebase) — needs your setup |
+| 6 | **Multilingual translations** — Zulu / Xhosa / Sotho / Afrikaans | Needs paid translator |
+| 7 | **Dashboard screenshot on landing page** | You take + supply the screenshot; then ~30 min to wire |
 
 ---
 
@@ -48,7 +68,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Trigger to resume |
 |---|---|---|
-| 5 | **Capacitor.js native app wrapper (iOS + Android)** | Ship any of: 100+ active shops asking "where's the app?", bank/accountant partnership requiring App Store presence, marketing spend >R10k/mo where App Store friction hurts conversion. Full runbook in memory `project_capacitor_evaluation.md`. |
+| 8 | **Capacitor.js native app wrapper (iOS + Android)** | 100+ shops OR bank partnership requiring App Store OR >R10k/mo marketing spend |
 
 ---
 
@@ -56,8 +76,8 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 6 | **LinkedIn post #2 — Yoco comparison** | Draft in memory `project_linkedin_comparison_posts.md`. Post ~day 7 after post #1 (so around 2026-07-26). |
-| 7 | **LinkedIn post #3 — Xero comparison** | Same file. Post ~day 14 (so around 2026-08-02). |
+| 9 | **LinkedIn post #2 — Yoco comparison** | Draft in memory `project_linkedin_comparison_posts.md`. Post ~2026-07-26 |
+| 10 | **LinkedIn post #3 — Xero comparison** | Same file. Post ~2026-08-02 |
 
 ---
 
@@ -65,34 +85,28 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 8 | Dashboard screenshot on landing page (trust signal) | ~1h once you pick a state to capture |
-| 9 | P3 language deeper renames — a few form-field labels still say "Store name" not "Business name" | ~30 min sweep |
-| 10 | Receipt component: weighables should print "1.500 kg Rice" not "1.500× Rice" | 15 min |
-| 11 | CSV product import for weighables — `parseInt` → `parseFloat` + optional `unit_label` column | 20 min |
-| 12 | IndexNow endpoint ergonomics — accept relative paths (`?url=/foo`) in addition to full URLs (currently only full URLs pass validation) | 15 min |
+| 11 | P3 language deeper renames — a few form-field labels still say "Store name" not "Business name" | ~30 min sweep |
 
 ---
 
-## 🟣 Admin / ops / security
+## 🟣 Admin / ops
 
 | # | Gap | Effort | Priority |
 |---|---|---|---|
-| 13 | `/admin` delete-user button (Supabase dashboard works today, so low priority) | 10 min | Low |
-| 14 | `/admin` send-password-reset button | 15 min | Low |
-| 15 | Sentry alerting rules to Slack/email (Sentry captures errors but doesn't notify) | 30 min in Sentry UI | Medium — unknown errors are the worst kind |
-| 16 | Bank feed follow-ups from Phase 3B — persist reviewed lines + bulk auto-confirm | 1-2h | Low (blocked until Ozow) |
-| 17 | Bluetooth printer follow-ups — persist last-paired + Settings test-print button | 1h | Low |
+| 12 | **Advisor empty state** for new users — personalise to onboarding-completeness | 30 min | Low — INTRO message works |
+| 13 | Bank feed follow-ups from Phase 3B — persist reviewed lines + bulk auto-confirm | 1-2h | Low (blocked until Ozow) |
+| 14 | Bluetooth printer follow-ups — persist last-paired + Settings test-print button | 1h | Low |
 
 ---
 
-## 🔵 Bot intelligence backlog
+## 🔵 Bot intelligence backlog (multi-day builds — dedicated session recommended)
 
 | # | Gap | Effort |
 |---|---|---|
-| 18 | Phase 1.6 — real scrapers for SARB / fuel / CPI (cron slots currently stubbed) | 1 day |
-| 19 | Phase 2 — live SA news ingestion (RSS → summariser → advisor context) | 1-2 days |
-| 20 | Phase 3 — proactive push insights when indicators move materially (rate hike, fuel +R1/L) | 1 day |
-| 21 | Phase 4 — predictive forecasts combining store trends + market data | 3-5 days |
+| 15 | **Phase 1.6** — real scrapers for SARB / fuel / CPI (cron slots currently stubbed) | 1 day |
+| 16 | **Phase 2** — live SA news ingestion (RSS → summariser → advisor context) | 1-2 days |
+| 17 | **Phase 3** — proactive push insights when indicators move materially | 1 day |
+| 18 | **Phase 4** — predictive forecasts combining store trends + market data | 3-5 days |
 
 ---
 
@@ -100,34 +114,32 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 22 | More comparison pages — SimplePay / Zoho Books / QuickBooks | ~1h each using shared ComparisonPage component |
-| 23 | More guides — "How to register for VAT SA" / "PAYE calculation guide" / "Spaza bookkeeping basics" | 2-3h each |
-| 24 | `/blog` scaffolding for ongoing content | 2-3h scaffolding, then ongoing |
-| 25 | `/status` page (uptime, SaaS-convention trust builder) | 1h |
-| 26 | Empty state on `/advisor` for new users — personalise to onboarding-completeness | 30 min |
-| 27 | Proper 404 / 500 error pages (Next.js defaults are ugly) | 30 min |
-| 28 | Multilingual translations — Zulu / Xhosa / Sotho / Afrikaans (i18n stubs exist; translations don't) | 2-3 days per language (needs a translator + budget) |
+| 19 | **`/blog` scaffolding + first post** — ongoing content channel | 2-3h scaffolding, then ongoing |
+| 20 | **Guide — "How to register for VAT in South Africa"** | 2-3h |
+| 21 | **Guide — "PAYE calculation guide"** | 2-3h |
+| 22 | **Guide — "Spaza bookkeeping basics"** | 2-3h |
 
 ---
 
 ## 📊 SVP-Product take on the current top
 
-**With Ozow deferred a month + tonight's security/compliance/marketing push landed, the top of the list quietly shifts to marketing + content credibility.** Concrete top-3:
+**Tonight shipped 9 items across 2 batches + updated docs.** New top-3 for the next session:
 
-1. **LinkedIn post #2 (Yoco) around 2026-07-26** — 5 min from you, biggest weekly-cadence ROI move
-2. **`/status` page + proper 404/500 pages (~2h combined)** — small SaaS-credibility wins new visitors notice
-3. **One more comparison page** (SimplePay or QuickBooks, ~1h) — compounds the SEO play while Google's still fresh-crawling the current 5
+1. **LinkedIn post #2 (Yoco) around 2026-07-26** — 5 min from you, biggest weekly-cadence ROI
+2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding
+3. **Bot intelligence Phase 1.6 — real scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding
 
 **Explicitly skip until asked:**
-- Bot intelligence Phase 2-4 (nice-to-have, not competitive-necessary)
-- Multilingual (needs paid translator)
-- Bluetooth printer follow-ups (low usage impact right now)
+- Bot intelligence Phase 4 (predictive forecasts) — nice-to-have, 3-5 days
+- Multilingual translations — needs paid translator
+- Bluetooth printer follow-ups — low usage impact
+- Dashboard screenshot — you decide when to capture
 
 ---
 
 ## How to keep this doc current
 
 - **After shipping** anything on this list — move the row into "✅ Recently closed" with the commit hash + date.
-- **After receiving** external dependency unblocks (Ozow creds, Meta template approval, Twilio setup) — move the row out of "🔴 Blocked" into the next appropriate section, or straight to "in-progress" if you're picking it up.
+- **After receiving** external dependency unblocks (Ozow creds, Meta template approval, Twilio setup) — move the row out of "🔴 Blocked" into the next appropriate section.
 - **After a new idea arrives** — add it to the relevant section rather than opening a separate note. This doc is the single git-synced source.
 - **Every 4 weeks or so** — prune the "✅ Recently closed" section (keep only the last 30 days) so this file stays scannable.
