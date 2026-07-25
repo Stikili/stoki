@@ -24,6 +24,8 @@ describe('IndexNow key + canonical URLs', () => {
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-sage')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-ikhokha')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-simplepay')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-zoho-books')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-quickbooks')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/guides/how-to-submit-vat201-south-africa')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/status')
   })

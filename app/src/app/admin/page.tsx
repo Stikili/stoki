@@ -4,6 +4,7 @@ import { effectivePlan, isTrialActive } from '@/lib/effective-plan'
 import { toStore } from '@/infrastructure/supabase/mappers'
 import type { Store } from '@/domain/entities/store'
 import BetaInviteCard from './BetaInviteCard'
+import UserActionsCell from './UserActionsCell'
 
 // Always fresh — admin signal data should never come from a stale cache.
 export const dynamic = 'force-dynamic'
@@ -108,12 +109,13 @@ export default async function AdminPage() {
                 <th className="text-left px-4 py-2.5">Plan</th>
                 <th className="text-left px-4 py-2.5">Onboarded</th>
                 <th className="text-left px-4 py-2.5">Signed up</th>
+                <th className="text-left px-4 py-2.5">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted text-sm">
+                  <td colSpan={8} className="px-4 py-8 text-center text-muted text-sm">
                     No signups yet.
                   </td>
                 </tr>
@@ -148,6 +150,9 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-4 py-2.5 text-muted whitespace-nowrap">
                       {formatSignedUp(r.signedUpAt)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <UserActionsCell userId={r.userId} email={r.email} />
                     </td>
                   </tr>
                 )

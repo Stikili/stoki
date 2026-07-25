@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { requireAdmin } from '@/lib/admin-auth'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { log } from '@/lib/log'
 
 /**
  * Founder-only "beta invite" — creates a Supabase auth user with a
@@ -87,5 +88,88 @@ export async function createBetaInvite(rawEmail: string): Promise<BetaInviteResu
     email,
     tempPassword,
     userId: created.user.id,
+  }
+}
+
+/**
+ * Founder-only "delete user" — nukes an auth.users row + cascades to
+ * every store the user owns (via ON DELETE CASCADE on stores.owner_id).
+ *
+ * Reserved for burning test accounts and cleaning up spam / abandoned
+ * signups. Do NOT use to service POPIA delete requests from real users
+ * — those go through the user-initiated /api/account/delete route which
+ * preserves an audit trail. This is a founder utility, not a support
+ * workflow.
+ *
+ * Guardrails:
+ *   - requireAdmin() gates on our admin allowlist
+ *   - Refuses to delete YOUR OWN admin account (can't nuke yourself)
+ *   - Logs the deletion with admin.email attribution so the audit
+ *     trail lives even after the target user is gone
+ */
+export type AdminActionResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string }
+
+export async function deleteUserAsAdmin(userId: string): Promise<AdminActionResult> {
+  const admin = await requireAdmin()
+  if (!userId || typeof userId !== 'string') {
+    return { ok: false, error: 'Invalid user id.' }
+  }
+  if (userId === admin.id) {
+    return { ok: false, error: "You can't delete your own admin account here — use Supabase dashboard if you really want to." }
+  }
+
+  const sb = createAdminClient()
+
+  const { data: target } = await sb.auth.admin.getUserById(userId)
+  const targetEmail = target?.user?.email ?? null
+
+  const { error } = await sb.auth.admin.deleteUser(userId)
+  if (error) {
+    log.error('admin.delete_user.failed', { adminEmail: admin.email, userId, error: error.message })
+    return { ok: false, error: error.message }
+  }
+
+  log.info('admin.delete_user.success', {
+    adminEmail: admin.email,
+    deletedUserId: userId,
+    deletedUserEmail: targetEmail,
+  })
+  revalidatePath('/admin')
+  return { ok: true, message: `Deleted ${targetEmail ?? userId}.` }
+}
+
+/**
+ * Founder-only "send password reset" — fires Supabase's magic-link
+ * reset email to a user. Useful when a beta tester loses their temp
+ * password or a support conversation ends with "just reset mine".
+ *
+ * Same underlying flow as the /login "Forgot password?" button.
+ * Requires Supabase Auth email templates enabled + SMTP configured.
+ */
+export async function sendPasswordResetAsAdmin(email: string): Promise<AdminActionResult> {
+  const admin = await requireAdmin()
+  const target = (email ?? '').trim().toLowerCase()
+  if (!target || !target.includes('@')) {
+    return { ok: false, error: 'Invalid email.' }
+  }
+
+  const sb = createAdminClient()
+  const { error } = await sb.auth.resetPasswordForEmail(target, {
+    redirectTo: 'https://www.stokiapp.com/auth/callback?next=/auth/reset-password',
+  })
+  if (error) {
+    log.error('admin.password_reset.failed', { adminEmail: admin.email, targetEmail: target, error: error.message })
+    return { ok: false, error: error.message }
+  }
+
+  log.info('admin.password_reset.sent', {
+    adminEmail: admin.email,
+    targetEmail: target,
+  })
+  return {
+    ok: true,
+    message: `Reset email requested. If SMTP is set they'll receive it within 60 seconds.`,
   }
 }

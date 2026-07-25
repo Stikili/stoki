@@ -105,6 +105,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${base}/compare/stoki-vs-zoho-books`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${base}/compare/stoki-vs-quickbooks`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
     // Guides — long-tail educational SEO. High priority since each guide
     // targets a distinct high-volume SA search intent.
     {

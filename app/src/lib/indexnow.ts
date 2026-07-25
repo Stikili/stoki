@@ -175,5 +175,7 @@ export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/compare/stoki-vs-sage`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-ikhokha`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-simplepay`,
+  `https://${CANONICAL_HOST}/compare/stoki-vs-zoho-books`,
+  `https://${CANONICAL_HOST}/compare/stoki-vs-quickbooks`,
   `https://${CANONICAL_HOST}/guides/how-to-submit-vat201-south-africa`,
 ]

@@ -357,6 +357,10 @@ function SlideCta() {
           <Link href="/compare/stoki-vs-ikhokha" className="underline" style={{ color: 'var(--muted)' }}>iKhokha</Link>
           {' · '}
           <Link href="/compare/stoki-vs-simplepay" className="underline" style={{ color: 'var(--muted)' }}>SimplePay</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-zoho-books" className="underline" style={{ color: 'var(--muted)' }}>Zoho Books</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-quickbooks" className="underline" style={{ color: 'var(--muted)' }}>QuickBooks</Link>
         </p>
         <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
           Guides:{' '}
