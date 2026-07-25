@@ -2,24 +2,18 @@
 
 import { revalidatePath } from 'next/cache'
 import { invalidateDashboard } from '@/lib/cache-tags'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/infrastructure/supabase/server'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { InvoiceRepository } from '@/infrastructure/supabase/repositories/InvoiceRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
 import { BankReconciliationRepository } from '@/infrastructure/supabase/repositories/BankReconciliationRepository'
 import { descriptionFingerprint } from '@/lib/csv-bank-statement'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * Bank statement reconciliation writes invoice payments + expense rows
+ * from CSV import — every action here mutates the ledger. Cashier-blocked
+ * on all three actions.
+ */
 export async function applyInvoicePaymentAction(
   invoiceId: string,
   amount: number,
@@ -28,7 +22,8 @@ export async function applyInvoicePaymentAction(
   statementDate: string,
   rawDescription: string,
 ) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'apply an invoice payment from bank rec')
   const invoiceRepo = new InvoiceRepository(supabase)
   await invoiceRepo.recordPayment(
     store.id,
@@ -59,7 +54,8 @@ export async function recordReconcileExpenseAction(
   statementDate: string,
   rawDescription: string,
 ) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'record a reconciled expense')
   const expenseRepo = new ExpenseRepository(supabase)
   await expenseRepo.create(store.id, {
     category,
@@ -86,7 +82,8 @@ export async function skipLineAction(
   amount: number,
   rawDescription: string,
 ) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'skip a bank rec line')
   const reconRepo = new BankReconciliationRepository(supabase)
   await reconRepo.upsert(store.id, {
     statementDate,

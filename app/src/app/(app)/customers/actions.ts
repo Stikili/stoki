@@ -1,23 +1,20 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/infrastructure/supabase/server'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { CustomerRepository } from '@/infrastructure/supabase/repositories/CustomerRepository'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier, denyIfCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * B2B customer CRUD — assertNotCashier on every action. Cashiers deal
+ * with walk-ins at the till (recorded as debtors, or as anonymous
+ * sales); the formal B2B customer book (with tax numbers, payment
+ * terms, billing addresses) is a back-office manager+ concern.
+ */
 export async function addCustomerAction(formData: FormData): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  const denied = denyIfCashier(role, 'add a B2B customer')
+  if (denied) return denied
   const name = ((formData.get('name') as string) ?? '').trim()
   if (!name) return { ok: false, error: 'Name is required' }
   const repo = new CustomerRepository(supabase)
@@ -37,7 +34,8 @@ export async function addCustomerAction(formData: FormData): Promise<{ ok: boole
 }
 
 export async function editCustomerAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'edit a B2B customer')
   const id = formData.get('id') as string
   if (!id) return
   const repo = new CustomerRepository(supabase)
@@ -58,7 +56,8 @@ export async function editCustomerAction(formData: FormData) {
 }
 
 export async function archiveCustomerAction(customerId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'archive a B2B customer')
   const repo = new CustomerRepository(supabase)
   await repo.archive(store.id, customerId)
   revalidatePath('/customers')
@@ -66,7 +65,8 @@ export async function archiveCustomerAction(customerId: string) {
 }
 
 export async function restoreCustomerAction(customerId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'restore a B2B customer')
   const repo = new CustomerRepository(supabase)
   await repo.restore(store.id, customerId)
   revalidatePath('/customers')

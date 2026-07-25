@@ -1,23 +1,12 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
-import { createClient } from '@/infrastructure/supabase/server'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { StocktakeRepository } from '@/infrastructure/supabase/repositories/StocktakeRepository'
 import { completeStocktake } from '@/application/inventory/completeStocktake'
-
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store, userId: user.id }
-}
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
 export interface SubmitStocktakeResult {
   ok: true
@@ -25,15 +14,22 @@ export interface SubmitStocktakeResult {
   totalVarianceValue: number
 }
 
+/**
+ * Stocktake writes variance adjustments straight to product qty and
+ * captures a P&L-affecting audit line — manager+ operation. Cashiers
+ * running the till shouldn't be able to reconcile the shelf count
+ * against the system count.
+ */
 export async function submitStocktakeAction(
   counts: Record<string, number>,
   notes?: string,
 ): Promise<SubmitStocktakeResult> {
-  const { supabase, store, userId } = await getContext()
+  const { supabase, store, user, role } = await getServerData()
+  assertNotCashier(role, 'submit a stocktake')
   const productRepo = new ProductRepository(supabase)
   const stocktakeRepo = new StocktakeRepository(supabase)
 
-  const stocktake = await completeStocktake(productRepo, stocktakeRepo, store.id, userId, {
+  const stocktake = await completeStocktake(productRepo, stocktakeRepo, store.id, user.id, {
     counts,
     notes,
   })

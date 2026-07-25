@@ -2,26 +2,25 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
-import { createClient } from '@/infrastructure/supabase/server'
-import { redirect } from 'next/navigation'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { DebtorRepository } from '@/infrastructure/supabase/repositories/DebtorRepository'
 import { CreditEntryRepository } from '@/infrastructure/supabase/repositories/CreditEntryRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { recordCredit } from '@/application/credit/recordCredit'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * Role model for the credit book:
+ *   - createDebtor / clearDebt → assertNotCashier. Creating a customer
+ *     record + wiping a balance are back-office decisions; the till
+ *     shouldn't rewrite the ledger.
+ *   - addCredit / settlePartial → open to cashier. These are the two
+ *     everyday till workflows: "put this on Mama Thabo's tab" and
+ *     "Mama Thabo just paid R100 off her tab".
+ */
 export async function createDebtorAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'add a credit customer')
   const debtorRepo = new DebtorRepository(supabase)
   const creditRepo = new CreditEntryRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -52,7 +51,7 @@ export async function createDebtorAction(formData: FormData) {
 }
 
 export async function addCreditAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store } = await getServerData()
   const creditRepo = new CreditEntryRepository(supabase)
   const debtorRepo = new DebtorRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -71,7 +70,8 @@ export async function addCreditAction(formData: FormData) {
 }
 
 export async function clearDebtAction(debtorId: string, currentOwed: number) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'clear a debt')
   const debtorRepo = new DebtorRepository(supabase)
 
   if (currentOwed > 0) {
@@ -86,7 +86,7 @@ export async function clearDebtAction(debtorId: string, currentOwed: number) {
 
 export async function settlePartialAction(debtorId: string, amount: number) {
   if (amount <= 0) return
-  const { supabase, store } = await getContext()
+  const { supabase, store } = await getServerData()
   const debtorRepo = new DebtorRepository(supabase)
 
   await debtorRepo.updateOwed(store.id, debtorId, -amount)

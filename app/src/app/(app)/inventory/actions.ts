@@ -2,9 +2,6 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { TAGS , invalidateDashboard } from '@/lib/cache-tags'
-import { createClient } from '@/infrastructure/supabase/server'
-import { redirect } from 'next/navigation'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { ProductRepository } from '@/infrastructure/supabase/repositories/ProductRepository'
 import { AlertRepository } from '@/infrastructure/supabase/repositories/AlertRepository'
 import { addProduct } from '@/application/inventory/addProduct'
@@ -14,19 +11,20 @@ import { RestockRepository } from '@/infrastructure/supabase/repositories/Restoc
 import { WastageRepository } from '@/infrastructure/supabase/repositories/WastageRepository'
 import { parseProductCsv } from '@/lib/csv-products'
 import { WastageReason } from '@/domain/entities/wastage'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * Role model for inventory:
+ *   - restock / wastage → open to cashier. Restocking arriving supplies
+ *     and recording expired/damaged stock are common till-side workflows.
+ *   - add / edit / archive / bulk-import → assertNotCashier. Product
+ *     catalogue management (prices, costs, VAT flags, SKUs) is manager+
+ *     work — cashiers shouldn't reprice items or add new lines.
+ */
 export async function addProductAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'add a product')
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
 
@@ -48,7 +46,7 @@ export async function addProductAction(formData: FormData) {
 }
 
 export async function restockAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store } = await getServerData()
   const productRepo = new ProductRepository(supabase)
   const restockRepo = new RestockRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
@@ -74,7 +72,8 @@ export async function restockAction(formData: FormData) {
 }
 
 export async function editProductAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'edit a product')
   const productRepo = new ProductRepository(supabase)
   const productId = formData.get('productId') as string
   const vatInclusiveRaw = formData.get('vatInclusive')
@@ -117,7 +116,8 @@ export async function editProductAction(formData: FormData) {
 }
 
 export async function archiveProductAction(productId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'archive a product')
   const productRepo = new ProductRepository(supabase)
 
   await productRepo.archive(store.id, productId)
@@ -135,7 +135,8 @@ export interface CsvImportResult {
 }
 
 export async function bulkImportProductsAction(csv: string): Promise<CsvImportResult> {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'bulk-import products')
   const productRepo = new ProductRepository(supabase)
   const alertRepo = new AlertRepository(supabase)
 
@@ -168,7 +169,7 @@ export async function bulkImportProductsAction(csv: string): Promise<CsvImportRe
 }
 
 export async function recordWasteAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store } = await getServerData()
   const productRepo = new ProductRepository(supabase)
   const wastageRepo = new WastageRepository(supabase)
   const alertRepo = new AlertRepository(supabase)

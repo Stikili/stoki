@@ -1,23 +1,18 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/infrastructure/supabase/server'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { SupplierRepository } from '@/infrastructure/supabase/repositories/SupplierRepository'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * Supplier CRUD is entirely back-office. Cashiers never touch this — a
+ * supplier record represents an ongoing procurement relationship, not
+ * a till-side workflow. Every action is assertNotCashier.
+ */
 export async function addSupplierAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'add a supplier')
   const repo = new SupplierRepository(supabase)
   const name = ((formData.get('name') as string) ?? '').trim()
   if (!name) return
@@ -32,7 +27,8 @@ export async function addSupplierAction(formData: FormData) {
 }
 
 export async function editSupplierAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'edit a supplier')
   const repo = new SupplierRepository(supabase)
   const id = formData.get('id') as string
   if (!id) return
@@ -47,7 +43,8 @@ export async function editSupplierAction(formData: FormData) {
 }
 
 export async function archiveSupplierAction(supplierId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'archive a supplier')
   const repo = new SupplierRepository(supabase)
   await repo.archive(store.id, supplierId)
   revalidatePath('/suppliers')
@@ -55,7 +52,8 @@ export async function archiveSupplierAction(supplierId: string) {
 }
 
 export async function restoreSupplierAction(supplierId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'restore a supplier')
   const repo = new SupplierRepository(supabase)
   await repo.restore(store.id, supplierId)
   revalidatePath('/suppliers')

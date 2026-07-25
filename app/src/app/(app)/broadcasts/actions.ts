@@ -1,23 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/infrastructure/supabase/server'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { CustomerRepository } from '@/infrastructure/supabase/repositories/CustomerRepository'
 import { WhatsAppBroadcastRepository } from '@/infrastructure/supabase/repositories/WhatsAppBroadcastRepository'
 import { sendBroadcast } from '@/application/whatsapp/sendBroadcast'
 import { sendWhatsAppTemplate, normalizeZAPhone } from '@/lib/whatsapp'
-
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store, userId: user.id }
-}
+import { getServerData } from '@/lib/getServerData'
+import { denyIfCashier } from '@/lib/role-guards'
 
 export interface CreateBroadcastResult {
   ok: boolean
@@ -27,6 +16,11 @@ export interface CreateBroadcastResult {
   error?: string
 }
 
+/**
+ * WhatsApp broadcasts fire a Meta template to N opted-in customers
+ * simultaneously — that's a marketing decision and a per-message
+ * Meta cost. Cashier-blocked; manager+ only.
+ */
 export async function createBroadcastAction(input: {
   templateName: string
   languageCode?: string
@@ -34,7 +28,9 @@ export async function createBroadcastAction(input: {
   notes?: string
   customerIds: string[]
 }): Promise<CreateBroadcastResult> {
-  const { supabase, store, userId } = await getContext()
+  const { supabase, store, user, role } = await getServerData()
+  const denied = denyIfCashier(role, 'send a WhatsApp broadcast')
+  if (denied) return denied
   const broadcastRepo = new WhatsAppBroadcastRepository(supabase)
   const customerRepo = new CustomerRepository(supabase)
 
@@ -55,7 +51,7 @@ export async function createBroadcastAction(input: {
     return { ok: false, error: 'No opted-in customers with phone numbers in this selection' }
   }
 
-  const broadcast = await broadcastRepo.create(store.id, userId, {
+  const broadcast = await broadcastRepo.create(store.id, user.id, {
     templateName: input.templateName.trim(),
     languageCode: input.languageCode ?? 'en',
     bodyParams: input.bodyParams,

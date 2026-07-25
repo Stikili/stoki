@@ -2,23 +2,18 @@
 
 import { revalidatePath } from 'next/cache'
 import { invalidateDashboard } from '@/lib/cache-tags'
-import { createClient } from '@/infrastructure/supabase/server'
-import { redirect } from 'next/navigation'
-import { StoreRepository } from '@/infrastructure/supabase/repositories/StoreRepository'
 import { ExpenseRepository } from '@/infrastructure/supabase/repositories/ExpenseRepository'
+import { getServerData } from '@/lib/getServerData'
+import { assertNotCashier } from '@/lib/role-guards'
 
-async function getContext() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const storeRepo = new StoreRepository(supabase)
-  const store = await storeRepo.getByOwnerId(user.id)
-  if (!store) redirect('/login')
-  return { supabase, store }
-}
-
+/**
+ * Cashiers commonly need to log petty-cash spends at the till (fuel run,
+ * cleaning supplies), so `addExpense` is available to everyone.
+ * Deleting history is a manager/owner call — cashiers can't undo their
+ * own or anyone else's expense rows.
+ */
 export async function addExpenseAction(formData: FormData) {
-  const { supabase, store } = await getContext()
+  const { supabase, store } = await getServerData()
   const expenseRepo = new ExpenseRepository(supabase)
 
   await expenseRepo.create(store.id, {
@@ -34,7 +29,8 @@ export async function addExpenseAction(formData: FormData) {
 }
 
 export async function deleteExpenseAction(expenseId: string) {
-  const { supabase, store } = await getContext()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'delete an expense')
   const expenseRepo = new ExpenseRepository(supabase)
   await expenseRepo.delete(store.id, expenseId)
   revalidatePath('/expenses')

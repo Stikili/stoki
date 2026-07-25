@@ -11,9 +11,11 @@ import { TAGS, invalidateDashboard } from '@/lib/cache-tags'
 import { hasFeature, type GateId } from '@/lib/plan-gates'
 import { recordCancellation } from '@/lib/subscription'
 import { AiTone, isValidAiTone } from '@/domain/entities/ai-tone'
+import { assertNotCashier, assertOwner } from '@/lib/role-guards'
 
 export async function updateStoreAction(formData: FormData) {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'update business details')
   const name = (formData.get('name') as string).trim()
   const phone = (formData.get('phone') as string | null)?.trim() || undefined
   const location = (formData.get('location') as string | null)?.trim() || undefined
@@ -69,7 +71,10 @@ export async function updateStoreAction(formData: FormData) {
  */
 export async function updateAiToneAction(_storeId: string, tone: AiTone): Promise<{ ok: boolean }> {
   if (!isValidAiTone(tone)) return { ok: false }
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  // Tone is a UX preference but still per-store; cashiers shouldn't change
+  // the voice their manager set. assertNotCashier keeps it in the owner+manager lane.
+  if (role === 'cashier') return { ok: false }
   const storeRepo = new StoreRepository(supabase)
   await storeRepo.update(store.id, { aiTone: tone })
   revalidateTag(TAGS.stores, 'default')
@@ -85,7 +90,8 @@ export async function updateAiToneAction(_storeId: string, tone: AiTone): Promis
  * dashboard on one shop and a full SMME dashboard on another.
  */
 export async function setSimpleViewAction(simpleView: boolean) {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'change dashboard density')
   const storeRepo = new StoreRepository(supabase)
   await storeRepo.update(store.id, { simpleView })
   revalidateTag(TAGS.stores, 'default')
@@ -95,7 +101,8 @@ export async function setSimpleViewAction(simpleView: boolean) {
 }
 
 export async function updateVatAction(formData: FormData) {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'update VAT settings')
   const vatRegistered = formData.get('vatRegistered') === 'on'
   const vatNumber = (formData.get('vatNumber') as string | null)?.trim() || ''
   const vatRateRaw = (formData.get('vatRate') as string | null)?.trim()
@@ -125,7 +132,8 @@ export async function updateVatAction(formData: FormData) {
 // Bulk-set the vat_inclusive flag across every product in the store. Used after
 // turning on VAT for the first time when existing prices were ex-VAT (or vice versa).
 export async function setAllProductsVatInclusiveAction(vatInclusive: boolean): Promise<{ updated: number }> {
-  const { supabase, store } = await getServerData()
+  const { supabase, store, role } = await getServerData()
+  assertNotCashier(role, 'bulk-update product VAT flags')
   const { ProductRepository } = await import('@/infrastructure/supabase/repositories/ProductRepository')
   const repo = new ProductRepository(supabase)
   const updated = await repo.setVatInclusiveAll(store.id, vatInclusive)
@@ -243,7 +251,8 @@ export async function cancelSubscriptionAction(): Promise<{ ok: boolean; error?:
 }
 
 export async function deleteStoreAction(storeId: string) {
-  const { supabase, allStores } = await getServerData()
+  const { supabase, allStores, role } = await getServerData()
+  assertOwner(role, 'delete this business')
 
   if (allStores.length <= 1) return // never delete the last store
 
