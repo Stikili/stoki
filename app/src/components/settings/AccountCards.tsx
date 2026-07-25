@@ -38,7 +38,42 @@ export function AccountCards({ storeId, simpleView, storeName }: { storeId: stri
       <DashboardDensityCard initial={simpleView} storeName={storeName} />
       <LanguageSelector />
       <NotificationsCard storeId={storeId} />
+      <DataExportCard />
     </>
+  )
+}
+
+/**
+ * POPIA data-portability card. One click = full JSON dump of every
+ * personal-information record Stoki holds for this account. Section 23
+ * of POPIA gives the data subject the right to access their info; this
+ * card is the concrete UX satisfying that promise from the privacy
+ * policy.
+ *
+ * Rendered as a plain <a href download> so the browser handles the
+ * save-as dialog natively (no blob-shuffle in JS). Endpoint is
+ * `/api/account/export` which returns a JSON blob with a proper
+ * Content-Disposition attachment header.
+ */
+function DataExportCard() {
+  return (
+    <div className="rounded-2xl p-4" style={cardStyle}>
+      <p className="font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Download my data</p>
+      <p className="text-muted text-sm mb-4">
+        POPIA gives you the right to a copy of your personal information. Download a JSON file with every record Stoki holds on you — your profile, every store you have access to, and all business records inside.
+      </p>
+      <a
+        href="/api/account/export"
+        download
+        className="inline-flex items-center justify-center w-full rounded-xl py-3 font-semibold text-sm"
+        style={{ background: 'var(--surface)', border: '1px solid var(--card-border)', color: 'var(--foreground)' }}
+      >
+        Download my data (JSON)
+      </a>
+      <p className="text-muted text-[11px] mt-2 ml-1">
+        Large accounts may take a few seconds. If the download stalls, email <a href="mailto:hello@stokiapp.com" className="underline">hello@stokiapp.com</a> and we&apos;ll send it manually.
+      </p>
+    </div>
   )
 }
 

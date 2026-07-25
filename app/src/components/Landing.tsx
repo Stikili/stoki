@@ -363,9 +363,11 @@ function SlideCta() {
           </Link>
         </p>
         <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>
-            See pricing →
-          </Link>
+          <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>Pricing</Link>
+          {' · '}
+          <Link href="/features" className="underline" style={{ color: 'var(--muted)' }}>Features</Link>
+          {' · '}
+          <Link href="/about" className="underline" style={{ color: 'var(--muted)' }}>About</Link>
         </p>
 
         {/* Trust signal — location + country only. No named-founder

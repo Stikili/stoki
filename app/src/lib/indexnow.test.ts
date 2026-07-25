@@ -12,10 +12,12 @@ describe('IndexNow key + canonical URLs', () => {
     }
   })
 
-  it('covers landing, login, register, pricing, privacy, terms, every comparison, and the VAT201 guide', () => {
+  it('covers landing, login, register, pricing, features, about, privacy, terms, every comparison, and the VAT201 guide', () => {
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/register')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/pricing')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/features')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/about')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-loyverse')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-yoco')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-xero')

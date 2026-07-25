@@ -118,6 +118,8 @@ export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/login`,
   `https://${CANONICAL_HOST}/register`,
   `https://${CANONICAL_HOST}/pricing`,
+  `https://${CANONICAL_HOST}/features`,
+  `https://${CANONICAL_HOST}/about`,
   `https://${CANONICAL_HOST}/privacy`,
   `https://${CANONICAL_HOST}/terms`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-loyverse`,
