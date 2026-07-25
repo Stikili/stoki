@@ -102,7 +102,7 @@ export default async function BillingPage() {
       {/* Plan cards */}
       <div className="grid grid-cols-1 gap-3">
         <PlanCard
-          name="Free" subtitle="for your day-one small business" price="R0" priceSub="Forever"
+          name="Free" subtitle="for the spaza on day one" price="R0" priceSub="Forever"
           current={current === 'free' && !trialDays}
           features={[
             '1 store, 1 user',

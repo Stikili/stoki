@@ -7,8 +7,8 @@ describe('parseProductCsv', () => {
     const result = parseProductCsv(csv)
     expect(result.errors).toEqual([])
     expect(result.rows).toEqual([
-      { name: 'Bread', price: 16.99, cost: 0, qty: 0, reorderPoint: 5, sku: null },
-      { name: 'Milk',  price: 23.99, cost: 0, qty: 0, reorderPoint: 5, sku: null },
+      { name: 'Bread', price: 16.99, cost: 0, qty: 0, reorderPoint: 5, sku: null, unitLabel: null },
+      { name: 'Milk',  price: 23.99, cost: 0, qty: 0, reorderPoint: 5, sku: null, unitLabel: null },
     ])
   })
 
@@ -16,7 +16,7 @@ describe('parseProductCsv', () => {
     const csv = 'name,price,cost,qty,reorder_point,sku\nBread,16.99,12,20,10,BREAD-1'
     const result = parseProductCsv(csv)
     expect(result.rows).toEqual([
-      { name: 'Bread', price: 16.99, cost: 12, qty: 20, reorderPoint: 10, sku: 'BREAD-1' },
+      { name: 'Bread', price: 16.99, cost: 12, qty: 20, reorderPoint: 10, sku: 'BREAD-1', unitLabel: null },
     ])
   })
 
@@ -125,6 +125,47 @@ describe('parseProductCsv', () => {
       const csv = 'name,price\n\nBread,abc' // bad row is line 3
       const result = parseProductCsv(csv)
       expect(result.errors[0].line).toBe(3)
+    })
+  })
+
+  describe('weighables', () => {
+    it('accepts decimal qty for weighable products (numeric(10,3) post-migration-015)', () => {
+      const csv = 'name,price,qty,unit_label\nRice,25.00,50.500,kg'
+      const result = parseProductCsv(csv)
+      expect(result.errors).toEqual([])
+      expect(result.rows[0]).toMatchObject({
+        name: 'Rice', price: 25, qty: 50.5, unitLabel: 'kg',
+      })
+    })
+
+    it('accepts every valid unit label', () => {
+      const csv = 'name,price,unit_label\nA,1,each\nB,1,kg\nC,1,g\nD,1,l\nE,1,ml'
+      const result = parseProductCsv(csv)
+      expect(result.rows.map(r => r.unitLabel)).toEqual(['each', 'kg', 'g', 'l', 'ml'])
+    })
+
+    it('drops unknown unit labels silently (typo tolerance)', () => {
+      const csv = 'name,price,unit_label\nA,1,kilos'
+      const result = parseProductCsv(csv)
+      expect(result.rows[0].unitLabel).toBeNull()
+    })
+
+    it('is case-insensitive on unit labels', () => {
+      const csv = 'name,price,unit_label\nA,1,KG\nB,1,Ml'
+      const result = parseProductCsv(csv)
+      expect(result.rows.map(r => r.unitLabel)).toEqual(['kg', 'ml'])
+    })
+
+    it('leaves unitLabel null when the column is missing (backwards compat)', () => {
+      const csv = 'name,price\nA,1'
+      const result = parseProductCsv(csv)
+      expect(result.rows[0].unitLabel).toBeNull()
+    })
+
+    it('accepts decimal reorder_point for weighables', () => {
+      const csv = 'name,price,reorder_point,unit_label\nRice,25,2.500,kg'
+      const result = parseProductCsv(csv)
+      expect(result.rows[0].reorderPoint).toBe(2.5)
     })
   })
 })

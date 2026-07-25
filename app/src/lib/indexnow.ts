@@ -43,9 +43,50 @@ export interface SubmitResult {
 }
 
 /**
+ * Normalise a caller-supplied URL to a full canonical-host URL. Accepts:
+ *   - full URL matching CANONICAL_HOST → returned unchanged
+ *   - full URL matching CANONICAL_HOST via www subdomain → rewritten to bare
+ *   - absolute path (`/compare/foo`) → prefixed with `https://<host>`
+ * Returns null for cross-host URLs (submitting a competitor's URL would be
+ * rejected by every engine anyway).
+ *
+ * Exported so tests can pin the shape. Small function; correctness matters
+ * because a caller who passes `?url=/foo` should get their URL submitted,
+ * not a 400 with "outside canonical host" that reads like a bug.
+ */
+export function normaliseCanonicalUrl(input: string): string | null {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+
+  // Absolute path → prepend our host.
+  if (trimmed.startsWith('/')) {
+    return `https://${CANONICAL_HOST}${trimmed}`
+  }
+
+  // Anything else must parse as a full URL. If it fails, reject.
+  try {
+    const parsed = new URL(trimmed)
+    // Accept both bare and www variants — bare is canonical (the
+    // Vercel redirect + our own canonical tags), but www is what
+    // some external references use.
+    const host = parsed.host.replace(/^www\./, '')
+    if (host !== CANONICAL_HOST) return null
+    // Return the bare-host form so we hand engines what our own
+    // sitemap + canonical tags say.
+    return `https://${CANONICAL_HOST}${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return null
+  }
+}
+
+/**
  * Submit a list of URLs to IndexNow. Batches up to 10,000 URLs per POST
  * (IndexNow's documented cap); this app never hits that, but the guard
  * is here for future-proofing.
+ *
+ * URLs are normalised via `normaliseCanonicalUrl` first — callers can
+ * pass either full canonical URLs OR absolute paths (`/compare/foo`),
+ * and both work. Non-canonical hosts are dropped with a clear error.
  *
  * Returns a shape the caller can log/report. Never throws — network
  * failures resolve to `{ok: false, status: 0, accepted: 0, message}` so
@@ -57,18 +98,23 @@ export async function submitToIndexNow(urls: string[]): Promise<SubmitResult> {
     return { ok: false, status: 400, accepted: 0, message: 'urlList exceeds IndexNow 10,000 cap' }
   }
 
-  // Every URL must belong to CANONICAL_HOST — cross-host submissions
-  // are rejected as "unrelated URL" by every engine, so validate up-
-  // front rather than sending garbage to the API.
-  const alien = urls.filter(u => {
-    try { return new URL(u).host !== CANONICAL_HOST } catch { return true }
-  })
+  // Normalise each URL. Anything that can't be resolved to our
+  // canonical host drops to the alien list with the raw input so the
+  // error message points at the actual problematic value.
+  const normalised: string[] = []
+  const alien: string[] = []
+  for (const raw of urls) {
+    const n = normaliseCanonicalUrl(raw)
+    if (n) normalised.push(n)
+    else alien.push(raw)
+  }
   if (alien.length > 0) {
     return {
       ok: false, status: 400, accepted: 0,
       message: `urls outside canonical host: ${alien.slice(0, 3).join(', ')}${alien.length > 3 ? '…' : ''}`,
     }
   }
+  urls = normalised
 
   const body = {
     host: CANONICAL_HOST,
@@ -120,6 +166,7 @@ export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/pricing`,
   `https://${CANONICAL_HOST}/features`,
   `https://${CANONICAL_HOST}/about`,
+  `https://${CANONICAL_HOST}/status`,
   `https://${CANONICAL_HOST}/privacy`,
   `https://${CANONICAL_HOST}/terms`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-loyverse`,
@@ -127,5 +174,6 @@ export const CANONICAL_URLS: string[] = [
   `https://${CANONICAL_HOST}/compare/stoki-vs-xero`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-sage`,
   `https://${CANONICAL_HOST}/compare/stoki-vs-ikhokha`,
+  `https://${CANONICAL_HOST}/compare/stoki-vs-simplepay`,
   `https://${CANONICAL_HOST}/guides/how-to-submit-vat201-south-africa`,
 ]

@@ -99,6 +99,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${base}/compare/stoki-vs-simplepay`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
     // Guides — long-tail educational SEO. High priority since each guide
     // targets a distinct high-volume SA search intent.
     {
@@ -106,6 +112,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    // Support / trust surfaces.
+    {
+      url: `${base}/status`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.4,
     },
   ]
 }

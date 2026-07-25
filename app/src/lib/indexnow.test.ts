@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CANONICAL_URLS, INDEXNOW_KEY, submitToIndexNow } from './indexnow'
+import { CANONICAL_URLS, INDEXNOW_KEY, normaliseCanonicalUrl, submitToIndexNow } from './indexnow'
 
 describe('IndexNow key + canonical URLs', () => {
   it('exports a non-empty hex key that matches the public/.txt filename', () => {
@@ -23,7 +23,45 @@ describe('IndexNow key + canonical URLs', () => {
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-xero')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-sage')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-ikhokha')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/compare/stoki-vs-simplepay')
     expect(CANONICAL_URLS).toContain('https://stokiapp.com/guides/how-to-submit-vat201-south-africa')
+    expect(CANONICAL_URLS).toContain('https://stokiapp.com/status')
+  })
+})
+
+describe('normaliseCanonicalUrl', () => {
+  it('returns the input unchanged when it is already a canonical bare-host URL', () => {
+    expect(normaliseCanonicalUrl('https://stokiapp.com/pricing')).toBe('https://stokiapp.com/pricing')
+  })
+
+  it('rewrites www subdomain to bare host', () => {
+    expect(normaliseCanonicalUrl('https://www.stokiapp.com/pricing')).toBe('https://stokiapp.com/pricing')
+  })
+
+  it('promotes an absolute path to a full canonical URL', () => {
+    expect(normaliseCanonicalUrl('/pricing')).toBe('https://stokiapp.com/pricing')
+    expect(normaliseCanonicalUrl('/compare/stoki-vs-loyverse')).toBe('https://stokiapp.com/compare/stoki-vs-loyverse')
+  })
+
+  it('preserves query string + hash', () => {
+    expect(normaliseCanonicalUrl('/pricing?ref=linkedin#free')).toBe('https://stokiapp.com/pricing?ref=linkedin#free')
+    expect(normaliseCanonicalUrl('https://stokiapp.com/pricing?ref=x')).toBe('https://stokiapp.com/pricing?ref=x')
+  })
+
+  it('trims whitespace', () => {
+    expect(normaliseCanonicalUrl('  /pricing  ')).toBe('https://stokiapp.com/pricing')
+  })
+
+  it('returns null for cross-host URLs', () => {
+    expect(normaliseCanonicalUrl('https://example.com/foo')).toBeNull()
+    expect(normaliseCanonicalUrl('https://loyverse.com/za')).toBeNull()
+  })
+
+  it('returns null for garbage or empty input', () => {
+    expect(normaliseCanonicalUrl('')).toBeNull()
+    expect(normaliseCanonicalUrl('   ')).toBeNull()
+    expect(normaliseCanonicalUrl('not-a-url')).toBeNull()
+    expect(normaliseCanonicalUrl('ftp://stokiapp.com/foo')).not.toBeNull() // ftp is a valid protocol; only host matters
   })
 })
 
@@ -44,6 +82,17 @@ describe('submitToIndexNow', () => {
     expect(result.status).toBe(400)
     expect(result.message).toMatch(/outside canonical host/i)
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('accepts relative paths and normalises to canonical host before submitting', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('', { status: 200 }),
+    )
+    const result = await submitToIndexNow(['/compare/stoki-vs-loyverse'])
+    expect(result.ok).toBe(true)
+    expect(result.accepted).toBe(1)
+    const body = JSON.parse(String(spy.mock.calls[0][1]?.body))
+    expect(body.urlList).toEqual(['https://stokiapp.com/compare/stoki-vs-loyverse'])
   })
 
   it('rejects malformed URLs without hitting the API', async () => {

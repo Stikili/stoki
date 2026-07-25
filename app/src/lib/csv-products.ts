@@ -8,6 +8,12 @@ export interface ProductCsvRow {
   qty: number
   reorderPoint: number
   sku: string | null
+  /** Optional weighable-goods label. Populated when the CSV row supplies
+   *  a `unit_label` column with one of the accepted unit slugs; when
+   *  omitted the column is left unset and the product defaults to 'each'
+   *  server-side. Post-migration-015, qty / reorder_point are numeric(10,3)
+   *  so weighables like "1.500 kg Rice" fit natively. */
+  unitLabel: 'each' | 'kg' | 'g' | 'l' | 'ml' | null
 }
 
 export interface ParsedProductCsv {
@@ -16,12 +22,18 @@ export interface ParsedProductCsv {
 }
 
 const REQUIRED_HEADERS = ['name', 'price'] as const
-const ALL_HEADERS = ['name', 'price', 'cost', 'qty', 'reorder_point', 'sku'] as const
+const ALL_HEADERS = ['name', 'price', 'cost', 'qty', 'reorder_point', 'sku', 'unit_label'] as const
 
-export const SAMPLE_CSV = `name,price,cost,qty,reorder_point,sku
-White Bread (700g),16.99,12.00,20,10,BREAD-W-700
-Coke 340ml Can,16.99,12.00,40,15,COKE-340
-Maggi Noodles,3.99,2.50,80,20,MAGGI-CHK
+/** Valid weighable/pourable unit labels. Anything else in the column
+ *  falls back to null (product defaults to 'each' server-side). */
+const VALID_UNIT_LABELS = new Set(['each', 'kg', 'g', 'l', 'ml'])
+
+export const SAMPLE_CSV = `name,price,cost,qty,reorder_point,sku,unit_label
+White Bread (700g),16.99,12.00,20,10,BREAD-W-700,each
+Coke 340ml Can,16.99,12.00,40,15,COKE-340,each
+Maggi Noodles,3.99,2.50,80,20,MAGGI-CHK,each
+Rice (loose),25.00,18.00,50.500,10,RICE-L,kg
+Sunflower Oil (bulk),42.00,32.00,20.000,5,OIL-B,l
 `
 
 /**
@@ -85,15 +97,29 @@ export function parseProductCsv(csv: string): ParsedProductCsv {
     const cost = headerIndex.cost !== undefined
       ? (parseDecimal((cells[headerIndex.cost] ?? '').trim()) ?? 0)
       : 0
+    // qty + reorder_point are numeric(10,3) post-migration-015 so a
+    // 1.500 kg rice entry stays as 1.5 not 1. parseDecimal accepts
+    // integers uniformly so nothing regresses for whole-unit imports.
     const qty = headerIndex.qty !== undefined
-      ? (parseInteger((cells[headerIndex.qty] ?? '').trim()) ?? 0)
+      ? (parseDecimal((cells[headerIndex.qty] ?? '').trim()) ?? 0)
       : 0
     const reorderPoint = headerIndex.reorder_point !== undefined
-      ? (parseInteger((cells[headerIndex.reorder_point] ?? '').trim()) ?? 5)
+      ? (parseDecimal((cells[headerIndex.reorder_point] ?? '').trim()) ?? 5)
       : 5
     const sku = headerIndex.sku !== undefined
       ? ((cells[headerIndex.sku] ?? '').trim() || null)
       : null
+
+    // Weighable unit label — accept the canonical slug or fall back to
+    // null so the caller can default 'each' server-side. Unknown labels
+    // silently drop (better than blocking a whole import over a typo).
+    let unitLabel: ProductCsvRow['unitLabel'] = null
+    if (headerIndex.unit_label !== undefined) {
+      const raw = (cells[headerIndex.unit_label] ?? '').trim().toLowerCase()
+      if (raw && VALID_UNIT_LABELS.has(raw)) {
+        unitLabel = raw as ProductCsvRow['unitLabel']
+      }
+    }
 
     if (cost < 0) {
       errors.push({ line: lineNumber, message: `Cost cannot be negative` })
@@ -104,7 +130,7 @@ export function parseProductCsv(csv: string): ParsedProductCsv {
       continue
     }
 
-    rows.push({ name, price, cost, qty, reorderPoint, sku })
+    rows.push({ name, price, cost, qty, reorderPoint, sku, unitLabel })
   }
 
   return { rows, errors }
@@ -153,9 +179,14 @@ function parseDecimal(s: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+// Kept for callers that specifically want integer parsing; internal
+// qty / reorder_point parsing switched to parseDecimal so weighable
+// imports work. Any future integer-only CSV field can use this.
 function parseInteger(s: string): number | null {
   if (s === '') return null
   const cleaned = s.replace(/[^\d\-]/g, '')
   const n = parseInt(cleaned, 10)
   return Number.isFinite(n) ? n : null
 }
+// Silence unused-var lint on parseInteger (retained intentionally).
+void parseInteger

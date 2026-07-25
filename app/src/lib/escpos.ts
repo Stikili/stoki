@@ -7,6 +7,10 @@ export interface ReceiptLine {
   name: string
   qty: number
   total: number
+  /** Optional unit label. When provided AND not 'each', the printed line
+   *  shows "1.500 kg Rice" instead of "1.500× Rice" — feels right for
+   *  weighable / pourable goods. Absent or 'each' → "5× Bread" as before. */
+  unitLabel?: 'each' | 'kg' | 'g' | 'l' | 'ml'
 }
 
 export interface ReceiptData {
@@ -129,7 +133,10 @@ export function encodeReceipt(data: ReceiptData): Uint8Array {
 
   for (const item of data.items) {
     const lineTotal = `R${item.total.toFixed(2)}`
-    const namePart = `${item.qty}x ${item.name}`
+    // Weighable formatting: "1.500 kg Rice" reads correctly for
+    // pourable/weighable goods; falls back to "5x Bread" for piece
+    // goods (unit=each or unset). Sub-1 kg / sub-1 l coerce to g/ml.
+    const namePart = formatReceiptQtyLabel(item)
     // If the item description doesn't fit on one line, wrap the name and put
     // the price on the last wrapped line (right-aligned).
     const wrapped = wrap(namePart, width - lineTotal.length - 1)
@@ -161,4 +168,28 @@ export function encodeReceipt(data: ReceiptData): Uint8Array {
   buf.pushAll(CMD_CUT_PARTIAL)
 
   return buf.toBytes()
+}
+
+/**
+ * Render the "qty × name" line for a receipt row. Weighable /
+ * pourable goods with an explicit unitLabel print as "1.500 kg Rice"
+ * so the receipt reads correctly for scale-priced items; piece goods
+ * keep the classic "5x Bread" shorthand. Sub-unit weights coerce to
+ * the smaller unit (< 1 kg → g, < 1 l → ml) for readability.
+ *
+ * Exported so tests + the on-screen Receipt component share exactly
+ * the same rendering logic — the printed receipt and the on-screen
+ * receipt must agree line-for-line.
+ */
+export function formatReceiptQtyLabel(item: Pick<ReceiptLine, 'qty' | 'name' | 'unitLabel'>): string {
+  const unit = item.unitLabel
+  if (!unit || unit === 'each') {
+    // Piece goods — drop trailing decimals on whole numbers.
+    const q = Number.isInteger(item.qty) ? String(item.qty) : item.qty.toFixed(3)
+    return `${q}x ${item.name}`
+  }
+  // Sub-unit coercion for readability.
+  if (unit === 'kg' && item.qty > 0 && item.qty < 1) return `${Math.round(item.qty * 1000)}g ${item.name}`
+  if (unit === 'l' && item.qty > 0 && item.qty < 1) return `${Math.round(item.qty * 1000)}ml ${item.name}`
+  return `${item.qty.toFixed(3)} ${unit} ${item.name}`
 }

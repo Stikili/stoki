@@ -128,7 +128,7 @@ export default function PricingPage() {
           {/* Free — live */}
           <TierCard
             name="Free"
-            subtitle="for your day-one small business"
+            subtitle="for the spaza on day one"
             price="R0"
             priceNote="forever"
             headline="Everything you need to start"

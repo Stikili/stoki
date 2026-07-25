@@ -111,7 +111,7 @@ function SlideHero() {
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
           style={{ color: 'var(--muted-dim)' }}
         >
-          Built for South African small businesses
+          Built for South African spazas, service businesses &amp; SMMEs
         </p>
         <h1
           className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"
@@ -355,6 +355,8 @@ function SlideCta() {
           <Link href="/compare/stoki-vs-sage" className="underline" style={{ color: 'var(--muted)' }}>Sage</Link>
           {' · '}
           <Link href="/compare/stoki-vs-ikhokha" className="underline" style={{ color: 'var(--muted)' }}>iKhokha</Link>
+          {' · '}
+          <Link href="/compare/stoki-vs-simplepay" className="underline" style={{ color: 'var(--muted)' }}>SimplePay</Link>
         </p>
         <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
           Guides:{' '}

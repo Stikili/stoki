@@ -153,6 +153,13 @@ export async function bulkImportProductsAction(csv: string): Promise<CsvImportRe
         qty: row.qty,
         reorderPoint: row.reorderPoint,
         sku: row.sku ?? undefined,
+        // Weighable-goods pass-through. When the CSV row supplies a
+        // valid unit_label the product is created as weighable with
+        // that unit; when null we leave it unset and the repo defaults
+        // to 'each' (non-weighable piece-goods behaviour).
+        ...(row.unitLabel && row.unitLabel !== 'each'
+          ? { isWeighable: true, unitLabel: row.unitLabel }
+          : {}),
       })
       imported++
     } catch {

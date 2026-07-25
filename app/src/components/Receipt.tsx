@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { encodeReceipt } from '@/lib/escpos'
+import { encodeReceipt, formatReceiptQtyLabel } from '@/lib/escpos'
 import { isPrinterSupported, printBytes } from '@/lib/bluetooth-printer'
 
 interface ReceiptItem {
@@ -12,6 +12,11 @@ interface ReceiptItem {
   vat?: number
   /** Whether the line price already includes VAT (SA retail standard). Defaults to true. */
   vatInclusive?: boolean
+  /** Optional weighable unit — 'kg', 'g', 'l', 'ml', or 'each' (default).
+   *  When set to a scale unit, the receipt prints "1.500 kg Rice" instead
+   *  of "1.500x Rice". Callers that don't populate this get the piece-goods
+   *  rendering (backwards compatible). */
+  unitLabel?: 'each' | 'kg' | 'g' | 'l' | 'ml'
 }
 
 interface ReceiptProps {
@@ -79,7 +84,7 @@ export default function Receipt({
       ...(businessAddress ? [businessAddress] : []),
       date,
       '',
-      ...items.map(i => `${i.qty}× ${i.name}  R${(i.price * i.qty).toFixed(2)}`),
+      ...items.map(i => `${formatReceiptQtyLabel(i)}  R${(i.price * i.qty).toFixed(2)}`),
       '─'.repeat(28),
       ...(vatRegistered ? [
         `Subtotal (excl. VAT): R${subtotalExcl.toFixed(2)}`,
@@ -124,6 +129,7 @@ export default function Receipt({
           name: i.name,
           qty: i.qty,
           total: i.price * i.qty,
+          ...(i.unitLabel ? { unitLabel: i.unitLabel } : {}),
         })),
         subtotalExcl: vatRegistered ? subtotalExcl : null,
         vatAmount: vatRegistered ? vatBasketTotal : null,
@@ -170,7 +176,7 @@ export default function Receipt({
 
           {items.map((item, i) => (
             <div key={i} className="flex justify-between text-sm py-1">
-              <span>{item.qty}× {item.name}</span>
+              <span>{formatReceiptQtyLabel(item)}</span>
               <span className="font-semibold">R{(item.price * item.qty).toFixed(2)}</span>
             </div>
           ))}
