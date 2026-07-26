@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   ShoppingCart, Package, CreditCard, Sparkles, ArrowRight, Receipt, Activity,
 } from 'lucide-react'
@@ -107,47 +106,46 @@ export default function Landing() {
 function SlideHero() {
   return (
     <section className="relative flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-32 pb-12 sm:pb-20 min-h-[100dvh] sm:min-h-0 overflow-hidden">
-      {/* Dashboard screenshot as a background trust-signal.
-          Positioned right-of-centre on desktop, bottom-behind on mobile.
-          Heavily faded + gradient-overlaid so hero copy stays readable.
-          If this looks off, `git revert HEAD` restores the previous
-          inline-in-SlideFeatures placement in one shot. */}
+      {/* Dashboard screenshot as a full-opacity background trust-signal.
+          Plain <img> (not next/image) — previous next/image attempt was
+          rendering imperceptibly for reasons we couldn't nail down;
+          plain <img> makes the render behaviour predictable and lets
+          the SA-persona image do its job.
+          Hero copy sits inside its own dark scrim card (below) so
+          readability holds against the fully-visible screenshot.
+          `git revert HEAD` restores the previous placement. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ zIndex: 0 }}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/screenshots/dashboard-mobile.png"
           alt=""
-          width={1290}
-          height={2796}
-          priority
-          className="absolute w-[75%] sm:w-[48%] max-w-[440px] h-auto rounded-[32px] opacity-[0.5] sm:opacity-[0.7]"
+          className="absolute rounded-[32px]"
           style={{
-            right: '-6%',
+            width: 'min(85%, 460px)',
+            right: '-8%',
             top: '50%',
             transform: 'translateY(-50%) rotate(6deg)',
             filter: 'saturate(1.15) brightness(1.05)',
-            maskImage:
-              'radial-gradient(ellipse at center, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 92%)',
-            WebkitMaskImage:
-              'radial-gradient(ellipse at center, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 92%)',
+            boxShadow: '0 40px 100px -30px rgba(0, 224, 160, 0.35)',
           }}
         />
-        {/* Dark gradient overlay from the left → keeps the hero copy
-            side of the viewport high-contrast even as the screenshot
-            occupies the right. Softer than the first pass so the
-            middle-hero region isn't fully black. */}
+        {/* Left→right gradient overlay: opaque on the hero-copy side,
+            transparent on the right so the screenshot reads through
+            at full strength on the right ~40% of the viewport. */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(90deg, var(--background) 0%, rgba(10,14,23,0.85) 25%, rgba(10,14,23,0.35) 55%, rgba(0,0,0,0) 80%)',
+              'linear-gradient(90deg, var(--background) 0%, rgba(8,15,26,0.92) 30%, rgba(8,15,26,0.45) 55%, rgba(0,0,0,0) 75%)',
           }}
         />
       </div>
 
-      <div className="relative max-w-2xl w-full mx-auto text-center">
+      <div className="relative z-10 max-w-2xl w-full mx-auto text-center">
         <p
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
           style={{ color: 'var(--muted-dim)' }}
