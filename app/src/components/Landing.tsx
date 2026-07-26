@@ -106,8 +106,47 @@ export default function Landing() {
 
 function SlideHero() {
   return (
-    <section className="flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-32 pb-12 sm:pb-20 min-h-[100dvh] sm:min-h-0">
-      <div className="max-w-2xl w-full mx-auto text-center">
+    <section className="relative flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-32 pb-12 sm:pb-20 min-h-[100dvh] sm:min-h-0 overflow-hidden">
+      {/* Dashboard screenshot as a background trust-signal.
+          Positioned right-of-centre on desktop, bottom-behind on mobile.
+          Heavily faded + gradient-overlaid so hero copy stays readable.
+          If this looks off, `git revert HEAD` restores the previous
+          inline-in-SlideFeatures placement in one shot. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+      >
+        <Image
+          src="/screenshots/dashboard-mobile.png"
+          alt=""
+          width={1290}
+          height={2796}
+          priority
+          className="absolute w-[70%] sm:w-[45%] max-w-[420px] h-auto rounded-[32px] opacity-[0.18] sm:opacity-[0.28]"
+          style={{
+            right: '-8%',
+            top: '50%',
+            transform: 'translateY(-50%) rotate(6deg)',
+            filter: 'saturate(1.1)',
+            maskImage:
+              'radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 85%)',
+            WebkitMaskImage:
+              'radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 85%)',
+          }}
+        />
+        {/* Dark gradient overlay from the left → keeps the hero copy
+            side of the viewport high-contrast even as the screenshot
+            occupies the right. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(90deg, var(--background) 0%, var(--background) 30%, rgba(0,0,0,0) 70%)',
+          }}
+        />
+      </div>
+
+      <div className="relative max-w-2xl w-full mx-auto text-center">
         <p
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
           style={{ color: 'var(--muted-dim)' }}
@@ -148,36 +187,9 @@ function SlideFeatures() {
   return (
     <section className="flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-12 pb-16 min-h-[100dvh] sm:min-h-0">
       <div className="max-w-3xl w-full mx-auto">
-        {/* Real product screenshot — Kagiso Kwikstop dashboard, mobile
-            portrait. Captured at DPR 3 (1290×2796). Rendered constrained
-            so the tall aspect ratio doesn't dominate the slide.
-            Emerald-tinted drop shadow keeps it feeling like a device on
-            a Stoki-brand surface, not an inline app screenshot. Sits
-            above the features H2 so the first thing readers see on this
-            slide is real product proof, not another headline. */}
-        <div className="mx-auto mb-8 sm:mb-10 max-w-[240px] sm:max-w-[280px]">
-          <Image
-            src="/screenshots/dashboard-mobile.png"
-            alt="The Stoki dashboard on a spaza owner's phone — showing today's R60 revenue from 3 sales, one credit customer owing R18, and end-of-day cash-up controls."
-            width={1290}
-            height={2796}
-            priority
-            sizes="(max-width: 640px) 240px, 280px"
-            className="w-full h-auto rounded-[28px]"
-            style={{
-              boxShadow:
-                '0 30px 80px -30px rgba(0, 200, 150, 0.45), 0 8px 24px -8px rgba(0, 0, 0, 0.35)',
-              border: '1px solid rgba(0, 200, 150, 0.15)',
-            }}
-          />
-          <p
-            className="text-center text-[11px] mt-3"
-            style={{ color: 'var(--muted-dim)' }}
-          >
-            The dashboard on a Sunday afternoon at Kagiso Kwikstop.
-          </p>
-        </div>
-
+        {/* Inline dashboard screenshot removed 2026-07-27 — the same
+            image now lives as a subtle background on SlideHero. If we
+            revert the hero placement, restore this block. */}
         <h2
           className="text-[28px] sm:text-[36px] font-bold tracking-tight text-center mb-8"
           style={{ color: 'var(--foreground)' }}
