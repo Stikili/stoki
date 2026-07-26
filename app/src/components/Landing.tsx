@@ -122,26 +122,27 @@ function SlideHero() {
           width={1290}
           height={2796}
           priority
-          className="absolute w-[70%] sm:w-[45%] max-w-[420px] h-auto rounded-[32px] opacity-[0.18] sm:opacity-[0.28]"
+          className="absolute w-[75%] sm:w-[48%] max-w-[440px] h-auto rounded-[32px] opacity-[0.5] sm:opacity-[0.7]"
           style={{
-            right: '-8%',
+            right: '-6%',
             top: '50%',
             transform: 'translateY(-50%) rotate(6deg)',
-            filter: 'saturate(1.1)',
+            filter: 'saturate(1.15) brightness(1.05)',
             maskImage:
-              'radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 85%)',
+              'radial-gradient(ellipse at center, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 92%)',
             WebkitMaskImage:
-              'radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 85%)',
+              'radial-gradient(ellipse at center, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 92%)',
           }}
         />
         {/* Dark gradient overlay from the left → keeps the hero copy
             side of the viewport high-contrast even as the screenshot
-            occupies the right. */}
+            occupies the right. Softer than the first pass so the
+            middle-hero region isn't fully black. */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(90deg, var(--background) 0%, var(--background) 30%, rgba(0,0,0,0) 70%)',
+              'linear-gradient(90deg, var(--background) 0%, rgba(10,14,23,0.85) 25%, rgba(10,14,23,0.35) 55%, rgba(0,0,0,0) 80%)',
           }}
         />
       </div>
