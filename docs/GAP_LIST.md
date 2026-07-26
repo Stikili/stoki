@@ -1,6 +1,6 @@
 # Stoki Gap List
 
-Single source of truth for what's still open on Stoki. Committed to git so it syncs across every device that clones or pulls the repo. **Last updated: 2026-07-19.**
+Single source of truth for what's still open on Stoki. Committed to git so it syncs across every device that clones or pulls the repo. **Last updated: 2026-07-27.**
 
 Anything not on this list is either shipped or hasn't been thought of yet — if you're planning work, add it here first so it survives context switches.
 
@@ -9,6 +9,9 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 ---
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
+
+**2026-07-27:**
+- **Dashboard screenshot on landing** — user captured a Kagiso Kwikstop demo dashboard (R60 revenue, 3 sales, 1 credit customer owing R18) and wired via `next/image` above the features grid in `SlideFeatures`. Emerald-tinted shadow, priority hint for LCP, alt text mentions visible numbers for SEO — commit `5d79fbe`
 
 **2026-07-19 (evening batch):**
 - `/status` public trust-signal page — commit `477a3b0`
@@ -60,7 +63,6 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 | 4 | **Phone OTP login** | Twilio not wired in Supabase (feature-flagged off) |
 | 5 | **Sentry alerting rules** | Configured in Sentry UI (not codebase) — needs your setup |
 | 6 | **Multilingual translations** — Zulu / Xhosa / Sotho / Afrikaans | Needs paid translator |
-| 7 | **Dashboard screenshot on landing page** | You take + supply the screenshot; then ~30 min to wire |
 
 ---
 
@@ -68,7 +70,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Trigger to resume |
 |---|---|---|
-| 8 | **Capacitor.js native app wrapper (iOS + Android)** | 100+ shops OR bank partnership requiring App Store OR >R10k/mo marketing spend |
+| 7 | **Capacitor.js native app wrapper (iOS + Android)** | 100+ shops OR bank partnership requiring App Store OR >R10k/mo marketing spend |
 
 ---
 
@@ -76,8 +78,8 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 9 | **LinkedIn post #2 — Yoco comparison** | Draft in memory `project_linkedin_comparison_posts.md`. Post ~2026-07-26 |
-| 10 | **LinkedIn post #3 — Xero comparison** | Same file. Post ~2026-08-02 |
+| 8 | **LinkedIn post #2 — Yoco comparison** | Draft in memory `project_linkedin_comparison_posts.md`. **Overdue since 2026-07-26 — post today.** |
+| 9 | **LinkedIn post #3 — Xero comparison** | Same file. Post ~2026-08-02 (or +7 days after post #2 lands) |
 
 ---
 
@@ -85,7 +87,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 11 | P3 language deeper renames — a few form-field labels still say "Store name" not "Business name" | ~30 min sweep |
+| 10 | P3 language deeper renames — a few form-field labels still say "Store name" not "Business name" | ~30 min sweep |
 
 ---
 
@@ -93,9 +95,9 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort | Priority |
 |---|---|---|---|
-| 12 | **Advisor empty state** for new users — personalise to onboarding-completeness | 30 min | Low — INTRO message works |
-| 13 | Bank feed follow-ups from Phase 3B — persist reviewed lines + bulk auto-confirm | 1-2h | Low (blocked until Ozow) |
-| 14 | Bluetooth printer follow-ups — persist last-paired + Settings test-print button | 1h | Low |
+| 11 | **Advisor empty state** for new users — personalise to onboarding-completeness | 30 min | Low — INTRO message works |
+| 12 | Bank feed follow-ups from Phase 3B — persist reviewed lines + bulk auto-confirm | 1-2h | Low (blocked until Ozow) |
+| 13 | Bluetooth printer follow-ups — persist last-paired + Settings test-print button | 1h | Low |
 
 ---
 
@@ -103,10 +105,10 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 15 | **Phase 1.6** — real scrapers for SARB / fuel / CPI (cron slots currently stubbed) | 1 day |
-| 16 | **Phase 2** — live SA news ingestion (RSS → summariser → advisor context) | 1-2 days |
-| 17 | **Phase 3** — proactive push insights when indicators move materially | 1 day |
-| 18 | **Phase 4** — predictive forecasts combining store trends + market data | 3-5 days |
+| 14 | **Phase 1.6** — real scrapers for SARB / fuel / CPI (cron slots currently stubbed) | 1 day |
+| 15 | **Phase 2** — live SA news ingestion (RSS → summariser → advisor context) | 1-2 days |
+| 16 | **Phase 3** — proactive push insights when indicators move materially | 1 day |
+| 17 | **Phase 4** — predictive forecasts combining store trends + market data | 3-5 days |
 
 ---
 
@@ -114,26 +116,26 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 19 | **`/blog` scaffolding + first post** — ongoing content channel | 2-3h scaffolding, then ongoing |
-| 20 | **Guide — "How to register for VAT in South Africa"** | 2-3h |
-| 21 | **Guide — "PAYE calculation guide"** | 2-3h |
-| 22 | **Guide — "Spaza bookkeeping basics"** | 2-3h |
+| 18 | **`/blog` scaffolding + first post** — ongoing content channel | 2-3h scaffolding, then ongoing |
+| 19 | **Guide — "How to register for VAT in South Africa"** | 2-3h |
+| 20 | **Guide — "PAYE calculation guide"** | 2-3h |
+| 21 | **Guide — "Spaza bookkeeping basics"** | 2-3h |
 
 ---
 
 ## 📊 SVP-Product take on the current top
 
-**Tonight shipped 9 items across 2 batches + updated docs.** New top-3 for the next session:
+**Dashboard-screenshot trust signal shipped.** New top-3:
 
-1. **LinkedIn post #2 (Yoco) around 2026-07-26** — 5 min from you, biggest weekly-cadence ROI
-2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding
-3. **Bot intelligence Phase 1.6 — real scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding
+1. **LinkedIn post #2 (Yoco) — post TODAY.** Was scheduled ~2026-07-26; overdue by a day. Zero code, drafts stashed in `memory/project_linkedin_comparison_posts.md`. Highest weekly-cadence ROI move on the whole list.
+2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going.
+3. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding. Currently the cron pulls placeholders; real live data makes the AI meaningfully sharper.
 
 **Explicitly skip until asked:**
 - Bot intelligence Phase 4 (predictive forecasts) — nice-to-have, 3-5 days
 - Multilingual translations — needs paid translator
 - Bluetooth printer follow-ups — low usage impact
-- Dashboard screenshot — you decide when to capture
+- Sentry alert rules — configure via Sentry's own UI, not code
 
 ---
 
