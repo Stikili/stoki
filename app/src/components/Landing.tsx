@@ -185,7 +185,7 @@ function SlideFeatures() {
             fits inside the swipe-deck viewport. */}
         <div
           aria-hidden
-          className="lg:hidden mx-auto mb-8 w-full max-w-[320px]"
+          className="lg:hidden mx-auto mb-6 w-full max-w-[220px]"
         >
           <div
             className="relative w-full overflow-hidden rounded-2xl"
@@ -236,12 +236,18 @@ function SlideFeatures() {
             title="Stoki AI"
             body="Pricing & restock advice. Vision, memory, knows the SA economy."
           />
+          {/* Table-stakes features (POS + Stock) hidden on mobile — every
+              competitor has these, so they don't sell. Mobile keeps the 4
+              differentiators visible; desktop shows all 6. Saves ~130px
+              of vertical scroll on the swipe-deck viewport. */}
           <FeatureMini
+            className="hidden sm:block"
             icon={<ShoppingCart size={18} strokeWidth={1.7} />}
             title="Point-of-sale"
             body="VAT-aware receipts, every payment method, returns, weighables, airtime."
           />
           <FeatureMini
+            className="hidden sm:block"
             icon={<Package size={18} strokeWidth={1.7} />}
             title="Stock"
             body="Restocks, wastage, expiry alerts, stocktake, valuation, POs."
@@ -364,13 +370,14 @@ function SlideCta() {
 
         {/* Multi-column footer — standard SaaS pattern (Stripe / Vercel /
             Linear / Notion). Three semantic groups: Product / Resources /
-            Compare. Mobile drops to 2 cols with Compare spanning both so
-            the 8 comparison links can flow in an internal 2-col grid
-            without becoming a tall single-column list. Section headers
-            are 10px uppercase small-caps (SaaS convention). Tight leading
-            keeps the whole block compact so the CTA slide doesn't need
-            vertical scroll on standard laptop viewports. */}
-        <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-6 text-[12px] text-left">
+            Compare. Mobile HIDES this entire block — the mobile CTA slide
+            is single-purpose ("tap Sign up free"); footer links live on
+            /compare/*, /features, /about pages which are reachable from
+            Google / LinkedIn directly, not from a landing-page footer.
+            Saves ~280px vertical scroll on the swipe-deck viewport.
+            Section headers are 10px uppercase small-caps (SaaS
+            convention). */}
+        <div className="hidden sm:grid mt-8 sm:mt-10 grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-6 text-[12px] text-left">
           <div>
             <div
               className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2.5"
@@ -444,10 +451,12 @@ function SlideCta() {
           </div>
         </div>
 
-        {/* Bottom line — company reg + legal. Divider gives the visual
-            separation between nav grid and legalese. */}
+        {/* Bottom legal line — desktop only (matches the multi-col
+            footer visibility above). Mobile keeps only the CTA card +
+            "By continuing" line so the whole slide fits in one viewport
+            without vertical scroll. */}
         <div
-          className="mt-6 sm:mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10.5px]"
+          className="hidden sm:flex mt-6 sm:mt-8 pt-4 flex-col sm:flex-row items-center justify-between gap-2 text-[10.5px]"
           style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted-dim)' }}
         >
           <span>Stoki (Pty) Ltd · Reg. K2026258855</span>
@@ -465,15 +474,16 @@ function SlideCta() {
 // ── Helper — single feature card ───────────────────────────────────────────
 
 function FeatureMini({
-  icon, title, body,
+  icon, title, body, className,
 }: {
   icon: React.ReactNode
   title: string
   body: string
+  className?: string
 }) {
   return (
     <div
-      className="rounded-2xl p-4 sm:p-5"
+      className={`rounded-2xl p-4 sm:p-5 ${className ?? ''}`}
       style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--card-border)',
