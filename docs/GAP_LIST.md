@@ -11,7 +11,11 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
 **2026-07-27:**
-- **Dashboard screenshot on landing** — user captured a Kagiso Kwikstop demo dashboard (R60 revenue, 3 sales, 1 credit customer owing R18) and wired via `next/image` above the features grid in `SlideFeatures`. Emerald-tinted shadow, priority hint for LCP, alt text mentions visible numbers for SEO — commit `5d79fbe`
+- **LinkedIn post #2 (Yoco) published** from `linkedin.com/company/stokiapp` — "one app for the whole business" opener, less-Yoco-focused variant. Post spacing: 8 days after post #1 (in the 5-7d ideal window, one day late)
+- **Landing 3-col footer redesign** — CTA slide got a standard Stripe/Vercel/Linear-style footer: Product / Resources / Compare Stoki columns with uppercase small-caps headers, bottom divider with reg-line + Privacy/Terms. Mail us + Follow us pills demoted to text links inside Resources. Container widened `max-w-md` → `max-w-4xl`, CTA card stays narrow via nested wrapper — commit `5d08827`
+- **Landing "Made in Cape Town" removed** — swept from Landing CTA + Status + About + Features footers in one pass. Founder-anonymity constraint (city = founder location) — commit `83dc968`
+- **Landing hero — split-screen redesign** — desktop: two-column grid with copy left / phone screenshot right (Linear/Vercel/Notion pattern). Mobile: text-only hero (viewport-height kept for swipe deck) + a 4:3 landscape crop of the dashboard header at the top of Slide 2. Multiple iterations before landing on this — commits `3cd6870` (split hero) and `d0e99a3` (mobile 4:3 crop)
+- **Dashboard screenshot on landing** — user captured a Kagiso Kwikstop demo dashboard (R60 revenue, 3 sales, 1 credit customer owing R18) — commit `5d79fbe`
 
 **2026-07-19 (evening batch):**
 - `/status` public trust-signal page — commit `477a3b0`
@@ -78,8 +82,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #2 — Yoco comparison** | Draft in memory `project_linkedin_comparison_posts.md`. **Overdue since 2026-07-26 — post today.** |
-| 9 | **LinkedIn post #3 — Xero comparison** | Same file. Post ~2026-08-02 (or +7 days after post #2 lands) |
+| 8 | **LinkedIn post #3 — Xero comparison** | Draft in memory `project_linkedin_comparison_posts.md`. Post ~2026-08-03 (7 days after Yoco post) |
 
 ---
 
@@ -125,11 +128,11 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## 📊 SVP-Product take on the current top
 
-**Dashboard-screenshot trust signal shipped.** New top-3:
+**Yoco post shipped 2026-07-27; landing hero + footer redesigned.** New top-3:
 
-1. **LinkedIn post #2 (Yoco) — post TODAY.** Was scheduled ~2026-07-26; overdue by a day. Zero code, drafts stashed in `memory/project_linkedin_comparison_posts.md`. Highest weekly-cadence ROI move on the whole list.
-2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going.
-3. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding. Currently the cron pulls placeholders; real live data makes the AI meaningfully sharper.
+1. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding. Currently the cron pulls placeholders; real live data makes the AI meaningfully sharper. **Actively being scoped 2026-07-27.**
+2. **LinkedIn post #3 (Xero) — post ~2026-08-03** (7 days after Yoco post). Zero code, draft in `memory/project_linkedin_comparison_posts.md`.
+3. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going.
 
 **Explicitly skip until asked:**
 - Bot intelligence Phase 4 (predictive forecasts) — nice-to-have, 3-5 days

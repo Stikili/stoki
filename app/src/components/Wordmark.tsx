@@ -62,9 +62,14 @@ export default function Wordmark({
         <rect x="20" y="42" width="32" height="12" rx="3" fill="#00C896" />
       </g>
 
-      {/* "stoki" — single glyph run. Whatever font actually resolves
-          (DM Sans first, system-ui fallback), the "i" is a real letter
-          so it can't be dropped by font-load timing. */}
+      {/* "stoki." — single glyph run with a real "." character rendered
+          as a red <tspan>. Whatever font actually resolves (DM Sans
+          first, system-ui fallback), the period follows the "i" via
+          the font's own kerning — no pixel-guess x position that
+          drifts when metrics differ. Previous version used a fixed
+          `<circle cx="175">` calibrated to DM Sans; if any fallback
+          font measured "stoki" shorter, the dot floated away from the
+          "i" with a visible gap. */}
       <text
         x="68"
         y="44"
@@ -74,15 +79,8 @@ export default function Wordmark({
         letterSpacing="-1.2"
         fill={textColor}
       >
-        stoki
+        stoki<tspan fill="#EF4444">.</tspan>
       </text>
-
-      {/* Brand period — small SA-flag-red dot, sits on the baseline just
-          after the text. Uses `textLength=0` positioning trick: place
-          the dot at a fixed x that clears "stoki" at every fallback
-          font width. 175 is measured against system-ui + DM Sans + the
-          two most common Android WebView fonts. */}
-      <circle cx="175" cy="42" r="2.5" fill="#EF4444" />
     </svg>
   )
 }
