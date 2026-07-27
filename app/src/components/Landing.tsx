@@ -105,78 +105,68 @@ export default function Landing() {
 
 function SlideHero() {
   return (
-    <section className="relative flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-32 pb-12 sm:pb-20 min-h-[100dvh] sm:min-h-0 overflow-hidden">
-      {/* Dashboard screenshot as a full-opacity background trust-signal.
-          Plain <img> (not next/image) — previous next/image attempt was
-          rendering imperceptibly for reasons we couldn't nail down;
-          plain <img> makes the render behaviour predictable and lets
-          the SA-persona image do its job.
-          Hero copy sits inside its own dark scrim card (below) so
-          readability holds against the fully-visible screenshot.
-          `git revert HEAD` restores the previous placement. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        style={{ zIndex: 0 }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/screenshots/dashboard-mobile.png"
-          alt=""
-          className="absolute rounded-[32px]"
-          style={{
-            width: 'min(85%, 460px)',
-            right: '-8%',
-            top: '50%',
-            transform: 'translateY(-50%) rotate(6deg)',
-            filter: 'saturate(1.15) brightness(1.05)',
-            boxShadow: '0 40px 100px -30px rgba(0, 224, 160, 0.35)',
-          }}
-        />
-        {/* Left→right gradient overlay: opaque on the hero-copy side,
-            transparent on the right so the screenshot reads through
-            at full strength on the right ~40% of the viewport. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(90deg, var(--background) 0%, rgba(8,15,26,0.92) 30%, rgba(8,15,26,0.45) 55%, rgba(0,0,0,0) 75%)',
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 max-w-2xl w-full mx-auto text-center">
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
-          style={{ color: 'var(--muted-dim)' }}
-        >
-          Built for South African spazas, service businesses &amp; SMMEs
-        </p>
-        <h1
-          className="text-[36px] sm:text-[56px] font-bold tracking-tight leading-[1.05] mb-5"
-          style={{ color: 'var(--foreground)' }}
-        >
-          Run your business{' '}
-          <span style={{ color: '#00e0a0' }}>without the chaos.</span>
-        </h1>
-        <p
-          className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-2xl mx-auto"
-          style={{ color: 'var(--muted)' }}
-        >
-          From your first sale to your next SARS submission, one app. With an AI assistant that knows the SA economy and works offline.
-        </p>
-        <div className="flex items-center justify-center">
-          <Link
-            href="/register"
-            className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px]"
+    <section className="relative flex items-center px-5 sm:px-8 pt-24 sm:pt-20 pb-12 sm:pb-20 min-h-[100dvh] sm:min-h-0">
+      {/* Split hero — desktop: copy left, phone right. Mobile: text-only
+          (phone lives in SlideFeatures on mobile so the hero fits in one
+          viewport height for the swipe deck). Standard SaaS hero pattern
+          (Linear, Vercel, Notion, Attio). */}
+      <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-16 items-center">
+        {/* Copy column — centered on mobile, left-aligned on desktop */}
+        <div className="text-center lg:text-left">
+          <p
+            className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4"
+            style={{ color: 'var(--muted-dim)' }}
           >
-            <span className="relative z-10">Sign up free</span>
-            <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
-          </Link>
+            Built for South African spazas, service businesses &amp; SMMEs
+          </p>
+          <h1
+            className="text-[36px] sm:text-[52px] lg:text-[60px] font-bold tracking-tight leading-[1.05] mb-5"
+            style={{ color: 'var(--foreground)' }}
+          >
+            Run your business{' '}
+            <span style={{ color: '#00e0a0' }}>without the chaos.</span>
+          </h1>
+          <p
+            className="text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0"
+            style={{ color: 'var(--muted)' }}
+          >
+            From your first sale to your next SARS submission, one app. With an AI assistant that knows the SA economy and works offline.
+          </p>
+          <div className="flex items-center justify-center lg:justify-start">
+            <Link
+              href="/register"
+              className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px]"
+            >
+              <span className="relative z-10">Sign up free</span>
+              <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
+            </Link>
+          </div>
+          <p className="text-[12px] mt-4" style={{ color: 'var(--muted-dim)' }}>
+            Free for your first store · No card required
+          </p>
         </div>
-        <p className="text-[12px] mt-4" style={{ color: 'var(--muted-dim)' }}>
-          Free for your first store · No card required
-        </p>
+
+        {/* Phone visual — desktop only. Mobile users see the same
+            screenshot at the top of SlideFeatures to keep the hero
+            viewport tight for the swipe deck. */}
+        <div aria-hidden className="hidden lg:flex justify-center lg:justify-end">
+          <div
+            className="relative"
+            style={{ maxWidth: 360, width: '100%' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/screenshots/dashboard-mobile.png"
+              alt=""
+              className="w-full h-auto rounded-[36px]"
+              style={{
+                boxShadow:
+                  '0 40px 100px -30px rgba(0, 224, 160, 0.35), 0 12px 28px -8px rgba(0, 0, 0, 0.45)',
+                border: '1px solid rgba(0, 224, 160, 0.15)',
+              }}
+            />
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -186,9 +176,27 @@ function SlideFeatures() {
   return (
     <section className="flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-12 pb-16 min-h-[100dvh] sm:min-h-0">
       <div className="max-w-3xl w-full mx-auto">
-        {/* Inline dashboard screenshot removed 2026-07-27 — the same
-            image now lives as a subtle background on SlideHero. If we
-            revert the hero placement, restore this block. */}
+        {/* Dashboard screenshot — mobile-only. Desktop users see the
+            same image in the SlideHero split-screen; showing it in both
+            places on desktop would be redundant. On mobile the swipe
+            deck needs the hero to fit in one viewport, so the phone
+            visual gets its dedicated slot at the top of Slide 2. */}
+        <div
+          aria-hidden
+          className="lg:hidden mx-auto mb-8 max-w-[240px] sm:max-w-[280px]"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/screenshots/dashboard-mobile.png"
+            alt=""
+            className="w-full h-auto rounded-[28px]"
+            style={{
+              boxShadow:
+                '0 30px 80px -30px rgba(0, 224, 160, 0.35), 0 8px 24px -8px rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(0, 224, 160, 0.15)',
+            }}
+          />
+        </div>
         <h2
           className="text-[28px] sm:text-[36px] font-bold tracking-tight text-center mb-8"
           style={{ color: 'var(--foreground)' }}
