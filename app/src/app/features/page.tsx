@@ -291,7 +291,7 @@ export default function FeaturesPage() {
         </section>
 
         <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
-          {totalFeatures} features across {GROUPS.length} categories · Made in Cape Town for South Africa · 🇿🇦
+          {totalFeatures} features across {GROUPS.length} categories
         </footer>
       </main>
     </>

@@ -434,13 +434,6 @@ function SlideCta() {
           <Link href="/about" className="underline" style={{ color: 'var(--muted)' }}>About</Link>
         </p>
 
-        {/* Trust signal — location + country only. No named-founder
-            attribution: the owner has requested to remain anonymous.
-            "Made in Cape Town for South Africa" is the strongest signal
-            we can send without naming any individual. */}
-        <p className="mt-5 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          Made in Cape Town for South Africa · 🇿🇦
-        </p>
 
         <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
           Stoki (Pty) Ltd · Reg. K2026258855

@@ -170,7 +170,7 @@ export default function StatusPage() {
         </section>
 
         <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
-          Stoki (Pty) Ltd · Reg. K2026258855 · Made in Cape Town for South Africa · 🇿🇦
+          Stoki (Pty) Ltd · Reg. K2026258855
         </footer>
       </main>
     </>
