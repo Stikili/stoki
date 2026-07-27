@@ -176,26 +176,34 @@ function SlideFeatures() {
   return (
     <section className="flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-12 pb-16 min-h-[100dvh] sm:min-h-0">
       <div className="max-w-3xl w-full mx-auto">
-        {/* Dashboard screenshot — mobile-only. Desktop users see the
-            same image in the SlideHero split-screen; showing it in both
-            places on desktop would be redundant. On mobile the swipe
-            deck needs the hero to fit in one viewport, so the phone
-            visual gets its dedicated slot at the top of Slide 2. */}
+        {/* Dashboard preview — mobile-only. Desktop shows the full
+            phone in the SlideHero split-screen. On mobile we crop to
+            a 4:3 landscape tile showing just the top of the dashboard
+            (header + revenue card) — reads as a "product preview"
+            rather than "phone showing phone showing phone", and
+            takes ~60% less vertical space so the features grid still
+            fits inside the swipe-deck viewport. */}
         <div
           aria-hidden
-          className="lg:hidden mx-auto mb-8 max-w-[240px] sm:max-w-[280px]"
+          className="lg:hidden mx-auto mb-8 w-full max-w-[320px]"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/screenshots/dashboard-mobile.png"
-            alt=""
-            className="w-full h-auto rounded-[28px]"
+          <div
+            className="relative w-full overflow-hidden rounded-2xl"
             style={{
+              aspectRatio: '4 / 3',
               boxShadow:
-                '0 30px 80px -30px rgba(0, 224, 160, 0.35), 0 8px 24px -8px rgba(0, 0, 0, 0.35)',
-              border: '1px solid rgba(0, 224, 160, 0.15)',
+                '0 24px 60px -24px rgba(0, 224, 160, 0.35), 0 6px 20px -6px rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(0, 224, 160, 0.18)',
             }}
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/screenshots/dashboard-mobile.png"
+              alt=""
+              className="absolute inset-0 w-full h-full"
+              style={{ objectFit: 'cover', objectPosition: 'top center' }}
+            />
+          </div>
         </div>
         <h2
           className="text-[28px] sm:text-[36px] font-bold tracking-tight text-center mb-8"
