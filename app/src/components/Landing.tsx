@@ -327,117 +327,136 @@ function ProofChip({ label, hint, status = 'live' }: {
 }
 
 function SlideCta() {
+  const footerLinkClass = 'hover:underline transition-opacity hover:opacity-100'
+  const footerLinkStyle = { color: 'var(--muted)', opacity: 0.9 }
   return (
-    <section className="flex items-center justify-center px-5 sm:px-8 pt-24 sm:pt-12 pb-16 min-h-[100dvh] sm:min-h-0">
-      <div className="max-w-md w-full mx-auto text-center">
-        <div className="card-glass p-8 sm:p-10">
-          <h2
-            className="text-[26px] sm:text-[30px] font-bold tracking-tight mb-2"
-            style={{ color: 'var(--foreground)' }}
-          >
-            Ready when you are.
-          </h2>
-          <p className="text-[15px] mb-6" style={{ color: 'var(--muted)' }}>
-            In your first hour: record a sale, do a cash-up, see your 30-day forecast.
+    <section className="flex items-center justify-center px-5 sm:px-8 pt-20 sm:pt-12 pb-12 sm:pb-16 min-h-[100dvh] sm:min-h-0">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* CTA card — kept narrow (max-w-md) inside the wider footer
+            container so the button stays focused while the footer nav
+            below has room to breathe as a 3-column grid. */}
+        <div className="max-w-md mx-auto text-center">
+          <div className="card-glass p-7 sm:p-10">
+            <h2
+              className="text-[26px] sm:text-[30px] font-bold tracking-tight mb-2"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Ready when you are.
+            </h2>
+            <p className="text-[15px] mb-6" style={{ color: 'var(--muted)' }}>
+              In your first hour: record a sale, do a cash-up, see your 30-day forecast.
+            </p>
+            <Link
+              href="/login?intent=register"
+              className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px] w-full"
+            >
+              <span className="relative z-10">Sign up free</span>
+              <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
+            </Link>
+          </div>
+          <p className="mt-4 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
+            By continuing you agree to our{' '}
+            <Link href="/privacy" className="underline" style={{ color: 'var(--muted)' }}>Privacy Policy</Link>
+            {' '}&amp;{' '}
+            <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
           </p>
-          <Link
-            href="/login?intent=register"
-            className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px] w-full"
-          >
-            <span className="relative z-10">Sign up free</span>
-            <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
-          </Link>
-        </div>
-        <p className="mt-6 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          By continuing you agree to our{' '}
-          <Link href="/privacy" className="underline" style={{ color: 'var(--muted)' }}>Privacy Policy</Link>
-          {' '}&amp;{' '}
-          <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
-        </p>
-
-        {/* Two footer CTAs — Mail us (hello@ as the friendly first-touch
-            for prospects) + Follow us (LinkedIn company page). Simple
-            side-by-side pills so tap targets are big enough on mobile
-            and neither dominates. support@ still lives in-app (Settings
-            support card, login footer, error pages) for signed-in users
-            who need help — the landing footer is for prospects. */}
-        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
-          <a
-            href="mailto:hello@stokiapp.com?subject=Hello%20Stoki"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--card-border)',
-              color: 'var(--muted)',
-            }}
-          >
-            {/* Inline mail glyph — no icon-lib import. */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Mail us
-          </a>
-          <a
-            href="https://www.linkedin.com/company/stokiapp"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--card-border)',
-              color: 'var(--muted)',
-            }}
-          >
-            {/* Inline LinkedIn "in" glyph. */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zm7.5 0h4.37v1.92h.06c.61-1.16 2.1-2.38 4.32-2.38 4.62 0 5.48 3.04 5.48 7v7.46h-4.56V15.5c0-1.72-.03-3.94-2.4-3.94-2.4 0-2.77 1.88-2.77 3.82V22h-4.5V8z"/>
-            </svg>
-            Follow us
-          </a>
         </div>
 
-        {/* Internal links to comparison pages. Text-link format (not
-            styled pills) is deliberate — Google's crawl-graph gives more
-            weight to anchor text than to icon-decorated CTAs, and this
-            line quietly tells the reader we're not afraid of being
-            compared to the market. */}
-        <p className="mt-5 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          See how Stoki compares to{' '}
-          <Link href="/compare/stoki-vs-loyverse" className="underline" style={{ color: 'var(--muted)' }}>Loyverse</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-yoco" className="underline" style={{ color: 'var(--muted)' }}>Yoco</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-xero" className="underline" style={{ color: 'var(--muted)' }}>Xero</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-sage" className="underline" style={{ color: 'var(--muted)' }}>Sage</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-ikhokha" className="underline" style={{ color: 'var(--muted)' }}>iKhokha</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-simplepay" className="underline" style={{ color: 'var(--muted)' }}>SimplePay</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-zoho-books" className="underline" style={{ color: 'var(--muted)' }}>Zoho Books</Link>
-          {' · '}
-          <Link href="/compare/stoki-vs-quickbooks" className="underline" style={{ color: 'var(--muted)' }}>QuickBooks</Link>
-        </p>
-        <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          Guides:{' '}
-          <Link href="/guides/how-to-submit-vat201-south-africa" className="underline" style={{ color: 'var(--muted)' }}>
-            How to submit VAT201 in South Africa
-          </Link>
-        </p>
-        <p className="mt-2 text-[11px]" style={{ color: 'var(--muted-dim)' }}>
-          <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>Pricing</Link>
-          {' · '}
-          <Link href="/features" className="underline" style={{ color: 'var(--muted)' }}>Features</Link>
-          {' · '}
-          <Link href="/about" className="underline" style={{ color: 'var(--muted)' }}>About</Link>
-        </p>
+        {/* Multi-column footer — standard SaaS pattern (Stripe / Vercel /
+            Linear / Notion). Three semantic groups: Product / Resources /
+            Compare. Mobile drops to 2 cols with Compare spanning both so
+            the 8 comparison links can flow in an internal 2-col grid
+            without becoming a tall single-column list. Section headers
+            are 10px uppercase small-caps (SaaS convention). Tight leading
+            keeps the whole block compact so the CTA slide doesn't need
+            vertical scroll on standard laptop viewports. */}
+        <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-6 text-[12px] text-left">
+          <div>
+            <div
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2.5"
+              style={{ color: 'var(--muted-dim)' }}
+            >
+              Product
+            </div>
+            <ul className="space-y-1.5 leading-tight">
+              <li><Link href="/pricing" className={footerLinkClass} style={footerLinkStyle}>Pricing</Link></li>
+              <li><Link href="/features" className={footerLinkClass} style={footerLinkStyle}>Features</Link></li>
+              <li><Link href="/about" className={footerLinkClass} style={footerLinkStyle}>About</Link></li>
+              <li><Link href="/status" className={footerLinkClass} style={footerLinkStyle}>Status</Link></li>
+            </ul>
+          </div>
+          <div>
+            <div
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2.5"
+              style={{ color: 'var(--muted-dim)' }}
+            >
+              Resources
+            </div>
+            <ul className="space-y-1.5 leading-tight">
+              <li>
+                <Link
+                  href="/guides/how-to-submit-vat201-south-africa"
+                  className={footerLinkClass}
+                  style={footerLinkStyle}
+                >
+                  VAT201 guide
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="mailto:hello@stokiapp.com?subject=Hello%20Stoki"
+                  className={footerLinkClass}
+                  style={footerLinkStyle}
+                >
+                  Contact
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.linkedin.com/company/stokiapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={footerLinkClass}
+                  style={footerLinkStyle}
+                >
+                  LinkedIn
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <div
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2.5"
+              style={{ color: 'var(--muted-dim)' }}
+            >
+              Compare Stoki with
+            </div>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 leading-tight">
+              <li><Link href="/compare/stoki-vs-loyverse" className={footerLinkClass} style={footerLinkStyle}>Loyverse</Link></li>
+              <li><Link href="/compare/stoki-vs-yoco" className={footerLinkClass} style={footerLinkStyle}>Yoco</Link></li>
+              <li><Link href="/compare/stoki-vs-xero" className={footerLinkClass} style={footerLinkStyle}>Xero</Link></li>
+              <li><Link href="/compare/stoki-vs-sage" className={footerLinkClass} style={footerLinkStyle}>Sage</Link></li>
+              <li><Link href="/compare/stoki-vs-ikhokha" className={footerLinkClass} style={footerLinkStyle}>iKhokha</Link></li>
+              <li><Link href="/compare/stoki-vs-simplepay" className={footerLinkClass} style={footerLinkStyle}>SimplePay</Link></li>
+              <li><Link href="/compare/stoki-vs-zoho-books" className={footerLinkClass} style={footerLinkStyle}>Zoho Books</Link></li>
+              <li><Link href="/compare/stoki-vs-quickbooks" className={footerLinkClass} style={footerLinkStyle}>QuickBooks</Link></li>
+            </ul>
+          </div>
+        </div>
 
-
-        <p className="mt-4 text-[10.5px]" style={{ color: 'var(--muted-dim)' }}>
-          Stoki (Pty) Ltd · Reg. K2026258855
-        </p>
+        {/* Bottom line — company reg + legal. Divider gives the visual
+            separation between nav grid and legalese. */}
+        <div
+          className="mt-6 sm:mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10.5px]"
+          style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted-dim)' }}
+        >
+          <span>Stoki (Pty) Ltd · Reg. K2026258855</span>
+          <span>
+            <Link href="/privacy" className={footerLinkClass} style={footerLinkStyle}>Privacy</Link>
+            {' · '}
+            <Link href="/terms" className={footerLinkClass} style={footerLinkStyle}>Terms</Link>
+          </span>
+        </div>
       </div>
     </section>
   )
