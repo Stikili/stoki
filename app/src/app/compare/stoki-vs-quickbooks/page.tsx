@@ -51,7 +51,7 @@ const data: ComparisonPageData = {
     { feature: 'Accountant ecosystem in SA', competitor: 'Smaller than Xero / Sage; some SA accountants trained', stoki: 'Accountant collab mode coming; export packs available', winner: 'competitor' },
     { feature: 'Airtime PIN dispensing', competitor: 'Not offered', stoki: 'Yes — sell airtime as inventory', winner: 'stoki' },
     { feature: 'AI voice adapts to owner', competitor: 'N/A', stoki: 'Kasi / Plain / Professional / Technical — one setting', winner: 'stoki' },
-    { feature: 'SA market context', competitor: 'Global platform with SA localisation', stoki: 'Built in Cape Town for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
+    { feature: 'SA market context', competitor: 'Global platform with SA localisation', stoki: 'Built for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
     { feature: 'ZAR pricing (no forex fees)', competitor: 'USD-denominated even when SA-billed; forex fees on cards', stoki: 'ZAR-native via SA payment provider — no forex', winner: 'stoki' },
   ],
   chooseCompetitor: [

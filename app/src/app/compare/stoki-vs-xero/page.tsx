@@ -55,7 +55,7 @@ const data: ComparisonPageData = {
     { feature: 'Third-party integrations', competitor: 'Hundreds (Shopify, WooCommerce, Stripe, banks, etc.)', stoki: 'Limited — Meta WhatsApp, Ozow, Sentry, Vercel', winner: 'competitor' },
     { feature: 'Multi-currency', competitor: 'Yes (Premium plan)', stoki: 'ZAR only — SA-focused product', winner: 'competitor' },
     { feature: 'AI voice adapts to owner', competitor: 'N/A', stoki: 'Kasi · Plain · Professional · Technical — one setting', winner: 'stoki' },
-    { feature: 'SA market context', competitor: 'Global product with SA localisation add-on', stoki: 'Built in Cape Town for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
+    { feature: 'SA market context', competitor: 'Global product with SA localisation add-on', stoki: 'Built for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
   ],
   chooseCompetitor: [
     'Your accountant runs your books and they prefer Xero (most SA accountants do).',

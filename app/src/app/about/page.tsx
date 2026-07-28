@@ -8,7 +8,7 @@ import Link from 'next/link'
  * company, not a solo project.
  *
  * Only company-level identity is surfaced: registered entity name,
- * Cape Town location, LinkedIn COMPANY page, support / hello email
+ * country of operation, LinkedIn COMPANY page, support / hello email
  * addresses, and the mission narrative told in Stoki's own voice
  * ("we" / "our" / "Stoki does X").
  *
@@ -23,20 +23,20 @@ const PAGE_URL = `${SITE}/about`
 export const metadata: Metadata = {
   title: 'About Stoki — the AI business assistant for SA SMMEs',
   description:
-    'Stoki is the AI-powered business operating system for South African SMMEs — informal traders, service businesses, and formal VAT-registered small businesses. Built in Cape Town for the SA economy.',
+    'Stoki is the AI-powered business operating system for South African SMMEs — informal traders, service businesses, and formal VAT-registered small businesses. Built for the SA economy.',
   alternates: { canonical: PAGE_URL },
   openGraph: {
     type: 'website',
     url: PAGE_URL,
     title: 'About Stoki',
     description:
-      'The AI-powered business operating system for South African SMMEs. Built in Cape Town for the SA economy.',
+      'The AI-powered business operating system for South African SMMEs. Built for the SA economy.',
     images: [{ url: '/og-image.png', width: 1200, height: 627 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'About Stoki',
-    description: 'The AI business assistant for South African SMMEs. Built in Cape Town.',
+    description: 'The AI business assistant for South African SMMEs. Built for the SA economy.',
     images: ['/og-image.png'],
   },
 }
@@ -52,8 +52,8 @@ const orgSchema = {
   description:
     'The AI-powered business assistant for South African SMMEs — informal and formal, from a street trader with one product to a VAT-registered business with staff.',
   foundingLocation: {
-    '@type': 'Place',
-    name: 'Cape Town, South Africa',
+    '@type': 'Country',
+    name: 'South Africa',
   },
   areaServed: {
     '@type': 'Country',
@@ -108,7 +108,7 @@ export default function AboutPage() {
             The AI business assistant for South African SMMEs.
           </h1>
           <p className="text-base sm:text-lg leading-relaxed" style={{ color: 'var(--muted)' }}>
-            Built in Cape Town, for the informal and formal small businesses that keep South Africa moving.
+            Built for the informal and formal small businesses that keep South Africa moving.
           </p>
         </header>
 
@@ -168,8 +168,7 @@ export default function AboutPage() {
           <div>
             <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>Where we&apos;re based</h2>
             <p style={{ color: 'var(--muted)' }}>
-              Stoki is built in Cape Town, South Africa. We&apos;re a registered South African company —
-              Stoki (Pty) Ltd, registration number K2026258855.
+              Stoki is a registered South African company — Stoki (Pty) Ltd, registration number K2026258855.
             </p>
           </div>
 

@@ -45,7 +45,7 @@ const data: ComparisonPageData = {
     { feature: 'Offline support', competitor: 'Yes (queues + syncs)', stoki: 'Offline-first PWA — sales queue during load-shedding', winner: 'tie' },
     { feature: 'Multi-store', competitor: 'Yes on free tier', stoki: 'Yes — separate ai_tone / VAT status per store', winner: 'tie' },
     { feature: 'Hardware ecosystem', competitor: 'Wide — many printers, scanners, cash drawers', stoki: 'Bluetooth thermal printer + phone camera scanner', winner: 'competitor' },
-    { feature: 'SA market context', competitor: 'Global product — no SA specificity', stoki: 'Built in Cape Town for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
+    { feature: 'SA market context', competitor: 'Global product — no SA specificity', stoki: 'Built for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
     { feature: 'Pricing (paid tier)', competitor: 'Employee mgmt + kitchen printing extras ~USD/month', stoki: 'ZAR pricing, SA billing (Ozow), no forex fees', winner: 'stoki' },
     { feature: 'Cost of goods / margin tracking', competitor: 'Yes', stoki: 'Yes — plus AI margin-erosion alerts', winner: 'stoki' },
     { feature: 'Language support', competitor: 'English + global languages', stoki: 'English + Zulu, Xhosa, Sotho, Afrikaans (rolling)', winner: 'tie' },

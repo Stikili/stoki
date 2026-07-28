@@ -51,7 +51,7 @@ const data: ComparisonPageData = {
     { feature: 'Offline support', competitor: 'Cloud-first; some desktop options', stoki: 'Offline-first PWA — sales queue during load-shedding', winner: 'stoki' },
     { feature: 'Third-party integrations', competitor: 'Broad SA + international connectors', stoki: 'Limited — Meta WhatsApp, Ozow, Sentry, Vercel', winner: 'competitor' },
     { feature: 'AI voice adapts to owner', competitor: 'N/A', stoki: 'Kasi / Plain / Professional / Technical — one setting', winner: 'stoki' },
-    { feature: 'SA market context', competitor: 'SA-localised global platform', stoki: 'Built in Cape Town for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
+    { feature: 'SA market context', competitor: 'SA-localised global platform', stoki: 'Built for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
     { feature: 'Onboarding effort', competitor: 'Multi-hour — typically accountant-assisted', stoki: 'Under 15 min self-serve on mobile', winner: 'stoki' },
   ],
   chooseCompetitor: [

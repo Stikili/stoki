@@ -48,7 +48,7 @@ const data: ComparisonPageData = {
     { feature: 'AI voice adapts to owner', competitor: 'N/A', stoki: 'Kasi / Plain / Professional / Technical', winner: 'stoki' },
     { feature: 'Ecosystem integrations', competitor: 'Massive — Zoho CRM, Inventory, Mail, Desk, 40+ Zoho apps', stoki: 'Limited — Meta WhatsApp, Ozow, Sentry', winner: 'competitor' },
     { feature: 'Multi-currency', competitor: 'Yes (Standard tier and above)', stoki: 'ZAR only — SA-focused product', winner: 'competitor' },
-    { feature: 'SA market context', competitor: 'Global platform; SA is one of many localisations', stoki: 'Built in Cape Town for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
+    { feature: 'SA market context', competitor: 'Global platform; SA is one of many localisations', stoki: 'Built for SA — SASSA, load-shedding, kasi', winner: 'stoki' },
     { feature: 'Accountant ecosystem in SA', competitor: 'Growing but smaller than Xero / Sage in SA', stoki: 'Accountant collab mode coming; export packs available', winner: 'competitor' },
     { feature: 'Airtime PIN dispensing', competitor: 'Not offered', stoki: 'Yes — sell airtime as inventory, dispense vouchers', winner: 'stoki' },
     { feature: 'Language support', competitor: 'English + global languages', stoki: 'English + Zulu / Xhosa / Sotho / Afrikaans (rolling)', winner: 'stoki' },
