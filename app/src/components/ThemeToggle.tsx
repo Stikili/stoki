@@ -10,8 +10,12 @@ import { useTheme } from '@/components/ThemeProvider'
  * RootLayout pre-applies the saved theme on subsequent loads, so there's
  * no flash on navigation.
  *
- * Visual: 40×40 rounded square, sun-icon when in dark, moon-icon when in
- * light. Inherits CSS var colours so it looks correct on both themes.
+ * Visual: 44×44 rounded pill, sun-icon when in dark, moon-icon when in
+ * light. Sized + shaped to visually match the header's "Sign in" pill
+ * button so the pair reads as a matched control cluster (Stripe /
+ * Vercel / Notion header pattern — secondary icon-only control paired
+ * with a primary CTA of the same height and border-radius family).
+ * Inherits CSS var colours so it looks correct on both themes.
  */
 export default function ThemeToggle({ className = '' }: { className?: string }) {
   const { theme, toggle } = useTheme()
@@ -22,7 +26,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
       onClick={toggle}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      className={`inline-flex items-center justify-center w-10 h-10 rounded-xl min-h-0 transition-colors ${className}`}
+      className={`inline-flex items-center justify-center w-11 h-11 rounded-2xl min-h-0 transition-colors ${className}`}
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--card-border)',
