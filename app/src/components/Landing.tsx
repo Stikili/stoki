@@ -64,30 +64,26 @@ export default function Landing() {
       />
 
       {/* Top bar — fixed so it stays visible while the deck swipes.
-          Three-column grid: wordmark left, nav visually centered
-          (via `justify-self-center` in the auto middle track), CTAs
-          right. Standard SaaS header pattern (Stripe / Vercel /
-          Notion) — reads as balanced regardless of nav width.
-          On mobile the nav is `hidden md:flex`, so the middle track
-          collapses to 0 and the wordmark + CTAs still hold their
-          left/right positions via the surrounding 1fr tracks. Same
-          nav surfaces as a compact row on the CTA slide for mobile. */}
+          Flex justify-between guarantees wordmark hugs the left and
+          CTAs hug the right on every viewport (Vercel header pattern).
+          Nav is absolutely centered in the header on desktop and
+          hidden on mobile; because it's out of the flex flow, it
+          doesn't push the CTAs off-right on any viewport. */}
       <header
-        className="fixed top-0 inset-x-0 z-10 items-center px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          backdropFilter: 'blur(8px)',
-        }}
+        className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
+        style={{ backdropFilter: 'blur(8px)' }}
       >
-        <div className="justify-self-start">
-          {/* Sized to match the Sign in button height (~42px) so the
-              brand reads as an equal-weight anchor against the CTA. */}
-          <Wordmark height={42} textColor="var(--foreground)" />
-        </div>
+        {/* Wordmark — sized to match the Sign in button height (~44px)
+            so the brand reads as an equal-weight anchor against the CTA. */}
+        <Wordmark height={42} textColor="var(--foreground)" />
+
+        {/* Primary nav — desktop only. Absolutely positioned to the
+            visual centre of the header regardless of wordmark or CTA
+            widths. On mobile it's hidden and the same links surface as
+            a compact row on the CTA slide instead. */}
         <nav
           aria-label="Primary"
-          className="hidden md:flex items-center gap-8 text-[13px] font-medium justify-self-center"
+          className="hidden md:flex items-center gap-8 text-[13px] font-medium absolute left-1/2 -translate-x-1/2"
         >
           <Link
             href="/features"
@@ -111,7 +107,10 @@ export default function Landing() {
             About
           </Link>
         </nav>
-        <div className="flex items-center gap-2 justify-self-end">
+
+        {/* Header control cluster — theme toggle + Sign in. Flex ensures
+            they hug the right edge (via parent's justify-between). */}
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link
             href="/login"
