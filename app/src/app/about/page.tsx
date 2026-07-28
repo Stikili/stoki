@@ -213,10 +213,9 @@ export default function AboutPage() {
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-sm"
-            style={{ background: '#00C896', color: '#0A0E17' }}
+            className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-semibold text-[15px]"
           >
-            Sign up free →
+            <span className="relative z-10">Sign up free →</span>
           </Link>
         </section>
 

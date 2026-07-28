@@ -319,21 +319,26 @@ function TierCard({ name, subtitle, price, priceNote, priceAnnual, headline, fea
       </ul>
 
       {cta && (
-        <Link
-          href={cta.href}
-          className="text-center rounded-xl py-3 text-sm font-semibold"
-          style={
-            cta.kind === 'primary'
-              ? { background: '#00C896', color: '#0A0E17' }
-              : {
-                  background: 'var(--surface)',
-                  color: 'var(--foreground)',
-                  border: '1px solid var(--card-border)',
-                }
-          }
-        >
-          {cta.label}
-        </Link>
+        cta.kind === 'primary' ? (
+          <Link
+            href={cta.href}
+            className="btn-gloss text-center rounded-2xl py-3 text-sm font-semibold"
+          >
+            <span className="relative z-10">{cta.label}</span>
+          </Link>
+        ) : (
+          <Link
+            href={cta.href}
+            className="text-center rounded-2xl py-3 text-sm font-semibold"
+            style={{
+              background: 'var(--surface)',
+              color: 'var(--foreground)',
+              border: '1px solid var(--card-border)',
+            }}
+          >
+            {cta.label}
+          </Link>
+        )
       )}
     </div>
   )
