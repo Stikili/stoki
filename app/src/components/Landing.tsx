@@ -5,8 +5,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Package, CreditCard, Sparkles, ArrowRight, Receipt, Activity,
 } from 'lucide-react'
-import Wordmark from '@/components/Wordmark'
-import ThemeToggle from '@/components/ThemeToggle'
+import MarketingHeader from '@/components/marketing/MarketingHeader'
 
 /**
  * Public marketing / landing page.
@@ -63,63 +62,12 @@ export default function Landing() {
         }}
       />
 
-      {/* Top bar — fixed so it stays visible while the deck swipes.
-          Flex justify-between guarantees wordmark hugs the left and
-          CTAs hug the right on every viewport (Vercel header pattern).
-          Nav is absolutely centered in the header on desktop and
-          hidden on mobile; because it's out of the flex flow, it
-          doesn't push the CTAs off-right on any viewport. */}
-      <header
-        className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
-        style={{ backdropFilter: 'blur(8px)' }}
-      >
-        {/* Wordmark — sized to match the Sign in button height (~44px)
-            so the brand reads as an equal-weight anchor against the CTA. */}
-        <Wordmark height={42} textColor="var(--foreground)" />
-
-        {/* Primary nav — desktop only. Absolutely positioned to the
-            visual centre of the header regardless of wordmark or CTA
-            widths. On mobile it's hidden and the same links surface as
-            a compact row on the CTA slide instead. */}
-        <nav
-          aria-label="Primary"
-          className="hidden md:flex items-center gap-8 text-[13px] font-medium absolute left-1/2 -translate-x-1/2"
-        >
-          <Link
-            href="/features"
-            className="transition-opacity hover:opacity-100"
-            style={{ color: 'var(--muted)', opacity: 0.85 }}
-          >
-            Features
-          </Link>
-          <Link
-            href="/pricing"
-            className="transition-opacity hover:opacity-100"
-            style={{ color: 'var(--muted)', opacity: 0.85 }}
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/about"
-            className="transition-opacity hover:opacity-100"
-            style={{ color: 'var(--muted)', opacity: 0.85 }}
-          >
-            About
-          </Link>
-        </nav>
-
-        {/* Header control cluster — theme toggle + Sign in. Flex ensures
-            they hug the right edge (via parent's justify-between). */}
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link
-            href="/login"
-            className="btn-gloss inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 font-semibold text-[14px]"
-          >
-            <span className="relative z-10">Sign in</span>
-          </Link>
-        </div>
-      </header>
+      {/* Shared marketing header — same component every other public
+          page renders via the (marketing)/layout.tsx. Landing keeps its
+          own inline placement (not the route-group layout) because the
+          swipe deck needs a custom slide container that the group's
+          padding-top wrapper would fight. */}
+      <MarketingHeader />
 
       {/* Deck — horizontal scroll-snap on mobile, normal block flow on desktop. */}
       <div ref={deckRef} className="landing-deck flex-1">

@@ -399,9 +399,15 @@ export default function FeaturesPage() {
           </p>
         </section>
 
-        <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+        {/* Feature-count meta preserved as a small in-page line — the
+            shared MarketingFooter (mounted by app/(marketing)/layout.tsx)
+            handles reg number + legal links. */}
+        <p
+          className="mt-8 pt-4 text-xs text-center"
+          style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}
+        >
           {totalFeatures} features across {GROUPS.length} categories
-        </footer>
+        </p>
       </main>
     </>
   )

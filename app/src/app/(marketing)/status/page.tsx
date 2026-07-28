@@ -169,9 +169,9 @@ export default function StatusPage() {
           </ol>
         </section>
 
-        <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
-          Stoki (Pty) Ltd · Reg. K2026258855
-        </footer>
+        {/* Footer removed — the shared MarketingFooter (mounted by
+            app/(marketing)/layout.tsx) now carries reg number + legal
+            links across every marketing page. */}
       </main>
     </>
   )

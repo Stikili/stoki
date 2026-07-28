@@ -310,7 +310,13 @@ export default function ComparisonPage({ data }: { data: ComparisonPageData }) {
           </Link>
         </section>
 
-        <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+        {/* Last-updated + accuracy note — kept as a <p> (not <footer>)
+            since the shared MarketingFooter (from the (marketing) route
+            group layout) now carries the site-wide footer. */}
+        <p
+          className="mt-8 pt-4 text-xs text-center"
+          style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}
+        >
           {data.footerNote ?? (
             <>
               Last updated {formatDate(data.updated)}. {data.competitor} features are based on their published product docs at the time of writing. If we&apos;ve got something wrong, email{' '}
@@ -318,7 +324,7 @@ export default function ComparisonPage({ data }: { data: ComparisonPageData }) {
               {' '}and we&apos;ll fix it.
             </>
           )}
-        </footer>
+        </p>
       </article>
     </>
   )

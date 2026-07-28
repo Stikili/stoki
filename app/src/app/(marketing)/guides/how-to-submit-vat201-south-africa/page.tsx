@@ -382,10 +382,16 @@ export default function Page() {
           </div>
         </section>
 
-        <footer className="mt-12 pt-6 text-xs text-center" style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+        {/* Last-updated + disclaimer note — kept as a <p> (not <footer>)
+            since the shared MarketingFooter (from the (marketing) route
+            group layout) now carries the site-wide footer. */}
+        <p
+          className="mt-8 pt-4 text-xs text-center"
+          style={{ borderTop: '1px solid var(--card-border)', color: 'var(--muted)' }}
+        >
           Last updated 19 July 2026. This guide is general information, not financial or tax advice. For your specific circumstances, consult a SARS-registered tax practitioner. Sources: SARS VAT guide (VAT 404), VAT 411 &amp; VAT 421 external guides, VAT Act 89 of 1991. Spotted an error? Email{' '}
           <a href="mailto:hello@stokiapp.com" className="underline" style={{ color: '#00C896' }}>hello@stokiapp.com</a>.
-        </footer>
+        </p>
       </article>
     </>
   )
