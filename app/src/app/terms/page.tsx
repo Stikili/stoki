@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 /**
  * Terms of Service. Linked from the landing footer and the login footer.
  *
@@ -8,6 +10,30 @@
  * Note for the operator: replace contact + governing-law specifics with the
  * registered business name and chosen forum before going to production.
  */
+
+const SITE = 'https://stokiapp.com'
+const PAGE_URL = `${SITE}/terms`
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description:
+    "Stoki's terms of service: what you get, what you owe, and the legal basics of using the app. Aligned with the SA ECT Act and CPA.",
+  alternates: { canonical: PAGE_URL },
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    title: 'Stoki Terms of Service',
+    description: 'Terms of service — what you get, what you owe, and the legal basics.',
+    images: [{ url: '/og-image.png', width: 1200, height: 627 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Stoki Terms of Service',
+    description: 'Terms of service.',
+    images: ['/og-image.png'],
+  },
+}
+
 export default function TermsPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12" style={{ color: 'var(--foreground)' }}>

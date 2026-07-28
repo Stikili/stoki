@@ -132,10 +132,12 @@ export default function Page() {
   const breadcrumb = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
+    // 2-level breadcrumb — /guides index page doesn't exist, so we
+    // don't emit a middle crumb pointing at a 404. If a /guides
+    // index ships later, restore the middle crumb.
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE },
-      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${SITE}/guides` },
-      { '@type': 'ListItem', position: 3, name: 'VAT201 South Africa', item: PAGE_URL },
+      { '@type': 'ListItem', position: 2, name: 'VAT201 South Africa', item: PAGE_URL },
     ],
   }
 

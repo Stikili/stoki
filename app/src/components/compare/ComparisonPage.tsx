@@ -136,10 +136,12 @@ export default function ComparisonPage({ data }: { data: ComparisonPageData }) {
   const breadcrumb = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
+    // 2-level breadcrumb — /compare index page doesn't exist, so we
+    // don't emit a middle crumb pointing at a 404. If a /compare
+    // index ships later, restore the middle crumb.
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE },
-      { '@type': 'ListItem', position: 2, name: 'Compare', item: `${SITE}/compare` },
-      { '@type': 'ListItem', position: 3, name: `Stoki vs ${data.competitor}`, item: url },
+      { '@type': 'ListItem', position: 2, name: `Stoki vs ${data.competitor}`, item: url },
     ],
   }
 

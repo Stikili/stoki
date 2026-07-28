@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 /**
  * POPIA-aligned privacy notice for Stoki.
  *
@@ -17,6 +19,30 @@
  * Registration with the Information Regulator (https://inforegulator.org.za)
  * is mandatory.
  */
+
+const SITE = 'https://stokiapp.com'
+const PAGE_URL = `${SITE}/privacy`
+
+export const metadata: Metadata = {
+  title: 'Privacy Notice — POPIA-aligned',
+  description:
+    "Stoki's POPIA-aligned privacy notice: what personal information we collect, why, how we protect it, and your rights under the Protection of Personal Information Act.",
+  alternates: { canonical: PAGE_URL },
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    title: 'Stoki Privacy Notice',
+    description: 'POPIA-aligned privacy notice — what we collect, why, and your rights.',
+    images: [{ url: '/og-image.png', width: 1200, height: 627 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Stoki Privacy Notice',
+    description: 'POPIA-aligned privacy notice.',
+    images: ['/og-image.png'],
+  },
+}
+
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12" style={{ color: 'var(--foreground)' }}>
