@@ -64,47 +64,54 @@ export default function Landing() {
       />
 
       {/* Top bar — fixed so it stays visible while the deck swipes.
-          Desktop shows a horizontal nav strip (Features / Pricing /
-          About) between the wordmark and the auth controls — the
-          Stripe / Linear / Vercel pattern. Mobile keeps the header
-          minimal (wordmark + theme + Sign in) and surfaces the same
-          nav in a compact row on the CTA slide instead. */}
+          Three-column grid: wordmark left, nav visually centered
+          (via `justify-self-center` in the auto middle track), CTAs
+          right. Standard SaaS header pattern (Stripe / Vercel /
+          Notion) — reads as balanced regardless of nav width.
+          On mobile the nav is `hidden md:flex`, so the middle track
+          collapses to 0 and the wordmark + CTAs still hold their
+          left/right positions via the surrounding 1fr tracks. Same
+          nav surfaces as a compact row on the CTA slide for mobile. */}
       <header
-        className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
-        style={{ backdropFilter: 'blur(8px)' }}
+        className="fixed top-0 inset-x-0 z-10 items-center px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          backdropFilter: 'blur(8px)',
+        }}
       >
-        <div className="flex items-center gap-8">
+        <div className="justify-self-start">
           {/* Sized to match the Sign in button height (~42px) so the
               brand reads as an equal-weight anchor against the CTA. */}
           <Wordmark height={42} textColor="var(--foreground)" />
-          <nav
-            aria-label="Primary"
-            className="hidden md:flex items-center gap-6 text-[13px] font-medium"
-          >
-            <Link
-              href="/features"
-              className="transition-opacity hover:opacity-100"
-              style={{ color: 'var(--muted)', opacity: 0.85 }}
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="transition-opacity hover:opacity-100"
-              style={{ color: 'var(--muted)', opacity: 0.85 }}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/about"
-              className="transition-opacity hover:opacity-100"
-              style={{ color: 'var(--muted)', opacity: 0.85 }}
-            >
-              About
-            </Link>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav
+          aria-label="Primary"
+          className="hidden md:flex items-center gap-8 text-[13px] font-medium justify-self-center"
+        >
+          <Link
+            href="/features"
+            className="transition-opacity hover:opacity-100"
+            style={{ color: 'var(--muted)', opacity: 0.85 }}
+          >
+            Features
+          </Link>
+          <Link
+            href="/pricing"
+            className="transition-opacity hover:opacity-100"
+            style={{ color: 'var(--muted)', opacity: 0.85 }}
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/about"
+            className="transition-opacity hover:opacity-100"
+            style={{ color: 'var(--muted)', opacity: 0.85 }}
+          >
+            About
+          </Link>
+        </nav>
+        <div className="flex items-center gap-2 justify-self-end">
           <ThemeToggle />
           <Link
             href="/login"
