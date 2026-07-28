@@ -301,7 +301,7 @@ export default function ComparisonPage({ data }: { data: ComparisonPageData }) {
             Free forever for your first store · 120-day Business trial · No card required
           </p>
           <Link
-            href="/login"
+            href="/register"
             className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-sm"
             style={{ background: '#00C896', color: '#0A0E17' }}
           >
