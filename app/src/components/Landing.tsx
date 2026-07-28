@@ -64,15 +64,46 @@ export default function Landing() {
       />
 
       {/* Top bar — fixed so it stays visible while the deck swipes.
-          The "Sign in" button mirrors the hero's "Sign up free" so the two
-          CTAs read as a matched pair across the page. */}
+          Desktop shows a horizontal nav strip (Features / Pricing /
+          About) between the wordmark and the auth controls — the
+          Stripe / Linear / Vercel pattern. Mobile keeps the header
+          minimal (wordmark + theme + Sign in) and surfaces the same
+          nav in a compact row on the CTA slide instead. */}
       <header
         className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto"
         style={{ backdropFilter: 'blur(8px)' }}
       >
-        {/* Sized to match the Sign in button height (~42px) so the brand
-            reads as an equal-weight anchor against the CTA. */}
-        <Wordmark height={42} textColor="var(--foreground)" />
+        <div className="flex items-center gap-8">
+          {/* Sized to match the Sign in button height (~42px) so the
+              brand reads as an equal-weight anchor against the CTA. */}
+          <Wordmark height={42} textColor="var(--foreground)" />
+          <nav
+            aria-label="Primary"
+            className="hidden md:flex items-center gap-6 text-[13px] font-medium"
+          >
+            <Link
+              href="/features"
+              className="transition-opacity hover:opacity-100"
+              style={{ color: 'var(--muted)', opacity: 0.85 }}
+            >
+              Features
+            </Link>
+            <Link
+              href="/pricing"
+              className="transition-opacity hover:opacity-100"
+              style={{ color: 'var(--muted)', opacity: 0.85 }}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/about"
+              className="transition-opacity hover:opacity-100"
+              style={{ color: 'var(--muted)', opacity: 0.85 }}
+            >
+              About
+            </Link>
+          </nav>
+        </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link
@@ -366,6 +397,23 @@ function SlideCta() {
             {' '}&amp;{' '}
             <Link href="/terms" className="underline" style={{ color: 'var(--muted)' }}>Terms</Link>.
           </p>
+
+          {/* Mobile-only nav row — the desktop header carries Features /
+              Pricing / About links, but the mobile header is minimal and
+              the 3-col footer is desktop-only. Compact single-line row
+              here keeps those routes discoverable on mobile at ~35px
+              vertical cost. */}
+          <nav
+            aria-label="Mobile secondary"
+            className="sm:hidden mt-4 flex items-center justify-center gap-3 text-[12px]"
+            style={{ color: 'var(--muted-dim)' }}
+          >
+            <Link href="/features" className="underline" style={{ color: 'var(--muted)' }}>Features</Link>
+            <span aria-hidden>·</span>
+            <Link href="/pricing" className="underline" style={{ color: 'var(--muted)' }}>Pricing</Link>
+            <span aria-hidden>·</span>
+            <Link href="/about" className="underline" style={{ color: 'var(--muted)' }}>About</Link>
+          </nav>
         </div>
 
         {/* Multi-column footer — standard SaaS pattern (Stripe / Vercel /
