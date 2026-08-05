@@ -1,6 +1,6 @@
 # Stoki Gap List
 
-Single source of truth for what's still open on Stoki. Committed to git so it syncs across every device that clones or pulls the repo. **Last updated: 2026-07-27.**
+Single source of truth for what's still open on Stoki. Committed to git so it syncs across every device that clones or pulls the repo. **Last updated: 2026-08-05.**
 
 Anything not on this list is either shipped or hasn't been thought of yet — if you're planning work, add it here first so it survives context switches.
 
@@ -9,6 +9,20 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 ---
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
+
+**2026-08-05:**
+- **VAT201 guide render bug fixed** — five backslash-apostrophe sequences sat in JSX *text* nodes on `/guides/how-to-submit-vat201-south-africa`, so the live page rendered "your bank\'s SARS payment option" with a visible backslash. These were also the 12 eslint errors that had **kept master's CI red since 2026-07-29** (`5461ff2` pulled the file into lint scope). Replaced with typographic quotes — commit `64e758c`
+- **Xero comparison refreshed** — Xero retired Starter/Standard/Premium in 2026 for Ignite/Grow/Comprehensive/Ultimate, and SA rand pricing moved off the ~R305/R515/R840 the page quoted. Page now states Stoki pricing concretely (Free / R99 / R249) and Xero's structurally, pointing at xero.com/za for live figures. Added a "Free tier" row (Xero has none) and removed the FAQ paragraph that claimed 3-4x, "under half" and "a third" of the same number — commit `64e758c`
+- **`packageManager` pin corrected** — root `package.json` declared `pnpm@11.18.0` (`207712f`) but the repo is npm workspaces with a `package-lock.json` and CI runs `npm ci`; no `pnpm-lock.yaml` exists. The pin also required Node ≥22.13 against a Node 20 toolchain, so any corepack-aware pnpm call failed outright. Repinned to `npm@10.8.2` — commit `64e758c`
+
+**2026-07-29 to 07-31 (marketing polish run):**
+- **Shared Header/Footer + `(marketing)` route group** — marketing pages consolidated under one layout — `5461ff2`
+- **`/privacy` + `/terms` metadata**, breadcrumb 404s dropped — `b2ec428`
+- **Primary CTAs standardised** on `btn-gloss` + `rounded-2xl` across marketing — `46aafde`
+- **Cape Town scrub, full pass** — 8 sites, founder-anonymity sweep completed — `348cfa2`
+- **`/features` redesign** — icon per feature + category layout — `7160e41`
+- **Landing header fixes** — flex+absolute nav so CTAs hug right on mobile; theme-toggle matched to sign-in button — `b951f33`, `efc3c3a`
+- **Compare CTA fix** — pointed at `/register` (was `/login`) + keyword typo — `b5967f5`
 
 **2026-07-27:**
 - **LinkedIn post #2 (Yoco) published** from `linkedin.com/company/stokiapp` — "one app for the whole business" opener, less-Yoco-focused variant. Post spacing: 8 days after post #1 (in the 5-7d ideal window, one day late)
@@ -82,7 +96,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #3 — Xero comparison** | Draft in memory `project_linkedin_comparison_posts.md`. Post ~2026-08-03 (7 days after Yoco post) |
+| 8 | **LinkedIn post #3 — Xero comparison** | ⚠️ **Overdue** — target was 2026-08-03. Draft in memory `project_linkedin_comparison_posts.md`, revised 2026-08-05 to drop the stale Xero rand figure and lead with Stoki Pro R99 + "Xero has no free tier". Ready to paste. |
 
 ---
 
@@ -91,6 +105,8 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 | # | Gap | Effort |
 |---|---|---|
 | 10 | P3 language deeper renames — a few form-field labels still say "Store name" not "Business name" | ~30 min sweep |
+| 10b | **Confirm Xero's live SA ZAR pricing** and put real figures back into `/compare/stoki-vs-xero` — xero.com 503s to automated fetches, so this needs a manual browser check. One SA source suggests the entry tier is now ~R450/mo (was ~R305) | 15 min |
+| 10c | Three remaining eslint warnings — unused `SupabaseClient` import in `anomaly-detect.ts`, unused `toPayslipLine` in `PayrollRepository.ts`, stale eslint-disable in `error.tsx`. Non-blocking (CI passes on warnings) | 10 min |
 
 ---
 
@@ -128,11 +144,13 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## 📊 SVP-Product take on the current top
 
-**Yoco post shipped 2026-07-27; landing hero + footer redesigned.** New top-3:
+**Marketing polish run shipped 29-31 July; CI unblocked and public render bug fixed 2026-08-05.** New top-3:
 
-1. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding. Currently the cron pulls placeholders; real live data makes the AI meaningfully sharper. **Actively being scoped 2026-07-27.**
-2. **LinkedIn post #3 (Xero) — post ~2026-08-03** (7 days after Yoco post). Zero code, draft in `memory/project_linkedin_comparison_posts.md`.
+1. **LinkedIn post #3 (Xero) — overdue, post today.** Zero code, ~10 minutes, draft revised and ready in `memory/project_linkedin_comparison_posts.md`. Cadence penalty compounds — the 5-7 day window after the Yoco post has already closed.
+2. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding, and increasingly urgent: the `BASELINE` constants in `market-context.ts` are dated 2026-05-01, so the advisor is confidently quoting a **3-month-stale repo rate** as fact. That's a credibility bug on the single most checkable claim in the product's positioning, not just a data-freshness nit. Plan is fully scoped in `memory/project_bot_intelligence_phase_1_6.md` — do not re-run the audit. One open decision: AA.co.za vs DMRE for fuel (recommendation: AA).
 3. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going.
+
+**Process note (2026-08-05):** master's CI sat red for a week without anyone noticing, and a public page shipped a visible render bug for the same period. Worth wiring a CI failure notification — a GitHub Actions email/Slack hook, or a `gh run list` check at the start of each session. `gh` CLI is not currently installed on the dev machine.
 
 **Explicitly skip until asked:**
 - Bot intelligence Phase 4 (predictive forecasts) — nice-to-have, 3-5 days
