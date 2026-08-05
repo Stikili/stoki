@@ -779,10 +779,11 @@ async function seedOne(
       ...(created ? { created_at: created } : {}),
     }
   })
-  const { data: debtors } = await supabase
-    .from('debtors')
-    .insert(debtorInserts)
-    .select('id, total_owed')
+  // Guarded like every other bulk insert here: a services profile has no
+  // informal credit book, and PostgREST rejects an empty insert payload.
+  const { data: debtors } = debtorInserts.length > 0
+    ? await supabase.from('debtors').insert(debtorInserts).select('id, total_owed')
+    : { data: null }
 
   // 10. Credit entries — paired ledger lines for each debtor.
   if (debtors) {
