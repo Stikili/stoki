@@ -1,19 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Seed two distinct demo stores per user so they can compare verticals and
+ * Seed three distinct demo stores per user so they can compare verticals and
  * see every Stoki feature populated with realistic data:
  *
- *   1. "Stoki Demo Spaza"  — Soweto, not VAT-registered. Informal trade
- *                            credit, airtime PINs, a combo bundle, a
- *                            weighable item, and short-tail fast-mover SKUs.
+ *   1. "Stoki Demo Spaza"    — Soweto, not VAT-registered. Informal trade
+ *                              credit, airtime PINs, a combo bundle, a
+ *                              weighable item, and short-tail fast-mover SKUs.
  *
- *   2. "Stoki Demo Market" — Cape Town, VAT-registered at 15%. B2B
- *                            customers + invoices (incl. partially paid +
- *                            overdue), broader catalogue with weighable
- *                            produce, scheduled-delivery flows.
+ *   2. "Stoki Demo Market"   — Cape Town, VAT-registered at 15%. B2B
+ *                              customers + invoices (incl. partially paid +
+ *                              overdue), broader catalogue with weighable
+ *                              produce, scheduled-delivery flows.
  *
- * Both stores carry: products (regular + airtime + bundle + weighable),
+ *   3. "Stoki Demo Advisory" — Gqeberha, VAT-registered. Professional
+ *                              services: retainers, hourly billing, no stock.
+ *                              The non-retail persona — see ADVISORY_PROFILE
+ *                              for why a service business needs cost: 0.
+ *
+ * The retail stores carry: products (regular + airtime + bundle + weighable),
  * suppliers, restocks, wastage, sales over 7 days with mixed payment
  * methods, expenses across categories, a stocktake snapshot, alerts, and
  * a handful of unsold airtime PINs.
@@ -426,7 +431,172 @@ const MARKET_PROFILE: DemoProfile = {
   seed_stocktake: true,
 }
 
-const DEMO_PROFILES = [SPAZA_PROFILE, MARKET_PROFILE] as const
+/**
+ * Professional-services demo — the non-retail persona.
+ *
+ * Exists because both other profiles sell goods, which left every demo (and
+ * every landing-page screenshot) looking like Stoki is a till for shops. A
+ * service business is a materially different dashboard: revenue arrives as
+ * invoices and retainers rather than sales at a counter, there is no stock to
+ * count, and the money owed to you matters more than the stock on your shelf.
+ *
+ * Two modelling notes, because the product schema has no first-class notion
+ * of a service:
+ *
+ *   - `cost: 0` on every line. A service has no cost of goods — the labour
+ *     behind it is an operating expense, and it is seeded as wages below.
+ *     This also keeps inventory valuation at R0, which is the correct look
+ *     for a firm that holds no stock; a nominal cost would invent a balance-
+ *     sheet asset that does not exist.
+ *   - A high `qty` with `reorder_point: 0`. Nothing here depletes, but
+ *     `productStatus()` reads `qty <= 0` as "out of stock", so a literal zero
+ *     would paint the dashboard with false out-of-stock warnings.
+ *
+ * Both are workarounds. The real fix is an `is_service` product flag that
+ * opts out of stock tracking and valuation entirely — worth doing if service
+ * businesses become a real segment rather than a demo.
+ */
+const ADVISORY_PROFILE: DemoProfile = {
+  store: {
+    name: 'Stoki Demo Advisory',
+    phone: '+27414501234',
+    location: 'Gqeberha',
+    // stores_category_check allows only spaza | general_dealer | food_stall |
+    // other — a professional-services firm is 'other'.
+    category: 'other',
+    vat_registered: true,
+    vat_number: '4987654321',
+    business_address: '3rd Floor, 27 Govan Mbeki Ave, Gqeberha, 6001',
+    lat: -33.9608,
+    lng: 25.6022,
+    cash_balance: 4200,
+  },
+  // Few transactions, each worth far more than a spaza sale.
+  sales_per_day: [1, 3],
+  // Almost entirely EFT — professional clients don't tap a card reader.
+  payment_methods: ['eft', 'eft', 'eft', 'card'],
+  rng_seed: 0x5C1B,
+  products: [
+    { name: 'Monthly bookkeeping retainer', price: 3500.00, cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-BOOK' },
+    { name: 'VAT201 preparation & filing',  price: 1250.00, cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-VAT' },
+    { name: 'Annual financial statements',  price: 8500.00, cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-AFS' },
+    { name: 'Payroll run (per payslip)',    price: 95.00,   cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-PAY' },
+    { name: 'Business advisory (per hour)', price: 850.00,  cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-HR' },
+    { name: 'CIPC company registration',    price: 1750.00, cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-CIPC' },
+    { name: 'Tax clearance certificate',    price: 950.00,  cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-TCC' },
+    { name: 'SARS objection / dispute',     price: 2500.00, cost: 0, qty: 500, reorder_point: 0, sku: 'SVC-SARS' },
+  ],
+  // A services firm buys subscriptions, not stock — modelled as expenses
+  // below rather than suppliers with restocks.
+  suppliers: [
+    { name: 'Sage Software SA',  contact_name: 'Renier Botha', phone: '0117125000' },
+  ],
+  restocks: [],
+  wastage: [],
+  // No informal credit book — this firm bills on terms, via invoices.
+  debtors: [],
+  customers: [
+    { name: 'Bayline Logistics',      contact_name: 'Zanele Mahlangu', phone: '0415551200', email: 'accounts@bayline.co.za',   vat_number: '4234567891', billing_address: '12 Harbour Rd, Gqeberha',      payment_terms_days: 30 },
+    { name: 'Nkosi Construction',     contact_name: 'Themba Nkosi',    phone: '0415553344', email: 'themba@nkosiconstruct.co.za', vat_number: '4345678912', billing_address: '88 Kempston Rd, Gqeberha', payment_terms_days: 30 },
+    { name: 'Coastal Dental Practice', contact_name: 'Dr A. Pillay',   phone: '0415557788', email: 'admin@coastaldental.co.za',                            billing_address: '4 Cape Rd, Gqeberha',       payment_terms_days: 14 },
+    { name: 'Umoya Textiles',         contact_name: 'Fatima Isaacs',   phone: '0415559090', email: 'fatima@umoyatextiles.co.za', vat_number: '4456789123', billing_address: '31 Neave St, Gqeberha',     payment_terms_days: 45 },
+  ],
+  invoices: [
+    {
+      // The retainer story — same client, billed every month, paid on time.
+      customer_name: 'Bayline Logistics',
+      status: 'paid',
+      issued_days_ago: 34,
+      due_in_days: -4,
+      lines: [
+        { description: 'Monthly bookkeeping retainer — June', qty: 1, unit_price: 3500.00 },
+        { description: 'Payroll run — 18 payslips',           qty: 18, unit_price: 95.00 },
+      ],
+      payment_method: 'eft',
+    },
+    {
+      customer_name: 'Bayline Logistics',
+      status: 'sent',
+      issued_days_ago: 4,
+      due_in_days: 26,
+      lines: [
+        { description: 'Monthly bookkeeping retainer — July', qty: 1, unit_price: 3500.00 },
+        { description: 'Payroll run — 18 payslips',           qty: 18, unit_price: 95.00 },
+        { description: 'VAT201 preparation & filing',         qty: 1, unit_price: 1250.00 },
+      ],
+    },
+    {
+      // The big annual job — high value, partially paid, gives the aging
+      // report something meaningful to show.
+      customer_name: 'Nkosi Construction',
+      status: 'sent',
+      issued_days_ago: 47,
+      due_in_days: -17,
+      lines: [
+        { description: 'Annual financial statements — FY2026', qty: 1, unit_price: 8500.00 },
+        { description: 'Business advisory — year-end review',  qty: 4, unit_price: 850.00 },
+      ],
+      paid_amount: 4000,
+      payment_method: 'eft',
+    },
+    {
+      customer_name: 'Coastal Dental Practice',
+      status: 'paid',
+      issued_days_ago: 9,
+      due_in_days: 5,
+      lines: [
+        { description: 'VAT201 preparation & filing', qty: 1, unit_price: 1250.00 },
+        { description: 'Tax clearance certificate',   qty: 1, unit_price: 950.00 },
+      ],
+      payment_method: 'eft',
+    },
+    {
+      // Long-terms client, not yet due — shows a healthy receivable.
+      customer_name: 'Umoya Textiles',
+      status: 'sent',
+      issued_days_ago: 11,
+      due_in_days: 34,
+      lines: [
+        { description: 'SARS objection — 2025 assessment', qty: 1, unit_price: 2500.00 },
+        { description: 'Business advisory (per hour)',     qty: 6, unit_price: 850.00 },
+      ],
+    },
+    {
+      customer_name: 'Coastal Dental Practice',
+      status: 'draft',
+      issued_days_ago: 0,
+      due_in_days: 14,
+      lines: [
+        { description: 'CIPC company registration — new practice', qty: 1, unit_price: 1750.00 },
+      ],
+    },
+  ],
+  expenses: [
+    { category: 'wages',       description: 'Two accountants + admin — monthly', amount: 62000, days_ago: 5 },
+    { category: 'rent',        description: 'Office rent — Govan Mbeki Ave',     amount: 12500, days_ago: 30 },
+    { category: 'other',       description: 'Sage + Xero practice licences',     amount: 4300,  days_ago: 12 },
+    { category: 'other',       description: 'Professional indemnity insurance',  amount: 2850,  days_ago: 20 },
+    { category: 'other',       description: 'SAICA membership renewal',          amount: 1980,  days_ago: 25 },
+    { category: 'electricity', description: 'Municipal — office',                amount: 1150,  days_ago: 14 },
+    { category: 'transport',   description: 'Client site visits — fuel',         amount: 890,   days_ago: 3 },
+    { category: 'other',       description: 'Fibre + VoIP',                      amount: 1299,  days_ago: 14 },
+  ],
+  airtime_pins: [],
+  alerts: [
+    { type: 'debtor',        message: 'Nkosi Construction INV-00003 is 17 days overdue — R4,500 outstanding', days_ago: 1 },
+    { type: 'ai_insight',    message: 'Retainer clients are 71% of revenue — two more would cover fixed costs', days_ago: 2 },
+    { type: 'debtor',        message: 'Coastal Dental Practice paid INV-00004 in full', days_ago: 4, read: true },
+    { type: 'weekly_report', message: 'Last week: R14,200 invoiced, 3 invoices issued, 1 payment received', days_ago: 0 },
+  ],
+  // Nothing to count — a stocktake on a services firm would be noise.
+  seed_stocktake: false,
+}
+
+const DEMO_PROFILES = [SPAZA_PROFILE, MARKET_PROFILE, ADVISORY_PROFILE] as const
+
+/** Exported for tests — asserting profile invariants is cheaper than
+ *  discovering a bad demo store after it has been seeded for every user. */
+export const _DEMO_PROFILES_FOR_TESTS = DEMO_PROFILES
 
 // ── Single-store seed implementation ───────────────────────────────────────
 

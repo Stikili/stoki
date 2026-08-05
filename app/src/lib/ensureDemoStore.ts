@@ -6,13 +6,14 @@ import { TAGS } from '@/lib/cache-tags'
 
 /**
  * Ensure every signed-in user has been seeded with the demo stores. Currently
- * seeds TWO demo stores (a Soweto spaza + a VAT-registered Cape Town
- * mini-market) so users can compare verticals and see every Stoki feature
- * populated with realistic data.
+ * seeds THREE demo stores (a Soweto spaza, a VAT-registered Cape Town
+ * mini-market, and a Gqeberha professional-services firm) so users can
+ * compare verticals and see every Stoki feature populated with realistic
+ * data — including the non-retail case.
  *
  * ## Versioning
  *
- * Tracked via `user_metadata.demo_seeded_v3`. The flag is bumped (rather
+ * Tracked via `user_metadata.demo_seeded_v4`. The flag is bumped (rather
  * than just toggled) every time we want to force a clean re-seed across
  * existing accounts — each version represents a hard reset.
  *
@@ -20,11 +21,16 @@ import { TAGS } from '@/lib/cache-tags'
  *   v2: two demo stores, but in some accounts left v1 leftovers behind
  *       because the cleanup was conditional on v1Done
  *   v3: unconditional cleanup — any is_demo store the user owns is
- *       soft-deleted before the v3 pair is seeded, regardless of which
+ *       soft-deleted before the pair is seeded, regardless of which
  *       prior version (if any) was applied
+ *   v4: adds the professional-services store, so every account has a
+ *       non-retail demo
  *
- * Users who deleted both demos and have v3 set are respected — they've
- * opted out, we don't recreate.
+ * Users who deleted their demos are respected only until the next version
+ * bump — v4 re-seeds them. That is the accepted cost of the hard-reset
+ * design: there is no separate "opted out" flag distinguishing "deleted
+ * these on purpose" from "never had the new one". Worth adding if demo
+ * deletion turns out to be common.
  *
  * ## Failure semantics
  *
@@ -37,10 +43,10 @@ export async function ensureDemoStore(
   user: Pick<User, 'id' | 'user_metadata'>,
 ): Promise<void> {
   const meta = user.user_metadata ?? {}
-  const v3Done = meta.demo_seeded_v3 === true
+  const v4Done = meta.demo_seeded_v4 === true
 
-  // Already on the v3 seed — nothing to do.
-  if (v3Done) return
+  // Already on the v4 seed — nothing to do.
+  if (v4Done) return
 
   try {
     // Use the service-role (admin) client for the seed. Reason: when a brand-
@@ -56,7 +62,7 @@ export async function ensureDemoStore(
     // Unconditional cleanup: soft-delete every is_demo store the caller
     // owns, regardless of which prior seed version it came from. This
     // collapses any duplicates / leftover-from-partial-failure rows so the
-    // user always lands on exactly the two stores in DEMO_PROFILES.
+    // user always lands on exactly the stores in DEMO_PROFILES.
     //
     // Soft-delete is safe: stores carry a `deleted_at` column and all
     // RLS-aware queries filter it. We don't hard-delete because cascading
@@ -77,6 +83,7 @@ export async function ensureDemoStore(
         demo_seeded: true,
         demo_seeded_v2: true,
         demo_seeded_v3: true,
+        demo_seeded_v4: true,
       },
     })
 
