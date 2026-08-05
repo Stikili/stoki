@@ -62,21 +62,26 @@ export interface MarketContext {
 // =============================================================================
 const BASELINE: Omit<MarketContext, 'asOf' | 'fx'> = {
   rates: {
+    // Verified against the SARB HomePageRates API on 2026-08-06. MPC held at
+    // 7.00% on 2026-07-23; prime has tracked it at +3.5 throughout.
     repo: 7.00,
     prime: 10.50,
     source: 'SARB MPC (baseline)',
-    asOf: '2026-05-01',
+    asOf: '2026-08-05',
   },
   fuel: {
-    petrol95: 23.50,
-    diesel: 21.80,
-    source: 'DoE / DMRE (baseline)',
-    asOf: '2026-05-01',
+    // DMRE prices effective 2026-08-05. Inland 95 ULP and 500ppm diesel
+    // wholesale — inland is the wider-coverage figure for our user base.
+    petrol95: 25.58,
+    diesel: 26.16,
+    source: 'DMRE (baseline)',
+    asOf: '2026-08-05',
   },
   inflation: {
-    cpiYoy: 4.5,
+    // Headline CPI for June 2026 per the SARB HomePageRates API.
+    cpiYoy: 5.0,
     source: 'Stats SA (baseline)',
-    asOf: '2026-04-01',
+    asOf: '2026-06-30',
   },
 }
 
@@ -224,10 +229,10 @@ async function fetchFx(): Promise<MarketContext['fx']> {
     // of a flaky third-party. The bot will mention "fx data unavailable" if
     // asked specifically about FX in a way it can't satisfy.
     return {
-      usdZar: 18.40,
-      eurZar: 19.85,
+      usdZar: 16.39,
+      eurZar: 18.92,
       source: 'baseline (fx fetch failed)',
-      asOf: '2026-05-01',
+      asOf: '2026-08-05',
     }
   }
 }

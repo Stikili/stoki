@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 import { MarketIndicatorRepository } from '@/infrastructure/supabase/repositories/MarketIndicatorRepository'
 import { fetchFxLive, _resetCacheForTests } from '@/lib/market-context'
+import { fetchSarbIndicators } from '@/lib/market-sources/sarb'
 import type { NewMarketIndicator } from '@/domain/entities/market-indicator'
 
 /**
@@ -15,14 +16,17 @@ import type { NewMarketIndicator } from '@/domain/entities/market-indicator'
  *
  * What's wired today:
  *   ✓ FX (USD/ZAR + EUR/ZAR)  — open.er-api.com, no API key
- *   ⚠ SARB rates              — TODO: SARB MPC RSS scrape
- *   ⚠ Fuel prices             — TODO: DMRE / AA SA monthly drop
- *   ⚠ CPI                     — TODO: Stats SA monthly release
+ *   ✓ SARB repo + prime       — SARB WebIndicators JSON API
+ *   ✓ CPI                     — same SARB call (they publish Stats SA's figure)
+ *   ⚠ Fuel prices             — no machine-readable source; owner updates
+ *                               these on /settings/market after the DMRE's
+ *                               monthly adjustment (first Wednesday)
  *
- * The TODO sources are intentionally not auto-scraped from this commit —
- * each requires its own brittle scraper that needs ongoing maintenance.
- * The owner can manually update them on /settings/market until those
- * scrapers are written; the bot reads whichever value is freshest.
+ * Fuel is deliberately not scraped. The obvious candidates all fail: AA.co.za
+ * renders its price table client-side, and the DMRE publishes a PDF whose
+ * layout changes between releases. A parser against either would break
+ * silently and feed the advisor wrong numbers, which is worse than a stale
+ * number the owner can see and correct. Revisit if a stable feed appears.
  */
 export async function POST(req: Request) {
   if (!authorise(req)) {
@@ -51,13 +55,22 @@ export async function POST(req: Request) {
     out.push({ kind: 'usd_zar', ok: false, error: errMsg(e) })
   }
 
-  // SARB / fuel / CPI scrapers go here when we wire them. Each one is its
-  // own small fetcher — a failed fetcher just doesn't append a row, the
-  // previous row stays as the latest. Slot left empty so the cron is
-  // structurally complete and easy to extend.
-  // try { rows.push(...await fetchSarbRates()) } catch (e) { out.push({ kind: 'sarb_repo', ok: false, error: errMsg(e) }) }
-  // try { rows.push(...await fetchFuel()) }       catch (e) { out.push({ kind: 'fuel_petrol_95', ok: false, error: errMsg(e) }) }
-  // try { rows.push(...await fetchCpi()) }        catch (e) { out.push({ kind: 'cpi_yoy', ok: false, error: errMsg(e) }) }
+  // SARB — one call covers repo, prime and CPI. Isolated in its own try so a
+  // SARB outage still leaves the FX rows above committed.
+  try {
+    const sarbRows = await fetchSarbIndicators()
+    rows.push(...sarbRows)
+    for (const row of sarbRows) out.push({ kind: row.kind, ok: true })
+  } catch (e) {
+    // Report against every kind this source feeds, so a null-streak alert can
+    // tell "SARB was down" apart from "SARB dropped the CPI field".
+    for (const kind of ['sarb_repo', 'sarb_prime', 'cpi_yoy']) {
+      out.push({ kind, ok: false, error: errMsg(e) })
+    }
+  }
+
+  // Fuel has no reliable machine-readable source — see the note above. It
+  // stays owner-maintained on /settings/market.
 
   if (rows.length > 0) {
     try {
