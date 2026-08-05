@@ -305,7 +305,7 @@ export default function Page() {
               <strong style={{ color: 'var(--foreground)' }}>Submit.</strong> Click <em>Submit</em>. You receive an immediate submission confirmation. Screenshot or PDF-save it for your records.
             </li>
             <li>
-              <strong style={{ color: 'var(--foreground)' }}>Pay by the deadline.</strong> Use the PRN via your bank\'s SARS payment option, or set up an EFT on eFiling itself. Payment is due by the same deadline as the return.
+              <strong style={{ color: 'var(--foreground)' }}>Pay by the deadline.</strong> Use the PRN via your bank’s SARS payment option, or set up an EFT on eFiling itself. Payment is due by the same deadline as the return.
             </li>
           </ol>
         </section>
@@ -316,10 +316,10 @@ export default function Page() {
           </h2>
           <ul className="list-disc ml-5 space-y-2.5 text-base leading-relaxed" style={{ color: 'var(--muted)' }}>
             <li>
-              <strong style={{ color: 'var(--foreground)' }}>Claiming input VAT without a valid tax invoice.</strong> Till slips and generic receipts don\'t count for anything over R5,000 — you need a proper tax invoice with your VAT number, the supplier\'s VAT number, and all required fields.
+              <strong style={{ color: 'var(--foreground)' }}>Claiming input VAT without a valid tax invoice.</strong> Till slips and generic receipts don’t count for anything over R5,000 — you need a proper tax invoice with your VAT number, the supplier’s VAT number, and all required fields.
             </li>
             <li>
-              <strong style={{ color: 'var(--foreground)' }}>Confusing zero-rated with exempt.</strong> Zero-rated lets you reclaim input VAT; exempt does not. Getting this wrong on rental income or interest received creates a reclaim you\'re not entitled to.
+              <strong style={{ color: 'var(--foreground)' }}>Confusing zero-rated with exempt.</strong> Zero-rated lets you reclaim input VAT; exempt does not. Getting this wrong on rental income or interest received creates a reclaim you’re not entitled to.
             </li>
             <li>
               <strong style={{ color: 'var(--foreground)' }}>Claiming entertainment expenses.</strong> Staff Christmas parties, client dinners, alcohol — input VAT on these is denied under Section 17(2). Common trap for restaurant / hospitality operators.
@@ -328,13 +328,13 @@ export default function Page() {
               <strong style={{ color: 'var(--foreground)' }}>Claiming input VAT on passenger vehicles.</strong> Input VAT on cars used for private / business purposes is restricted — you generally cannot claim on the purchase, only on running costs subject to apportionment.
             </li>
             <li>
-              <strong style={{ color: 'var(--foreground)' }}>Filing zero returns because "there was no activity".</strong> You still need to file. Skipping a return triggers a penalty and moves you to SARS\'s "risky vendor" list.
+              <strong style={{ color: 'var(--foreground)' }}>Filing zero returns because “there was no activity”.</strong> You still need to file. Skipping a return triggers a penalty and moves you to SARS’s “risky vendor” list.
             </li>
             <li>
               <strong style={{ color: 'var(--foreground)' }}>Not adjusting for change in use.</strong> Taking stock for personal use is an output-VAT event. Moving a business vehicle to personal use requires an adjustment.
             </li>
             <li>
-              <strong style={{ color: 'var(--foreground)' }}>Late payment despite on-time filing.</strong> The 10% penalty applies to late PAYMENT even if the return was submitted on time. Pay by the deadline, not "when the money comes in".
+              <strong style={{ color: 'var(--foreground)' }}>Late payment despite on-time filing.</strong> The 10% penalty applies to late PAYMENT even if the return was submitted on time. Pay by the deadline, not “when the money comes in”.
             </li>
           </ul>
         </section>
@@ -345,7 +345,7 @@ export default function Page() {
             How Stoki auto-generates VAT201
           </h2>
           <p className="text-base leading-relaxed mb-3" style={{ color: 'var(--muted)' }}>
-            If you\'re running an SA small business on Stoki, VAT201 filing takes about 5 minutes instead of an hour:
+            If you’re running an SA small business on Stoki, VAT201 filing takes about 5 minutes instead of an hour:
           </p>
           <ul className="list-disc ml-5 space-y-2 text-base leading-relaxed" style={{ color: 'var(--muted)' }}>
             <li>Every sale is tagged VAT-standard, zero-rated, or exempt at the point of sale — no bulk reclassification at month-end.</li>
