@@ -11,6 +11,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
 **2026-08-05:**
+- **LinkedIn post #3 (Xero) published** from `linkedin.com/company/stokiapp` — brief ~110-word variant leading with "Depends on who runs your books", no Xero rand figure quoted (2026 repricing unverified). **Completes the 3-post comparison series** (Loyverse → Yoco → Xero). Posted 9 days after the Yoco post, 2 days past the 5-7 day target window
 - **VAT201 guide render bug fixed** — five backslash-apostrophe sequences sat in JSX *text* nodes on `/guides/how-to-submit-vat201-south-africa`, so the live page rendered "your bank\'s SARS payment option" with a visible backslash. These were also the 12 eslint errors that had **kept master's CI red since 2026-07-29** (`5461ff2` pulled the file into lint scope). Replaced with typographic quotes — commit `64e758c`
 - **Xero comparison refreshed** — Xero retired Starter/Standard/Premium in 2026 for Ignite/Grow/Comprehensive/Ultimate, and SA rand pricing moved off the ~R305/R515/R840 the page quoted. Page now states Stoki pricing concretely (Free / R99 / R249) and Xero's structurally, pointing at xero.com/za for live figures. Added a "Free tier" row (Xero has none) and removed the FAQ paragraph that claimed 3-4x, "under half" and "a third" of the same number — commit `64e758c`
 - **`packageManager` pin corrected** — root `package.json` declared `pnpm@11.18.0` (`207712f`) but the repo is npm workspaces with a `package-lock.json` and CI runs `npm ci`; no `pnpm-lock.yaml` exists. The pin also required Node ≥22.13 against a Node 20 toolchain, so any corepack-aware pnpm call failed outright. Repinned to `npm@10.8.2` — commit `64e758c`
@@ -96,7 +97,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #3 — Xero comparison** | ⚠️ **Overdue** — target was 2026-08-03. Draft in memory `project_linkedin_comparison_posts.md`, revised 2026-08-05 to drop the stale Xero rand figure and lead with Stoki Pro R99 + "Xero has no free tier". Ready to paste. |
+| 8 | **LinkedIn post #4 — no draft yet** | Comparison series is finished (all 3 posted). Next post needs a new angle — the drafts memory has none. Options: a VAT201 guide repurpose, a "what SA SMMEs get wrong about X" educational post, or a product-update post. Target ~2026-08-12 to hold the weekly-ish cadence. |
 
 ---
 
@@ -144,11 +145,11 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## 📊 SVP-Product take on the current top
 
-**Marketing polish run shipped 29-31 July; CI unblocked and public render bug fixed 2026-08-05.** New top-3:
+**Comparison-post series complete; CI unblocked and public render bug fixed 2026-08-05.** New top-3:
 
-1. **LinkedIn post #3 (Xero) — overdue, post today.** Zero code, ~10 minutes, draft revised and ready in `memory/project_linkedin_comparison_posts.md`. Cadence penalty compounds — the 5-7 day window after the Yoco post has already closed.
-2. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding, and increasingly urgent: the `BASELINE` constants in `market-context.ts` are dated 2026-05-01, so the advisor is confidently quoting a **3-month-stale repo rate** as fact. That's a credibility bug on the single most checkable claim in the product's positioning, not just a data-freshness nit. Plan is fully scoped in `memory/project_bot_intelligence_phase_1_6.md` — do not re-run the audit. One open decision: AA.co.za vs DMRE for fuel (recommendation: AA).
-3. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going.
+1. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding, and increasingly urgent: the `BASELINE` constants in `market-context.ts` are dated 2026-05-01, so the advisor is confidently quoting a **3-month-stale repo rate** as fact. That's a credibility bug on the single most checkable claim in the product's positioning, not just a data-freshness nit. Plan is fully scoped in `memory/project_bot_intelligence_phase_1_6.md` — do not re-run the audit. One open decision: AA.co.za vs DMRE for fuel (recommendation: AA).
+2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going. Also solves the LinkedIn-content problem: the comparison series is exhausted, and blog posts are the natural next thing to link from the company page.
+3. **Confirm Xero's live SA pricing** (15 min, item 10b) — the comparison page currently avoids naming a Xero figure because it couldn't be verified. A concrete number materially strengthens both the page and any future post referencing it.
 
 **Process note (2026-08-05):** master's CI sat red for a week without anyone noticing, and a public page shipped a visible render bug for the same period. Worth wiring a CI failure notification — a GitHub Actions email/Slack hook, or a `gh run list` check at the start of each session. `gh` CLI is not currently installed on the dev machine.
 
