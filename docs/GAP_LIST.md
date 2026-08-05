@@ -10,6 +10,11 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
+**2026-08-06:**
+- **Bot intelligence Phase 1.6 shipped** — SARB repo, prime and CPI now refresh live from the SARB's own JSON API (`custom.resbank.co.za/SarbWebApi/WebIndicators/HomePageRates`). The planned cheerio/pdf-parse scrapers were abandoned after live probing: the plan's SARB URL 404s, and both the replacement rate pages and AA.co.za render values client-side. One official JSON call replaced two planned parsers. Matches on `TimeseriesCode` not display name (SARB relabelled "repo rate" → "SARB Policy Rate"), and reads prime rather than deriving repo + 3.5. 11 tests against a verbatim live fixture — commit `c665544`
+- **Fuel scraping declined, deliberately** — the AA-vs-DMRE decision is moot; neither is machine-readable. Fuel stays owner-maintained on `/settings/market`, updated after the DMRE's first-Wednesday adjustment. A silently-broken parser feeding the advisor wrong R/L figures is worse than a stale number the owner can see
+- **BASELINE constants refreshed** — repo/prime were still correct at 7.00/10.50, but **diesel was 20% off** (21.80 → 26.16), petrol 23.50 → 25.58, CPI 4.5 → 5.0, FX fallback 18.40 → 16.39 — commit `c665544`
+
 **2026-08-05:**
 - **LinkedIn post #3 (Xero) published** from `linkedin.com/company/stokiapp` — brief ~110-word variant leading with "Depends on who runs your books", no Xero rand figure quoted (2026 repricing unverified). **Completes the 3-post comparison series** (Loyverse → Yoco → Xero). Posted 9 days after the Yoco post, 2 days past the 5-7 day target window
 - **VAT201 guide render bug fixed** — five backslash-apostrophe sequences sat in JSX *text* nodes on `/guides/how-to-submit-vat201-south-africa`, so the live page rendered "your bank\'s SARS payment option" with a visible backslash. These were also the 12 eslint errors that had **kept master's CI red since 2026-07-29** (`5461ff2` pulled the file into lint scope). Replaced with typographic quotes — commit `64e758c`
@@ -125,7 +130,10 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 14 | **Phase 1.6** — real scrapers for SARB / fuel / CPI (cron slots currently stubbed) | 1 day |
+| 14a | **Sentry N-day null-streak alert** — warn when a market indicator returns null 3 days running. The cron's `attempted[]` output already reports per-kind failures, so the hook point exists. Left over from Phase 1.6 | 30 min |
+| 14b | **`docs/BOT_INTELLIGENCE.md`** — design doc for the market-data layer, never scaffolded. Left over from Phase 1.6 | 1h |
+| 14c | **Phase 1.7** — `web_search` tool for the in-app advisor. WhatsApp brain has `WEB_SOURCE_ALLOWLIST`; `/api/advisor` has no equivalent | 4-6h |
+| 14d | **Watch: SARB may retire the prime lending rate** — they've published a consultation paper on it. If prime is discontinued, `sarb_prime` needs a story | monitor |
 | 15 | **Phase 2** — live SA news ingestion (RSS → summariser → advisor context) | 1-2 days |
 | 16 | **Phase 3** — proactive push insights when indicators move materially | 1 day |
 | 17 | **Phase 4** — predictive forecasts combining store trends + market data | 3-5 days |
@@ -145,10 +153,10 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## 📊 SVP-Product take on the current top
 
-**Comparison-post series complete; CI unblocked and public render bug fixed 2026-08-05.** New top-3:
+**Phase 1.6 shipped; comparison-post series complete; CI unblocked 2026-08-06.** New top-3:
 
-1. **Bot intelligence Phase 1.6 — real SARB / fuel / CPI scrapers** (1 day, dedicated session) — highest-leverage upgrade to the AI advisor's factual grounding, and increasingly urgent: the `BASELINE` constants in `market-context.ts` are dated 2026-05-01, so the advisor is confidently quoting a **3-month-stale repo rate** as fact. That's a credibility bug on the single most checkable claim in the product's positioning, not just a data-freshness nit. Plan is fully scoped in `memory/project_bot_intelligence_phase_1_6.md` — do not re-run the audit. One open decision: AA.co.za vs DMRE for fuel (recommendation: AA).
-2. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going. Also solves the LinkedIn-content problem: the comparison series is exhausted, and blog posts are the natural next thing to link from the company page.
+1. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going. Also solves the LinkedIn-content problem: the comparison series is exhausted, and blog posts are the natural next thing to link from the company page.
+2. **Monthly fuel-price reminder** — now that fuel is explicitly owner-maintained rather than scraped, it needs a process or it rots exactly the way BASELINE did. DMRE adjusts the first Wednesday of each month; a recurring reminder to update `/settings/market` is the whole fix.
 3. **Confirm Xero's live SA pricing** (15 min, item 10b) — the comparison page currently avoids naming a Xero figure because it couldn't be verified. A concrete number materially strengthens both the page and any future post referencing it.
 
 **Process note (2026-08-05):** master's CI sat red for a week without anyone noticing, and a public page shipped a visible render bug for the same period. Worth wiring a CI failure notification — a GitHub Actions email/Slack hook, or a `gh run list` check at the start of each session. `gh` CLI is not currently installed on the dev machine.
