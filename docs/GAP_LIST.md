@@ -10,6 +10,9 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
+**2026-08-13:**
+- **LinkedIn post #4 published** — first non-comparison post, a ~70-word paragraph driving to the indexed `/guides/how-to-submit-vat201-south-africa` page ("Most VAT201 mistakes we see aren't fraud — they're admin"). No IndexNow ping: the guide content hasn't changed since `64e758c`. Cadence data point — actual spacing across #1→#4 is 8, 9, 8 days, so plan against ~8-9 days rather than the 5-7 in the original plan
+
 **2026-08-06:**
 - **Bot intelligence Phase 1.6 shipped** — SARB repo, prime and CPI now refresh live from the SARB's own JSON API (`custom.resbank.co.za/SarbWebApi/WebIndicators/HomePageRates`). The planned cheerio/pdf-parse scrapers were abandoned after live probing: the plan's SARB URL 404s, and both the replacement rate pages and AA.co.za render values client-side. One official JSON call replaced two planned parsers. Matches on `TimeseriesCode` not display name (SARB relabelled "repo rate" → "SARB Policy Rate"), and reads prime rather than deriving repo + 3.5. 11 tests against a verbatim live fixture — commit `c665544`
 - **Fuel scraping declined, deliberately** — the AA-vs-DMRE decision is moot; neither is machine-readable. Fuel stays owner-maintained on `/settings/market`, updated after the DMRE's first-Wednesday adjustment. A silently-broken parser feeding the advisor wrong R/L figures is worse than a stale number the owner can see
@@ -102,7 +105,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #4 — VAT201 mistakes** | ⚠️ **Overdue** — target was 2026-08-12. Drafted 2026-08-13 in memory `project_linkedin_comparison_posts.md`, ready to paste. First non-comparison post: repurposes the indexed `/guides/how-to-submit-vat201-south-africa` page. **No IndexNow ping** — the guide content hasn't changed since `64e758c`. |
+| 8 | **LinkedIn post #5 — no draft** | Series exhausted again. Real cadence is ~8-9 days, so target ~2026-08-21. Only remaining angle without new content is the Phase 1.6 product update ("your accounting app doesn't know the repo rate changed; ours does"). After that the well is dry until `/blog` exists. |
 
 ---
 
