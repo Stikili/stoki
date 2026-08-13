@@ -102,7 +102,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #4 — no draft yet** | Comparison series is finished (all 3 posted). Next post needs a new angle — the drafts memory has none. Options: a VAT201 guide repurpose, a "what SA SMMEs get wrong about X" educational post, or a product-update post. Target ~2026-08-12 to hold the weekly-ish cadence. |
+| 8 | **LinkedIn post #4 — VAT201 mistakes** | ⚠️ **Overdue** — target was 2026-08-12. Drafted 2026-08-13 in memory `project_linkedin_comparison_posts.md`, ready to paste. First non-comparison post: repurposes the indexed `/guides/how-to-submit-vat201-south-africa` page. **No IndexNow ping** — the guide content hasn't changed since `64e758c`. |
 
 ---
 
