@@ -77,7 +77,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Target | Notes |
 |---|---|---|---|
-| 1 | **Ozow payment integration** | ~2026-08-19 | User-decided defer. Runbook in memory `project_payment_provider.md`. 120-day Business trial covers immediate access. |
+| 1 | **Ozow — sandbox + live cutover** | Blocked on credentials | See row 1b. Everything past code-complete needs real keys. |
 
 ---
 
@@ -85,6 +85,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Blocker |
 |---|---|---|
+| 1b | **Ozow merchant credentials** — `OZOW_SITE_CODE`, `OZOW_PRIVATE_KEY`, `OZOW_API_KEY` | ⚠️ **Confirmed blocker 2026-08-13.** Merchant onboarding recorded as in progress since 2026-07-18 — **26 days**, against a runbook expectation of same-day approval for SA registered entities. That gap suggests a stalled document request rather than a queue; worth chasing Ozow directly. Nothing else unblocks this, and the ~2026-08-19 target cannot hold without it. Note: credentials block sandbox testing and go-live, NOT writing the integration. |
 | 2 | **WhatsApp monthly-report Meta template** | Register `stoki_monthly_report` in Meta Business Manager (1-2 day approval) |
 | 3 | **Native SA bank feeds (5 banks)** | Post-Ozow (~mid-August + ~1 month) |
 | 4 | **Phone OTP login** | Twilio not wired in Supabase (feature-flagged off) |
