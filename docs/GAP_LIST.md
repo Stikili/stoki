@@ -166,6 +166,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 1. **Ozow** — credentials expected 2026-08-31. Adapter only, not a billing build (see `project_payment_provider.md` pre-work findings). Start when keys land.
 2. **First Wednesday of every month is now the operating rhythm** — DMRE adjusts fuel, which triggers three things at once: update `/settings/market` (fuel is owner-maintained, not scraped), publish the month's cost report, post it to LinkedIn. Next: **2026-09-02**. This single cadence closes the fuel-rot risk and the content-cadence problem together.
+   - Backed by a weekly cloud routine, `trig_01W2gqgoqSbGa3csUFd1qWKz` (Mondays 08:00 SAST) — checks whether the current month's report exists and reports published / upcoming / overdue. Read-only. Manage at https://claude.ai/code/routines
 3. **Confirm Xero's live SA pricing** (15 min, item 10b) — the comparison page currently avoids naming a Xero figure because it couldn't be verified. A concrete number materially strengthens both the page and any future post referencing it.
 
 **Process note (2026-08-05):** master's CI sat red for a week without anyone noticing, and a public page shipped a visible render bug for the same period. Worth wiring a CI failure notification — a GitHub Actions email/Slack hook, or a `gh run list` check at the start of each session. `gh` CLI is not currently installed on the dev machine.
