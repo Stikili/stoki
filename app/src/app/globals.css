@@ -103,6 +103,67 @@ button, a, [role="button"] { min-height: 48px; }
   .tile-press:hover { background: var(--card-bg); border-color: var(--card-border); }
 }
 
+/* ── Blog prose ──────────────────────────────────────────────────────────
+ * Element styles for long-form post bodies, so a post file contains prose
+ * rather than a class attribute on every paragraph. Scoped to .blog-prose
+ * so it can never leak into app UI.
+ *
+ * Tables scroll inside their own wrapper rather than widening the page —
+ * a rates table on a 360px phone will always overflow, and a horizontally
+ * scrolling document is far worse than a horizontally scrolling table.
+ */
+.blog-prose {
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+.blog-prose > * + * { margin-top: 1.15rem; }
+.blog-prose h2 {
+  color: var(--foreground);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2.5rem;
+}
+.blog-prose h3 {
+  color: var(--foreground);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 1.9rem;
+}
+.blog-prose strong { color: var(--foreground); font-weight: 600; }
+.blog-prose a { color: var(--brand, #00c98d); text-decoration: underline; }
+.blog-prose ul, .blog-prose ol { padding-left: 1.25rem; }
+.blog-prose ul { list-style: disc; }
+.blog-prose ol { list-style: decimal; }
+.blog-prose li + li { margin-top: 0.5rem; }
+.blog-prose blockquote {
+  border-left: 3px solid rgba(0, 200, 150, 0.4);
+  padding-left: 1rem;
+  font-style: italic;
+}
+.blog-prose .table-scroll { overflow-x: auto; }
+.blog-prose table {
+  width: 100%;
+  min-width: 30rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.blog-prose th, .blog-prose td {
+  border-bottom: 1px solid var(--card-border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.blog-prose th {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.blog-prose td.num, .blog-prose th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
 /* ── Login / auth visual primitives ──────────────────────────────────────
  * Modern glass + shine vocabulary. Used on the login screen but reusable on
  * any premium-feel surface (onboarding hero card, paywall modal, etc.).

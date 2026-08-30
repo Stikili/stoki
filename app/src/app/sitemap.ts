@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { POSTS } from '@/content/blog'
 
 /**
  * Auto-generated /sitemap.xml. Google + Bing crawl this to discover every
@@ -8,8 +9,9 @@ import type { MetadataRoute } from 'next'
  * settings, credit, etc.) is inside the (app) route group and is not
  * indexable anyway. Adding them here just wastes crawl budget on 401s.
  *
- * When a new public route ships (blog post, comparison page, landing
- * variant), add it to the array below.
+ * When a new public route ships (comparison page, guide, landing variant),
+ * add it to the array below. Blog posts are the exception — they're derived
+ * from the post registry, so publishing a post needs no edit here.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://stokiapp.com'
@@ -125,6 +127,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    // Blog index + every published post, derived from the registry so a
+    // new post never needs a second edit here to get crawled.
+    {
+      url: `${base}/blog`,
+      lastModified: POSTS[0] ? new Date(POSTS[0].published) : now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    ...POSTS.map(post => ({
+      url: `${base}/blog/${post.slug}`,
+      lastModified: new Date(post.updated ?? post.published),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
     // Support / trust surfaces.
     {
       url: `${base}/status`,

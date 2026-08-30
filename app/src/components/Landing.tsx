@@ -403,6 +403,11 @@ function SlideCta() {
             </div>
             <ul className="space-y-1.5 leading-tight">
               <li>
+                <Link href="/blog" className={footerLinkClass} style={footerLinkStyle}>
+                  Blog
+                </Link>
+              </li>
+              <li>
                 <Link
                   href="/guides/how-to-submit-vat201-south-africa"
                   className={footerLinkClass}
