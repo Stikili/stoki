@@ -136,6 +136,12 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ---
 
+## 🟠 Scoped, awaiting go/no-go
+
+| # | Item | Notes |
+|---|---|---|
+| 22 | **Spaza Fund readiness flow (WhatsApp)** | Design doc: `docs/SPAZA_FUND_READINESS.md` (2026-08-30). Free readiness assessment + doc pack for the R500m Spaza Shop Support Fund — 38% of applications are blocked on municipal licensing. **Scoped as assessment, NOT verification**: 3 of the 4 proposed "checks" have no API, and UIF isn't a fund requirement at all. CIPC is optional below R80k. One sprint for the assessment; doc pack blocked on confirming the fund's document checklist with SEDFA. Three open decisions in §10 before starting. |
+
 ## 🔵 Bot intelligence backlog (multi-day builds — dedicated session recommended)
 
 | # | Gap | Effort |
