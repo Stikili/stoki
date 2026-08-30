@@ -10,6 +10,11 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 ## ✅ Recently closed (kept for reference — 30-day rolling)
 
+**2026-08-30:**
+- **`/blog` shipped** — index + post routing + Article/Blog/BreadcrumbList JSON-LD, following the `ComparisonPage` house pattern (data schema + shared renderer, consumer owns content only). No MDX: it would add a build dependency, a second styling system, and content typecheck can't see. Sitemap now **derives blog URLs from the post registry**, so publishing needs no second edit to get crawled. Blog links added to both footers — commit `833bf75`
+- **First post — "SA small business cost report, August 2026"** — built on the figures Stoki already ingests (SARB WebIndicators API + DMRE fuel). Angle: diesel now costs *more* than petrol (R26.16 vs R25.58 inland) because petrol got a slate-levy cut diesel didn't, so "petrol drops 52c" was the opposite of good news for anyone moving goods. **Repeatable by construction** — DMRE adjusts the first Wednesday monthly and the inputs are already in the DB — commit `833bf75`
+- **Guide dead-end closed** — a reader landing on the VAT201 guide from LinkedIn now has somewhere to go next
+
 **2026-08-13:**
 - **LinkedIn post #4 published** — first non-comparison post, a ~70-word paragraph driving to the indexed `/guides/how-to-submit-vat201-south-africa` page ("Most VAT201 mistakes we see aren't fraud — they're admin"). No IndexNow ping: the guide content hasn't changed since `64e758c`. Cadence data point — actual spacing across #1→#4 is 8, 9, 8 days, so plan against ~8-9 days rather than the 5-7 in the original plan
 
@@ -106,7 +111,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Item | Where |
 |---|---|---|
-| 8 | **LinkedIn post #5 — no draft** | Series exhausted again. Real cadence is ~8-9 days, so target ~2026-08-21. Only remaining angle without new content is the Phase 1.6 product update ("your accounting app doesn't know the repo rate changed; ours does"). After that the well is dry until `/blog` exists. |
+| 8 | **LinkedIn post #5 — cost report** | Ready: post the August cost report (`/blog/sa-small-business-cost-report-august-2026`). Lead on the counterintuitive line — *diesel now costs more than petrol*. **Do ping IndexNow for this one** — unlike post #4, the URL is genuinely new. Recurring from here: one post per cost report, monthly. |
 
 ---
 
@@ -148,7 +153,7 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 | # | Gap | Effort |
 |---|---|---|
-| 18 | **`/blog` scaffolding + first post** — ongoing content channel | 2-3h scaffolding, then ongoing |
+| 18 | ~~`/blog` scaffolding~~ — **shipped 2026-08-30** (`833bf75`). To publish: add a module under `content/blog/`, register its `meta` in `content/blog/index.ts`, add the thin route file. Sitemap is automatic. | done |
 | 19 | **Guide — "How to register for VAT in South Africa"** | 2-3h |
 | 20 | **Guide — "PAYE calculation guide"** | 2-3h |
 | 21 | **Guide — "Spaza bookkeeping basics"** | 2-3h |
@@ -159,8 +164,8 @@ Cross-referenced with memory files in `~/.claude/projects/.../memory/` for AI-as
 
 **Phase 1.6 shipped; comparison-post series complete; CI unblocked 2026-08-06.** New top-3:
 
-1. **`/blog` scaffolding + first post** (2-3h) — content channel for ongoing SEO compounding. Now that 7 comparison pages + 1 guide are indexed, a blog + fresh posts keeps the crawl-frequency + backlink flow going. Also solves the LinkedIn-content problem: the comparison series is exhausted, and blog posts are the natural next thing to link from the company page.
-2. **Monthly fuel-price reminder** — now that fuel is explicitly owner-maintained rather than scraped, it needs a process or it rots exactly the way BASELINE did. DMRE adjusts the first Wednesday of each month; a recurring reminder to update `/settings/market` is the whole fix.
+1. **Ozow** — credentials expected 2026-08-31. Adapter only, not a billing build (see `project_payment_provider.md` pre-work findings). Start when keys land.
+2. **First Wednesday of every month is now the operating rhythm** — DMRE adjusts fuel, which triggers three things at once: update `/settings/market` (fuel is owner-maintained, not scraped), publish the month's cost report, post it to LinkedIn. Next: **2026-09-02**. This single cadence closes the fuel-rot risk and the content-cadence problem together.
 3. **Confirm Xero's live SA pricing** (15 min, item 10b) — the comparison page currently avoids naming a Xero figure because it couldn't be verified. A concrete number materially strengthens both the page and any future post referencing it.
 
 **Process note (2026-08-05):** master's CI sat red for a week without anyone noticing, and a public page shipped a visible render bug for the same period. Worth wiring a CI failure notification — a GitHub Actions email/Slack hook, or a `gh run list` check at the start of each session. `gh` CLI is not currently installed on the dev machine.
